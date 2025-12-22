@@ -1,0 +1,300 @@
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  /* NyayaNet Color Palette - Indian Constitution Inspired */
+  --color-justice-black: #0a0a0a;
+  --color-constitution-gold: #c0a068;
+  --color-parchment-cream: #f5f1e8;
+  --color-judge-ivory: #fffaf0;
+  --color-gavel-bronze: #b8860b;
+  --color-ink-gray: #2c2c2c;
+  --color-seal-red: #8b0000;
+
+  /* Transparency Layers */
+  --overlay-gold-10: rgba(192, 160, 104, 0.1);
+  --overlay-gold-20: rgba(192, 160, 104, 0.2);
+  --overlay-gold-30: rgba(192, 160, 104, 0.3);
+  --overlay-gold-40: rgba(192, 160, 104, 0.4);
+  --overlay-gold-50: rgba(192, 160, 104, 0.5);
+  --overlay-black-80: rgba(10, 10, 10, 0.8);
+  --overlay-black-50: rgba(10, 10, 10, 0.5);
+
+  /* Font Families */
+  --font-heading: 'Playfair Display', 'Times New Roman', serif;
+  --font-body: 'Cormorant Garamond', Georgia, serif;
+  --font-mono: 'Courier Prime', 'Courier New', monospace;
+
+  /* Font Sizes */
+  --font-size: 16px;
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+  --text-3xl: 1.875rem;
+  --text-4xl: 2.25rem;
+  --text-5xl: 3rem;
+
+  /* Letter Spacing */
+  --tracking-tight: -0.025em;
+  --tracking-normal: 0;
+  --tracking-wide: 0.05em;
+  --tracking-wider: 0.1em;
+
+  /* Font Weights */
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* Border Radius */
+  --radius: 0.5rem;
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  /* Default Radix UI Variables (Compatibility) */
+  --background: var(--color-parchment-cream);
+  --foreground: var(--color-ink-gray);
+  --card: var(--color-parchment-cream);
+  --card-foreground: var(--color-ink-gray);
+  --popover: var(--color-parchment-cream);
+  --popover-foreground: var(--color-ink-gray);
+  --primary: var(--color-constitution-gold);
+  --primary-foreground: var(--color-justice-black);
+  --secondary: var(--color-gavel-bronze);
+  --secondary-foreground: var(--color-judge-ivory);
+  --muted: var(--color-parchment-cream);
+  --muted-foreground: var(--color-ink-gray);
+  --accent: var(--color-constitution-gold);
+  --accent-foreground: var(--color-justice-black);
+  --destructive: var(--color-seal-red);
+  --destructive-foreground: var(--color-judge-ivory);
+  --border: var(--overlay-gold-20);
+  --input: var(--overlay-gold-30);
+  --ring: var(--color-constitution-gold);
+}
+
+@theme inline {
+  /* NyayaNet Custom Color Classes */
+  --color-justice-black: #0a0a0a;
+  --color-constitution-gold: #c0a068;
+  --color-parchment-cream: #f5f1e8;
+  --color-judge-ivory: #fffaf0;
+  --color-gavel-bronze: #b8860b;
+  --color-ink-gray: #2c2c2c;
+  --color-seal-red: #8b0000;
+
+  /* Compatibility Colors */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* Border Radius */
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-justice-black text-judge-ivory;
+    font-family: var(--font-body);
+  }
+
+  html {
+    font-size: var(--font-size);
+  }
+
+  /* Default typography - can be overridden by Tailwind classes */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
+  }
+
+  h1 {
+    font-size: var(--text-4xl);
+    font-weight: var(--font-weight-bold);
+    line-height: 1.2;
+  }
+
+  h2 {
+    font-size: var(--text-3xl);
+    font-weight: var(--font-weight-bold);
+    line-height: 1.3;
+  }
+
+  h3 {
+    font-size: var(--text-2xl);
+    font-weight: var(--font-weight-semibold);
+    line-height: 1.4;
+  }
+
+  h4 {
+    font-size: var(--text-xl);
+    font-weight: var(--font-weight-semibold);
+    line-height: 1.5;
+  }
+
+  p {
+    font-family: var(--font-body);
+    font-size: var(--text-base);
+    font-weight: var(--font-weight-normal);
+    line-height: 1.6;
+  }
+
+  label {
+    font-size: var(--text-base);
+    font-weight: var(--font-weight-medium);
+    line-height: 1.5;
+  }
+
+  button {
+    font-size: var(--text-base);
+    font-weight: var(--font-weight-medium);
+    line-height: 1.5;
+  }
+
+  input, textarea {
+    font-family: var(--font-body);
+    font-size: var(--text-base);
+    font-weight: var(--font-weight-normal);
+    line-height: 1.5;
+  }
+}
+
+/* NyayaNet Custom Utility Classes */
+@layer utilities {
+  /* Parchment Background with Texture */
+  .parchment-bg {
+    background-color: var(--color-parchment-cream);
+    background-image:
+      radial-gradient(circle at 10% 20%, var(--overlay-gold-10) 0%, transparent 20%),
+      radial-gradient(circle at 90% 80%, var(--overlay-gold-10) 0%, transparent 20%);
+    position: relative;
+  }
+
+  .parchment-bg::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%23c0a068' fill-opacity='0.02' fill-rule='evenodd'/%3E%3C/svg%3E");
+    opacity: 0.15;
+    pointer-events: none;
+  }
+
+  /* Aged Paper Effect for Posts */
+  .aged-paper {
+    background: linear-gradient(
+      135deg,
+      var(--color-parchment-cream) 0%,
+      #f0e6d3 50%,
+      var(--color-parchment-cream) 100%
+    );
+    box-shadow:
+      0 1px 1px rgba(0, 0, 0, 0.1),
+      0 2px 2px rgba(0, 0, 0, 0.1),
+      0 4px 4px rgba(0, 0, 0, 0.1),
+      0 8px 8px rgba(0, 0, 0, 0.1),
+      0 16px 16px rgba(0, 0, 0, 0.1),
+      inset 0 0 0 1px var(--overlay-gold-10),
+      inset 0 0 20px var(--overlay-gold-10);
+  }
+
+  /* Constitution Book Texture */
+  .constitution-texture {
+    background-color: var(--color-parchment-cream);
+    background-image:
+      linear-gradient(90deg, transparent 79px, var(--overlay-gold-10) 79px, var(--overlay-gold-10) 81px, transparent 81px),
+      linear-gradient(var(--color-parchment-cream) 30px, #eee 30px, #eee 31px, var(--color-parchment-cream) 31px);
+    background-size: 100% 100%, 100% 32px;
+    border-left: 1px solid var(--overlay-gold-20);
+  }
+
+  /* Gold Border */
+  .gold-border {
+    border: 1px solid var(--overlay-gold-30);
+  }
+
+  .gold-border-thick {
+    border: 2px solid var(--color-constitution-gold);
+  }
+
+  /* Font Families */
+  .font-heading {
+    font-family: var(--font-heading);
+  }
+
+  .font-body {
+    font-family: var(--font-body);
+  }
+
+  .font-mono {
+    font-family: var(--font-mono);
+  }
+}
+
+/* Animations for Lady Justice Loader */
+@keyframes draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes pulse-gold {
+  0%, 100% {
+    opacity: 0.2;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.4;
+    transform: scale(1.05);
+  }
+}
+
+.animate-draw {
+  animation-fill-mode: forwards;
+}
+
+.animate-fadeIn {
+  animation-fill-mode: forwards;
+  opacity: 0;
+}
+
+.animate-pulse-gold {
+  animation: pulse-gold 2s ease-in-out infinite;
+}
