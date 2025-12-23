@@ -1,0 +1,331 @@
+NyayaNet – Menu Structure & Feature Flow (Clear Visualization)
+
+NyayaNet is a law-focused professional platform that combines
+social networking + discussions + AI assistance + legal knowledge browsing.
+
+The application is organized into the following primary menus, each with its own search bar and clear purpose.
+
+1. Profile
+Purpose
+
+Acts as a personal professional page for each user, similar to a lawyer-centric LinkedIn profile.
+
+What a user sees
+
+Profile photo and basic details
+
+Role (Lawyer / Law Student / Researcher)
+
+Areas of interest / specialization (tags)
+
+Certificates & qualifications
+
+Short bio / description
+
+Sections inside Profile
+
+My Posts
+Posts created by the user (achievements, work updates, legal opinions)
+
+My Discussions
+Discussions started or participated in by the user
+
+Bookmarks (Saved Items)
+
+Saved posts
+
+Saved discussions
+
+(Future: saved AI results, saved laws)
+
+Actions available
+
+Create a new post
+
+Edit profile details
+
+Navigate to liked or saved content
+
+Click on followers / following
+
+🔍 Profile Search Bar
+
+Search within your own posts, discussions, or saved items
+
+2. Feed / Home
+Purpose
+
+Acts as the main activity stream, showing content from other users.
+
+What appears in the feed
+
+Posts from followed users
+
+Trending or recent legal posts
+
+Discussion highlights
+
+Each post contains
+
+Author name & profile link
+
+Post content (text, optional attachments)
+
+Action buttons:
+
+👍 Like
+
+💬 Comment
+
+🔖 Save
+
+➕ Follow author
+
+Controls at the top
+
+Tag Filter
+(e.g., Consumer Law, Tax Law, Business Law)
+
+Sort Options
+
+Latest
+
+Most Liked
+
+Most Discussed
+
+🔍 Feed Search Bar
+
+Search posts by keywords, tags, or author names
+
+3. Discussion Room
+Purpose
+
+A Quora / StackOverflow-style legal discussion space.
+
+Structure
+
+Each discussion has:
+
+Title
+
+Topic tag (law domain)
+
+Main question / statement
+
+Threaded replies
+
+User actions
+
+Create a new discussion
+
+Reply to discussions
+
+Upvote helpful replies
+
+Save discussion
+
+Visit any participant’s profile
+
+Visual hierarchy
+
+Original discussion at top
+
+Replies below
+
+Most upvoted replies highlighted
+
+🔍 Discussion Search Bar
+
+Search by discussion title, keywords, or tags
+
+4. Network
+Purpose
+
+Manage professional connections and communication.
+
+Sections inside Network
+
+Followers
+
+Following
+
+Pending Follow Requests
+
+Blocked Users
+
+Actions available
+
+Accept / reject follow requests
+
+Unfollow users
+
+Mute users (hide their content)
+
+Block users (no interaction)
+
+Messaging
+
+One-to-one chat
+
+Group chat (multiple users)
+
+View chat history
+
+Attach basic files (optional later)
+
+🔍 Network Search Bar
+
+Search people by name or specialization
+
+5. Notifications
+Purpose
+
+Keeps the user updated on all activity related to them.
+
+Notification types
+
+New followers
+
+Likes on posts
+
+Comments on posts
+
+Replies in discussions
+
+AI request completed
+
+Features
+
+Click notification → go to relevant content
+
+Mark notifications as read/unread
+
+🔍 Notification Search Bar
+
+Search notifications by text or type
+
+6. AI Room
+Purpose
+
+Central place for AI-based legal assistance.
+
+Layout
+
+A chat-like interface with a mode switch at the top.
+
+AI Modes
+
+Retrieval Mode
+
+User asks a legal query
+
+AI returns:
+
+Relevant acts & sections
+
+Relevant case judgments with snippets
+
+Prediction Mode
+
+User describes a case
+
+AI returns:
+
+Predicted outcome
+
+Confidence score (probability)
+
+Features
+
+View previous AI queries
+
+Copy or save responses
+
+Clear chat history
+
+🔍 AI Search Bar
+
+Search previous AI queries and responses
+
+7. Law Search
+Purpose
+
+Allows users to browse and search legal provisions directly, without AI inference.
+
+Content available
+
+Acts
+
+Sections
+
+Articles
+
+Rules & amendments
+
+User experience
+
+Browse by:
+
+Law category
+
+Act name
+
+Click a section → view full text
+
+See related sections or acts
+
+🔍 Law Search Bar
+
+Search by act name, section number, or keywords
+
+8. Case Workspace (Personal Notes Area)
+Purpose
+
+Acts like a private sticky-notes / mini text editor for legal work.
+
+Features
+
+Create multiple notes/files
+
+Each note is a simple text editor
+
+Rename, delete, and organize notes
+
+Use it to:
+
+Draft case summaries
+
+Keep arguments
+
+Paste AI outputs manually
+
+Key characteristics
+
+Private to the user
+
+Not shared publicly
+
+Lightweight and fast
+
+🔍 Workspace Search Bar
+
+Search inside your notes
+
+Final Mental Picture
+
+If someone uses NyayaNet:
+
+They connect with legal professionals
+
+Discuss legal topics
+
+Search laws directly
+
+Ask AI for retrieval or prediction
+
+Save and organize useful information
+
+Maintain private case notes
+
+All inside one focused legal ecosystem.
