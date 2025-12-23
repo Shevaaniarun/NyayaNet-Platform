@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import ladyJustice from "../../styles/lady-justice.png";
+import ladyJustice from "/lady-justice.png";
 
 export function JusticeLoader() {
   const [progress, setProgress] = useState(0);
