@@ -1,0 +1,353 @@
+import { DiscussionModel } from '../models/Discussion';
+import { DiscussionReplyModel } from '../models/DiscussionReply';
+import { DiscussionFollowerModel } from '../models/DiscussionFollower';
+import { DiscussionUpvoteModel } from '../models/DiscussionUpvote';
+import { 
+  CreateDiscussionInput, 
+  CreateReplyInput, 
+  DiscussionFilters, 
+  SearchFilters,
+  DiscussionReplyWithAuthor 
+} from '../types/discussionTypes';
+
+interface FormattedReply {
+  id: string;
+  content: string;
+  upvoteCount: number;
+  replyCount: number;
+  isEdited: boolean;
+  createdAt: Date;
+  author: {
+    id: string;
+    fullName?: string;
+    role?: string;
+    profilePhotoUrl?: string;
+  };
+  hasUpvoted?: boolean;
+  replies: FormattedReply[];
+}
+
+interface FormattedDiscussion {
+  id: string;
+  title: string;
+  description: string;
+  discussionType: string;
+  category: string;
+  tags: string[];
+  replyCount: number;
+  upvoteCount: number;
+  viewCount: number;
+  saveCount: number;
+  followerCount: number;
+  isResolved: boolean;
+  hasBestAnswer: boolean;
+  createdAt: Date;
+  lastActivityAt: Date;
+  author: {
+    id: string;
+    fullName?: string;
+    role?: string;
+    profilePhotoUrl?: string;
+  };
+  isFollowing?: boolean;
+  isSaved?: boolean;
+}
+
+interface PaginatedDiscussions {
+  discussions: FormattedDiscussion[];
+  pagination: {
+    total: number;
+    page: number;
+    limit: number;
+    pages: number;
+  };
+  categories: string[];
+}
+
+interface DiscussionDetails {
+  id: string;
+  title: string;
+  description: string;
+  discussionType: string;
+  category: string;
+  tags: string[];
+  replyCount: number;
+  upvoteCount: number;
+  viewCount: number;
+  saveCount: number;
+  followerCount: number;
+  isResolved: boolean;
+  isPublic: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+  lastActivityAt: Date;
+  author: {
+    id: string;
+    fullName?: string;
+    role?: string;
+    profilePhotoUrl?: string;
+  };
+  bestAnswer: {
+    id: string;
+    content: string;
+    upvoteCount: number;
+    author: {
+      fullName?: string;
+      profilePhotoUrl?: string;
+    };
+  } | null;
+  isFollowing?: boolean;
+  isSaved?: boolean;
+  replies: FormattedReply[];
+}
+
+export class DiscussionService {
+  // Get all discussions
+  static async getDiscussions(filters: DiscussionFilters, userId?: string): Promise<PaginatedDiscussions> {
+    const { discussions, total } = await DiscussionModel.findAll(filters, userId);
+    
+    const page = filters.page || 1;
+    const limit = filters.limit || 20;
+    const pages = Math.ceil(total / limit);
+
+    // Get unique categories for filter
+    const categoriesQuery = await DiscussionModel.findAll({}, userId);
+    const uniqueCategories = [...new Set(categoriesQuery.discussions.map(d => d.category))];
+
+    const formattedDiscussions: FormattedDiscussion[] = discussions.map(discussion => ({
+      id: discussion.id,
+      title: discussion.title,
+      description: discussion.description,
+      discussionType: discussion.discussion_type,
+      category: discussion.category,
+      tags: discussion.tags,
+      replyCount: discussion.reply_count,
+      upvoteCount: discussion.upvote_count,
+      viewCount: discussion.view_count,
+      saveCount: discussion.save_count,
+      followerCount: discussion.follower_count,
+      isResolved: discussion.is_resolved,
+      hasBestAnswer: !!discussion.best_answer_id,
+      createdAt: discussion.created_at,
+      lastActivityAt: discussion.last_activity_at,
+      author: {
+        id: discussion.user_id,
+        fullName: discussion.author_name,
+        role: discussion.author_role,
+        profilePhotoUrl: discussion.author_photo
+      },
+      isFollowing: discussion.is_following,
+      isSaved: discussion.is_saved
+    }));
+
+    return {
+      discussions: formattedDiscussions,
+      pagination: {
+        total,
+        page,
+        limit,
+        pages
+      },
+      categories: uniqueCategories
+    };
+  }
+
+  // Create a new discussion
+  static async createDiscussion(data: CreateDiscussionInput, userId: string): Promise<{ id: string; title: string; createdAt: Date }> {
+    const discussion = await DiscussionModel.create(data, userId);
+    
+    return {
+      id: discussion.id,
+      title: discussion.title,
+      createdAt: discussion.created_at
+    };
+  }
+
+  // Get discussion details
+  static async getDiscussionDetails(id: string, userId?: string): Promise<DiscussionDetails | null> {
+    const discussionResult = await DiscussionModel.findById(id, userId);
+    
+    if (!discussionResult) {
+      return null;
+    }
+
+    // Increment view count
+    await DiscussionModel.incrementViewCount(id);
+
+    // Get replies
+    const replies = await DiscussionReplyModel.findByDiscussionId(id, userId);
+
+    // Helper function to format replies hierarchically
+    const formatReplies = (repliesArray: DiscussionReplyWithAuthor[], parentId: string | null = null): FormattedReply[] => {
+      return repliesArray
+        .filter(reply => {
+          if (parentId === null) {
+            return reply.parent_reply_id === null;
+          } else {
+            return reply.parent_reply_id === parentId;
+          }
+        })
+        .map(reply => ({
+          id: reply.id,
+          content: reply.content,
+          upvoteCount: reply.upvote_count,
+          replyCount: reply.reply_count,
+          isEdited: reply.is_edited,
+          createdAt: reply.created_at,
+          author: {
+            id: reply.user_id,
+            fullName: reply.author_name,
+            role: reply.author_role,
+            profilePhotoUrl: reply.author_photo
+          },
+          hasUpvoted: reply.has_upvoted,
+          replies: formatReplies(repliesArray, reply.id)
+        }));
+    };
+
+    const formattedReplies = formatReplies(replies);
+
+    return {
+      id: discussionResult.id,
+      title: discussionResult.title,
+      description: discussionResult.description,
+      discussionType: discussionResult.discussion_type,
+      category: discussionResult.category,
+      tags: discussionResult.tags,
+      replyCount: discussionResult.reply_count,
+      upvoteCount: discussionResult.upvote_count,
+      viewCount: discussionResult.view_count,
+      saveCount: discussionResult.save_count,
+      followerCount: discussionResult.follower_count,
+      isResolved: discussionResult.is_resolved,
+      isPublic: discussionResult.is_public,
+      createdAt: discussionResult.created_at,
+      updatedAt: discussionResult.updated_at,
+      lastActivityAt: discussionResult.last_activity_at,
+      author: {
+        id: discussionResult.user_id,
+        fullName: discussionResult.author_name,
+        role: discussionResult.author_role,
+        profilePhotoUrl: discussionResult.author_photo
+      },
+      bestAnswer: discussionResult.bestAnswer || null,
+      isFollowing: discussionResult.is_following,
+      isSaved: discussionResult.is_saved,
+      replies: formattedReplies
+    };
+  }
+
+  // Add reply to discussion
+  static async addReply(discussionId: string, data: CreateReplyInput, userId: string): Promise<{ id: string; content: string; createdAt: Date }> {
+    const reply = await DiscussionReplyModel.create(data, discussionId, userId);
+    
+    return {
+      id: reply.id,
+      content: reply.content,
+      createdAt: reply.created_at
+    };
+  }
+
+  // Toggle upvote on reply
+  static async toggleUpvote(replyId: string, userId: string): Promise<{ upvoted: boolean; count: number }> {
+    const result = await DiscussionUpvoteModel.toggleUpvote(replyId, userId);
+    return result;
+  }
+
+  // Follow/unfollow discussion
+  static async toggleFollow(discussionId: string, userId: string): Promise<{ following: boolean; followerCount: number }> {
+    const isFollowing = await DiscussionFollowerModel.isFollowing(discussionId, userId);
+    
+    if (isFollowing) {
+      await DiscussionFollowerModel.unfollow(discussionId, userId);
+    } else {
+      await DiscussionFollowerModel.follow(discussionId, userId);
+    }
+
+    const newFollowerCount = await DiscussionFollowerModel.getFollowerCount(discussionId);
+    
+    return {
+      following: !isFollowing,
+      followerCount: newFollowerCount
+    };
+  }
+
+  // Mark reply as best answer
+  static async markBestAnswer(discussionId: string, replyId: string, userId: string): Promise<boolean> {
+    const discussion = await DiscussionModel.setBestAnswer(discussionId, replyId, userId);
+    
+    if (!discussion) {
+      throw new Error('Discussion not found or unauthorized');
+    }
+
+    return true;
+  }
+
+  // Mark discussion as resolved
+  static async markResolved(discussionId: string, userId: string): Promise<boolean> {
+    const discussion = await DiscussionModel.markAsResolved(discussionId, userId);
+    
+    if (!discussion) {
+      throw new Error('Discussion not found or unauthorized');
+    }
+
+    return true;
+  }
+
+  // Search discussions
+  static async searchDiscussions(filters: SearchFilters, userId?: string): Promise<{
+    discussions: Array<{
+      id: string;
+      title: string;
+      excerpt: string;
+      category: string;
+      replyCount: number;
+      upvoteCount: number;
+      createdAt: Date;
+      author: {
+        fullName?: string;
+        profilePhotoUrl?: string;
+      };
+      isFollowing?: boolean;
+    }>;
+    pagination: {
+      total: number;
+      page: number;
+      limit: number;
+      pages: number;
+    };
+  }> {
+    const { discussions, total } = await DiscussionModel.search(filters, userId);
+    
+    const page = filters.page || 1;
+    const limit = filters.limit || 20;
+    const pages = Math.ceil(total / limit);
+
+    const formattedDiscussions = discussions.map(discussion => ({
+      id: discussion.id,
+      title: discussion.title,
+      excerpt: discussion.description.length > 150 
+        ? discussion.description.substring(0, 150) + '...' 
+        : discussion.description,
+      category: discussion.category,
+      replyCount: discussion.reply_count,
+      upvoteCount: discussion.upvote_count,
+      createdAt: discussion.created_at,
+      author: {
+        fullName: discussion.author_name,
+        profilePhotoUrl: discussion.author_photo
+      },
+      isFollowing: discussion.is_following
+    }));
+
+    return {
+      discussions: formattedDiscussions,
+      pagination: {
+        total,
+        page,
+        limit,
+        pages
+      }
+    };
+  }
+}
