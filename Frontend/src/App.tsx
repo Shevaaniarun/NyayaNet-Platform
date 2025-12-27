@@ -13,6 +13,7 @@ import { Header } from './components/Header';
 import { CreatePost } from './components/CreatePost';
 import { MobileNotice } from './components/MobileNotice';
 import { Sparkles, TrendingUp, Gavel } from 'lucide-react';
+import { DiscussionsPage } from './pages/DiscussionPage';
 
 // Mock data for posts
 const mockPosts: Post[] = [
@@ -115,7 +116,7 @@ const mockCases: CaseItem[] = [
   },
 ];
 
-type ViewType = 'feed' | 'cases' | 'ai' | 'dashboard';
+type ViewType = 'feed' | 'cases' | 'ai' | 'dashboard' | 'discussions';
 
 export default function App() {
   const [isLoading, setIsLoading] = useState(true);
@@ -136,6 +137,7 @@ export default function App() {
       '/feed': 'feed',
       '/cases': 'cases',
       '/ai': 'ai',
+      '/discussions': 'discussions',
     };
     setCurrentView(viewMap[path] || 'dashboard');
   };
@@ -151,7 +153,11 @@ export default function App() {
 
       {/* Sidebar Navigation */}
       <Sidebar
-        currentPath={currentView === 'dashboard' ? '/' : currentView === 'feed' ? '/feed' : currentView === 'cases' ? '/cases' : '/ai'}
+        currentPath={currentView === 'dashboard' ? '/' : 
+                    currentView === 'feed' ? '/feed' : 
+                    currentView === 'cases' ? '/cases' : 
+                    currentView === 'ai' ? '/ai' : 
+                    '/discussions'}
         onNavigate={handleNavigation}
       />
 
@@ -182,10 +188,11 @@ export default function App() {
                       <span>Try Legal AI</span>
                     </button>
                     <button
-                      onClick={() => setCurrentView('feed')}
-                      className="px-8 py-4 border-2 border-constitution-gold text-constitution-gold rounded-lg font-bold tracking-wide hover:bg-constitution-gold/5 transition-colors"
+                      onClick={() => setCurrentView('discussions')}
+                      className="px-8 py-4 border-2 border-constitution-gold text-constitution-gold rounded-lg font-bold tracking-wide hover:bg-constitution-gold/5 transition-colors flex items-center space-x-2"
                     >
-                      View Legal Feed
+                      <Sparkles className="w-5 h-5" />
+                      <span>Join Legal Debates</span>
                     </button>
                   </div>
                 </div>
@@ -277,6 +284,9 @@ export default function App() {
 
         {/* AI Assistant View */}
         {currentView === 'ai' && <AIAssistant />}
+
+        {/* Discussions Page View */}
+        {currentView === 'discussions' && <DiscussionsPage />}
       </div>
     </div>
   );
