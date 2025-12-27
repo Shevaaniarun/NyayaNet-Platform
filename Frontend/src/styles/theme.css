@@ -298,3 +298,197 @@
 .animate-pulse-gold {
   animation: pulse-gold 2s ease-in-out infinite;
 }
+
+/* Animation Keyframes */
+@keyframes float-legal {
+  0%, 100% { 
+    transform: translateY(0px) translateX(0) rotate(0deg); 
+  }
+  25% { 
+    transform: translateY(-15px) translateX(5px) rotate(1deg); 
+  }
+  50% { 
+    transform: translateY(5px) translateX(-8px) rotate(-1deg); 
+  }
+  75% { 
+    transform: translateY(-10px) translateX(3px) rotate(0.5deg); 
+  }
+}
+
+@keyframes pulse-drift {
+  0%, 100% { 
+    opacity: 0.4;
+    transform: scale(1);
+  }
+  33% { 
+    opacity: 0.7;
+    transform: scale(1.05) translateX(10px) translateY(10px);
+  }
+  66% { 
+    opacity: 0.5;
+    transform: scale(0.95) translateX(-10px) translateY(-5px);
+  }
+}
+
+@keyframes gradient-flow {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+@keyframes line-glow {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scaleX(0.8);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scaleX(1);
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    opacity: 0.6;
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(var(--primary), 0.4);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+    box-shadow: 0 0 0 4px rgba(var(--primary), 0);
+  }
+}
+
+@keyframes text-reveal {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in-up {
+  0% {
+    opacity: 0;
+    transform: translateY(15px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Animation Utility Classes */
+.animate-float-legal {
+  animation: float-legal 8s ease-in-out infinite;
+}
+
+.animate-pulse-drift {
+  animation: pulse-drift 12s ease-in-out infinite;
+}
+
+.animate-gradient-flow {
+  animation: gradient-flow 15s ease infinite;
+  background-size: 200% 200%;
+}
+
+.animate-line-glow {
+  animation: line-glow 4s ease-in-out infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+.animate-text-reveal {
+  animation: text-reveal 1s ease-out forwards;
+  opacity: 0;
+  animation-fill-mode: forwards;
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.8s ease-out forwards;
+  opacity: 0;
+  animation-fill-mode: forwards;
+}
+
+.animate-fade-in {
+  animation: fade-in 1s ease-out forwards;
+  opacity: 0;
+  animation-fill-mode: forwards;
+}
+
+/* Animation Delay Classes */
+.animation-delay-200 {
+  animation-delay: 200ms;
+}
+
+.animation-delay-300 {
+  animation-delay: 300ms;
+}
+
+.animation-delay-400 {
+  animation-delay: 400ms;
+}
+
+.animation-delay-500 {
+  animation-delay: 500ms;
+}
+
+.animation-delay-700 {
+  animation-delay: 700ms;
+}
+
+.animation-delay-900 {
+  animation-delay: 900ms;
+}
+
+.animation-delay-1000 {
+  animation-delay: 1s;
+}
+
+.animation-delay-1500 {
+  animation-delay: 1.5s;
+}
+
+.animation-delay-2000 {
+  animation-delay: 2s;
+}
+
+.animation-delay-2500 {
+  animation-delay: 2.5s;
+}
+
+.animation-delay-3000 {
+  animation-delay: 3s;
+}
+
+.animation-delay-3500 {
+  animation-delay: 3.5s;
+}
+
+.animation-delay-4000 {
+  animation-delay: 4s;
+}
+
+.animation-delay-5000 {
+  animation-delay: 5s;
+}
