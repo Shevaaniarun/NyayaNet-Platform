@@ -1,30 +1,54 @@
-import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
+import { Request, Response, NextFunction } from "express";
+import jwt, { JwtPayload } from "jsonwebtoken";
 
-interface AuthRequest extends Request {
-  user?: any;
+/**
+ * Shape of data we store inside JWT
+ */
+interface AuthPayload extends JwtPayload {
+  userId: string;
+  role: string;
 }
 
-export const authenticate = (req: AuthRequest, res: Response, next: NextFunction) => {
+/**
+ * Extend Express Request to include user
+ */
+export interface AuthRequest extends Request {
+  user?: AuthPayload;
+}
+
+/**
+ * JWT Authentication Middleware
+ */
+export const authenticate = (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const authHeader = req.headers.authorization;
-    
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return res.status(401).json({
         success: false,
-        message: 'Authentication required'
+        message: "Authentication required",
       });
     }
 
-    const token = authHeader.split(' ')[1];
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
-    
+    const token = authHeader.split(" ")[1];
+
+    const JWT_SECRET = process.env.JWT_SECRET;
+    if (!JWT_SECRET) {
+      throw new Error("JWT_SECRET is not defined");
+    }
+
+    const decoded = jwt.verify(token, JWT_SECRET) as AuthPayload;
+
     req.user = decoded;
     next();
   } catch (error) {
     return res.status(401).json({
       success: false,
-      message: 'Invalid or expired token'
+      message: "Invalid or expired token",
     });
   }
 };
