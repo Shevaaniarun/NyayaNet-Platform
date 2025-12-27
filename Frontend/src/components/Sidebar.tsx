@@ -83,13 +83,6 @@ const navItems: NavItem[] = [
     badge: null,
     symbol: '📚',
   },
-  {
-  path: '/discussions',
-  icon: MessageCircle,
-  label: 'Debates',
-  badge: null,
-  symbol: '💭',
-  },
 ];
 
 interface SidebarProps {
