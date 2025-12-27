@@ -15,6 +15,7 @@ import { MobileNotice } from './components/MobileNotice';
 import { Sparkles, TrendingUp, Gavel } from 'lucide-react';
 import { DiscussionsPage } from './pages/DiscussionPage';
 import RegisterPage from "./pages/RegisterPage";
+import LoginPage from "./pages/LoginPage";
 
 // Mock data for posts
 const mockPosts: Post[] = [
@@ -122,6 +123,7 @@ type ViewType = 'feed' | 'cases' | 'ai' | 'dashboard' | 'discussions';
 export default function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authView, setAuthView] = useState<"register" | "login">("register");
   const [currentView, setCurrentView] = useState<ViewType>('dashboard');
 
   // Simulate initial loading
@@ -148,9 +150,14 @@ export default function App() {
     return <JusticeLoader />;
   }
 
-  if (!isAuthenticated) {
-  return <RegisterPage />;
+ if (!isAuthenticated) {
+  return authView === "register" ? (
+    <RegisterPage onSwitchToLogin={() => setAuthView("login")} />
+  ) : (
+    <LoginPage onSwitchToRegister={() => setAuthView("register")} />
+  );
 }
+
 
   return (
     

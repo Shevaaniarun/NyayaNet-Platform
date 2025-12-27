@@ -1,13 +1,13 @@
 import React from 'react';
 
-type RegisterPageProps = {
-  onSwitchToLogin: () => void;
+type LoginPageProps = {
+  onSwitchToRegister: () => void;
 };
 
-const RegisterPage = ({ onSwitchToLogin }: RegisterPageProps) => {
+const LoginPage: React.FC<LoginPageProps> = ({ onSwitchToRegister }) => {
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    // Form submission logic will be added later
+    // Login logic will be added later
   };
 
   return (
@@ -101,28 +101,13 @@ const RegisterPage = ({ onSwitchToLogin }: RegisterPageProps) => {
 
           <div className="bg-card rounded-2xl shadow-2xl p-8 border border-border/50 backdrop-blur-sm">
             <h2 className="text-2xl font-semibold text-foreground mb-2">
-              Create Account
+              Welcome Back
             </h2>
             <p className="text-muted-foreground mb-8">
-              Join NyayaNet's legal community
+              Sign in to your legal workspace
             </p>
 
             <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Full Name */}
-              <div className="space-y-2">
-                <label htmlFor="name" className="text-sm font-medium text-foreground">
-                  Full Name
-                </label>
-                <input
-                  id="name"
-                  name="name"
-                  type="text"
-                  placeholder="Enter your full name"
-                  className="w-full px-4 py-3 rounded-lg border border-input bg-background/50 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-300 hover:border-primary/30"
-                  autoComplete="name"
-                />
-              </div>
-
               {/* Email */}
               <div className="space-y-2">
                 <label htmlFor="email" className="text-sm font-medium text-foreground">
@@ -147,33 +132,10 @@ const RegisterPage = ({ onSwitchToLogin }: RegisterPageProps) => {
                   id="password"
                   name="password"
                   type="password"
-                  placeholder="Create a strong password"
+                  placeholder="Enter your password"
                   className="w-full px-4 py-3 rounded-lg border border-input bg-background/50 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-300 hover:border-primary/30"
-                  autoComplete="new-password"
+                  autoComplete="current-password"
                 />
-              </div>
-
-              {/* Role */}
-              <div className="space-y-2">
-                <label htmlFor="role" className="text-sm font-medium text-foreground">
-                  Professional Role
-                </label>
-                <select
-                  id="role"
-                  name="role"
-                  className="w-full px-4 py-3 rounded-lg border border-input bg-background/50 text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-300 hover:border-primary/30 appearance-none"
-                  defaultValue=""
-                >
-                  <option value="" disabled>Select your role</option>
-                  <option value="STUDENT">Law Student</option>
-                  <option value="LAWYER">Lawyer</option>
-                  <option value="LEGAL_PROFESSIONAL">Legal Professional</option>
-                </select>
-              </div>
-
-              {/* Terms agreement */}
-              <div className="text-xs text-muted-foreground">
-                By creating an account, you agree to our Terms of Service and Privacy Policy.
               </div>
 
               {/* Submit Button */}
@@ -181,20 +143,20 @@ const RegisterPage = ({ onSwitchToLogin }: RegisterPageProps) => {
                 type="submit"
                 className="w-full btn-primary py-3 px-4 rounded-lg font-medium text-black transition-all duration-300 hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 active:scale-[0.98] shadow-lg hover:shadow-xl"
               >
-                Create Account
+                Sign In
               </button>
 
-              {/* Sign in link */}
+              {/* Register link */}
               <div className="text-center pt-4">
                 <p className="text-sm text-muted-foreground">
-                  Already have an account?{' '}
+                  Don't have an account?{' '}
                   <button
                     type="button"
-                    onClick={onSwitchToLogin}
+                    onClick={onSwitchToRegister}
                     className="text-primary font-medium hover:text-primary/90 focus:outline-none focus:underline transition-colors duration-300"
-                    >
-                    Sign in
-                 </button>
+                  >
+                    Register
+                  </button>
                 </p>
               </div>
             </form>
@@ -205,4 +167,4 @@ const RegisterPage = ({ onSwitchToLogin }: RegisterPageProps) => {
   );
 };
 
-export default RegisterPage;
+export default LoginPage;
