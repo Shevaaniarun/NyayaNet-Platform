@@ -1,6 +1,30 @@
 import { useState, useEffect } from 'react';
 import { Send, Heart, Bookmark, Share2, Flag, MoreVertical, CheckCircle, Gavel, Users, MessageSquare, Eye, Calendar, ChevronLeft, User, Reply } from 'lucide-react';
-import { Discussion } from './DiscussionCard';
+
+interface Discussion {
+  id: string;
+  title: string;
+  description: string;
+  discussionType: 'GENERAL' | 'CASE_ANALYSIS' | 'LEGAL_QUERY' | 'OPINION_POLL';
+  category: string;
+  tags: string[];
+  replyCount: number;
+  upvoteCount: number;
+  viewCount: number;
+  followerCount: number;
+  isResolved: boolean;
+  hasBestAnswer: boolean;
+  createdAt: string;
+  lastActivityAt: string;
+  author: {
+    id: string;
+    fullName?: string;
+    role?: string;
+    profilePhotoUrl?: string | null;  // Made consistent
+  };
+  isFollowing?: boolean;
+  isSaved?: boolean;
+}
 
 interface Reply {
   id: string;
@@ -8,12 +32,12 @@ interface Reply {
   upvoteCount: number;
   replyCount: number;
   isEdited: boolean;
-  createdAt: Date;
+  createdAt: string;
   author: {
     id: string;
     fullName?: string;
     role?: string;
-    profilePhotoUrl?: string;
+    profilePhotoUrl?: string | null;  // Made consistent
   };
   hasUpvoted?: boolean;
   replies: Reply[];
@@ -23,14 +47,14 @@ interface Reply {
 interface DiscussionDetailProps {
   discussion: Discussion & {
     isPublic: boolean;
-    updatedAt: Date;
+    updatedAt: string;
     bestAnswer?: {
       id: string;
       content: string;
       upvoteCount: number;
       author: {
         fullName?: string;
-        profilePhotoUrl?: string;
+        profilePhotoUrl?: string | null;  // Made consistent
       };
     } | null;
     replies: Reply[];
@@ -58,8 +82,9 @@ export function DiscussionDetail({
   const [expandedReplies, setExpandedReplies] = useState<Set<string>>(new Set());
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
 
-  const formatDate = (date: Date) => {
-    return new Date(date).toLocaleDateString('en-US', {
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',

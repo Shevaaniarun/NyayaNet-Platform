@@ -13,13 +13,13 @@ export interface Discussion {
   followerCount: number;
   isResolved: boolean;
   hasBestAnswer: boolean;
-  createdAt: Date;
-  lastActivityAt: Date;
+  createdAt: string;
+  lastActivityAt: string;
   author: {
     id: string;
     fullName?: string;
     role?: string;
-    profilePhotoUrl?: string;
+    profilePhotoUrl?: string | null;  // Made consistent with service
   };
   isFollowing?: boolean;
   isSaved?: boolean;
@@ -57,16 +57,17 @@ export function DiscussionCard({ discussion, onClick }: DiscussionCardProps) {
     }
   };
 
-  const formatDate = (date: Date) => {
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
     const now = new Date();
-    const diff = now.getTime() - new Date(date).getTime();
+    const diff = now.getTime() - date.getTime();
     const hours = Math.floor(diff / (1000 * 60 * 60));
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
 
     if (hours < 1) return 'Just now';
     if (hours < 24) return `${hours}h ago`;
     if (days < 7) return `${days}d ago`;
-    return new Date(date).toLocaleDateString();
+    return date.toLocaleDateString();
   };
 
   return (

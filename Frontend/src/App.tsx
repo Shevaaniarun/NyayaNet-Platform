@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Sidebar } from './components/Sidebar';
-import { PostCard, Post } from './components/PostCard';
-import { CaseCard, CaseItem } from './components/CaseCard';
+import { PostCard, Post as PostComponentType } from './components/PostCard';
+import { CaseCard, CaseItem as CaseItemComponentType } from './components/CaseCard';
 import { AIAssistant } from './components/AIAssistant';
 import { JusticeLoader } from './components/JusticeLoader';
 import { CreatePost } from './components/CreatePost';
@@ -9,79 +9,70 @@ import { MobileNotice } from './components/MobileNotice';
 import { Sparkles, TrendingUp, Gavel } from 'lucide-react';
 import { DiscussionsPage } from './pages/DiscussionPage';
 import { ProfilePage } from './pages/ProfilePage';
-
-const mockPosts: Post[] = [
-    {
-        id: '1',
-        author: {
-            fullName: 'Adv. Priya Sharma',
-            profilePhotoUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop',
-            role: 'Senior Advocate',
-            designation: 'Senior Advocate, Supreme Court',
-            organization: 'Supreme Court of India',
-        },
-        postType: 'legal_insight',
-        content: 'The recent Supreme Court judgment on Consumer Rights establishes crucial precedent.',
-        createdAt: '2 hours ago',
-        likeCount: 248,
-        commentCount: 32,
-        tags: ['ConsumerLaw', 'SupremeCourt'],
-    },
-    {
-        id: '2',
-        author: {
-            fullName: 'Justice Rajiv Mehta (Retd.)',
-            profilePhotoUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop',
-            role: 'Retired Judge',
-            designation: 'Former High Court Judge',
-            organization: 'Delhi High Court',
-        },
-        postType: 'case_discussion',
-        content: 'Reflecting on the evolution of Article 21 jurisprudence over the past three decades.',
-        createdAt: '5 hours ago',
-        likeCount: 412,
-        commentCount: 56,
-        tags: ['Constitution', 'Article21'],
-    },
-];
-
-const mockCases: CaseItem[] = [
-    {
-        id: '1',
-        caseTitle: 'Kumar v. State Bank of India',
-        caseNumber: 'CC/2024/1547',
-        caseStatus: 'hearing_scheduled',
-        courtName: 'District Consumer Disputes Redressal Commission',
-        courtLevel: 'District Court',
-        clientName: 'Rajesh Kumar',
-        hearingDate: 'Jan 15, 2024',
-        caseDescription: 'Consumer complaint regarding unauthorized deductions.',
-        documentCount: 12,
-        tags: ['Consumer Law', 'Banking'],
-    },
-    {
-        id: '2',
-        caseTitle: 'Mehta Electronics v. Reliance Consumer',
-        caseNumber: 'CA/2023/8934',
-        caseStatus: 'active',
-        courtName: 'State Consumer Disputes Redressal Commission',
-        courtLevel: 'State Court',
-        clientName: 'Mehta Electronics Pvt. Ltd.',
-        hearingDate: 'Jan 22, 2024',
-        caseDescription: 'Appeal against District Forum order.',
-        documentCount: 24,
-        tags: ['Product Liability', 'Warranty'],
-    },
-];
+import { getFeed, Post as ApiPost } from './api/posts';
+import { toast } from 'react-toastify';
 
 type ViewType = 'feed' | 'cases' | 'ai' | 'dashboard' | 'discussions' | 'profile';
 
-export default function App() {
+// Type adapters
+const adaptPost = (apiPost: ApiPost): PostComponentType => ({
+    id: apiPost.id,
+    author: {
+        fullName: apiPost.author?.fullName || 'Unknown User',
+        profilePhotoUrl: apiPost.author?.profilePhotoUrl || '',
+        role: 'User',
+        designation: apiPost.author?.designation || '',
+        organization: ''
+    },
+    postType: apiPost.postType || 'POST',
+    content: apiPost.content,
+    createdAt: new Date(apiPost.createdAt).toLocaleDateString(),
+    likeCount: apiPost.likeCount || 0,
+    commentCount: apiPost.commentCount || 0,
+    tags: apiPost.tags || []
+});
+
+const mapCaseStatus = (status: string): CaseItemComponentType['caseStatus'] => {
+    const statusMap: Record<string, CaseItemComponentType['caseStatus']> = {
+        'active': 'active',
+        'closed': 'closed',
+        'hearing_scheduled': 'hearing_scheduled',
+        'appealed': 'pending',
+        'dismissed': 'closed',
+        'pending': 'pending'
+    };
+    return statusMap[status] || 'active';
+};
+
+// Main App Component
+function App() {
     const [isLoading, setIsLoading] = useState(true);
     const [currentView, setCurrentView] = useState<ViewType>('dashboard');
+    const [posts, setPosts] = useState<PostComponentType[]>([]);
+    const [cases, setCases] = useState<CaseItemComponentType[]>([]);
+    const [isLoadingPosts, setIsLoadingPosts] = useState(false);
+    const [isLoadingCases, setIsLoadingCases] = useState(false);
 
     useEffect(() => {
+        const loadInitialData = async () => {
+            try {
+                setIsLoadingPosts(true);
+                const postsData = await getFeed(1, 10);
+                setPosts(postsData.posts.map(adaptPost));
+            } catch (error) {
+                console.error('Failed to load posts:', error);
+                toast.error('Failed to load posts');
+            } finally {
+                setIsLoadingPosts(false);
+            }
+        };
+
+        // Start loading data immediately
+        loadInitialData();
+        
+        // Set a timer for the loader (just like in the previous version)
         const timer = setTimeout(() => setIsLoading(false), 4500);
+        
         return () => clearTimeout(timer);
     }, []);
 
@@ -93,6 +84,20 @@ export default function App() {
     };
 
     if (isLoading) return <JusticeLoader />;
+
+    const refreshPosts = async () => {
+        try {
+            setIsLoadingPosts(true);
+            const postsData = await getFeed(1, 10);
+            setPosts(postsData.posts.map(adaptPost));
+        } catch (error) {
+            console.error('Failed to refresh posts:', error);
+            toast.error('Failed to refresh posts');
+        } finally {
+            setIsLoadingPosts(false);
+        }
+    };
+
 
     return (
         <div className="flex min-h-screen bg-justice-black">
@@ -146,17 +151,32 @@ export default function App() {
 
                         <div>
                             <h2 className="font-heading font-bold text-judge-ivory mb-6">Recent Legal Updates</h2>
-                            <div className="space-y-6">{mockPosts.map((post) => <PostCard key={post.id} post={post} />)}</div>
+                            <div className="space-y-6">
+                                {posts.map((post) => (
+                                    <PostCard key={post.id} post={post} />
+                                ))}
+                            </div>
                         </div>
                     </div>
                 )}
 
                 {currentView === 'feed' && (
-                    <div className="min-h-screen bg-justice-black p-8">
-                        <div className="max-w-4xl mx-auto">
-                            <h1 className="font-heading font-bold text-judge-ivory mb-8">Legal Feed</h1>
+                    <div className="flex-1 p-6 overflow-y-auto">
+                        <div className="max-w-3xl mx-auto space-y-6">
                             <CreatePost />
-                            <div className="space-y-6">{mockPosts.map((post) => <PostCard key={post.id} post={post} />)}</div>
+                            {isLoadingPosts ? (
+                                <div className="flex justify-center p-8">
+                                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-justice-blue"></div>
+                                </div>
+                            ) : posts.length > 0 ? (
+                                posts.map((post) => (
+                                    <PostCard key={post.id} post={post} />
+                                ))
+                            ) : (
+                                <div className="text-center py-12 text-gray-400">
+                                    <p>No posts found. Be the first to post something!</p>
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}
@@ -165,7 +185,11 @@ export default function App() {
                     <div className="min-h-screen bg-justice-black p-8">
                         <div className="max-w-6xl mx-auto">
                             <h1 className="font-heading font-bold text-judge-ivory mb-8">Case Docket</h1>
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">{mockCases.map((caseItem) => <CaseCard key={caseItem.id} caseItem={caseItem} />)}</div>
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                                {cases.map((caseItem) => (
+                                    <CaseCard key={caseItem.id} caseItem={caseItem} />
+                                ))}
+                            </div>
                         </div>
                     </div>
                 )}
@@ -179,3 +203,5 @@ export default function App() {
         </div>
     );
 }
+
+export default App;
