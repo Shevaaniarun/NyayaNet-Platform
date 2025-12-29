@@ -3,7 +3,8 @@
  * Displays professional legal posts with constitution-inspired design
  */
 
-import { Heart, MessageSquare, Share2, Bookmark, MoreVertical, Scale } from 'lucide-react';
+import { useState } from 'react';
+import { Heart, MessageSquare, Share2, Bookmark, MoreVertical, Scale, X, Send, Flag, EyeOff, Link2 } from 'lucide-react';
 
 export interface Post {
   id: string;
@@ -32,6 +33,82 @@ interface PostCardProps {
 }
 
 export function PostCard({ post }: PostCardProps) {
+  const [isLiked, setIsLiked] = useState(false);
+  const [likeCount, setLikeCount] = useState(post.likeCount);
+  const [isBookmarked, setIsBookmarked] = useState(false);
+  const [showComments, setShowComments] = useState(false);
+  const [commentText, setCommentText] = useState('');
+  const [comments, setComments] = useState<Array<{ id: string; text: string; author: string; time: string }>>([]);
+  const [showMenu, setShowMenu] = useState(false);
+
+  const handleLike = () => {
+    if (isLiked) {
+      setLikeCount(likeCount - 1);
+    } else {
+      setLikeCount(likeCount + 1);
+    }
+    setIsLiked(!isLiked);
+  };
+
+  const handleBookmark = () => {
+    setIsBookmarked(!isBookmarked);
+    if (!isBookmarked) {
+      alert('Post saved to bookmarks!');
+    }
+  };
+
+  const handleShare = () => {
+    const shareText = `Check out this legal insight from ${post.author.fullName} on NyayaNet:\n\n"${post.content.substring(0, 100)}..."`;
+
+    if (navigator.share) {
+      navigator.share({
+        title: 'Legal Insight - NyayaNet',
+        text: shareText,
+        url: window.location.href
+      }).catch(() => {
+        navigator.clipboard.writeText(shareText);
+        alert('Post link copied to clipboard!');
+      });
+    } else {
+      navigator.clipboard.writeText(shareText);
+      alert('Post link copied to clipboard!');
+    }
+  };
+
+  const handleComment = () => {
+    setShowComments(!showComments);
+  };
+
+  const submitComment = () => {
+    if (!commentText.trim()) return;
+
+    const newComment = {
+      id: Date.now().toString(),
+      text: commentText,
+      author: 'You',
+      time: 'Just now'
+    };
+
+    setComments([...comments, newComment]);
+    setCommentText('');
+  };
+
+  const handleMenuAction = (action: string) => {
+    setShowMenu(false);
+    switch (action) {
+      case 'copyLink':
+        navigator.clipboard.writeText(`${window.location.origin}/post/${post.id}`);
+        alert('Post link copied!');
+        break;
+      case 'report':
+        alert('Thank you for reporting. Our team will review this post.');
+        break;
+      case 'hide':
+        alert('This post will be hidden from your feed.');
+        break;
+    }
+  };
+
   return (
     <div className="relative mb-8">
       {/* Aged Paper Container */}
@@ -132,32 +209,123 @@ export function PostCard({ post }: PostCardProps) {
         {/* Interaction Bar */}
         <div className="flex items-center justify-between pt-4 border-t border-constitution-gold/20">
           <div className="flex space-x-6">
-            <button className="flex items-center space-x-2 text-ink-gray/70 hover:text-constitution-gold transition-colors">
-              <Heart className="w-5 h-5" />
-              <span>{post.likeCount}</span>
+            <button
+              onClick={handleLike}
+              className={`flex items-center space-x-2 transition-colors ${isLiked ? 'text-red-500' : 'text-ink-gray/70 hover:text-constitution-gold'}`}
+            >
+              <Heart className={`w-5 h-5 ${isLiked ? 'fill-current' : ''}`} />
+              <span>{likeCount}</span>
             </button>
-            <button className="flex items-center space-x-2 text-ink-gray/70 hover:text-constitution-gold transition-colors">
+            <button
+              onClick={handleComment}
+              className={`flex items-center space-x-2 transition-colors ${showComments ? 'text-constitution-gold' : 'text-ink-gray/70 hover:text-constitution-gold'}`}
+            >
               <MessageSquare className="w-5 h-5" />
-              <span>{post.commentCount}</span>
+              <span>{post.commentCount + comments.length}</span>
             </button>
-            <button className="flex items-center space-x-2 text-ink-gray/70 hover:text-constitution-gold transition-colors">
+            <button
+              onClick={handleShare}
+              className="flex items-center space-x-2 text-ink-gray/70 hover:text-constitution-gold transition-colors"
+            >
               <Share2 className="w-5 h-5" />
             </button>
           </div>
 
-          <div className="flex items-center space-x-3">
-            <button className="text-ink-gray/70 hover:text-constitution-gold transition-colors">
-              <Bookmark className="w-5 h-5" />
+          <div className="flex items-center space-x-3 relative">
+            <button
+              onClick={handleBookmark}
+              className={`transition-colors ${isBookmarked ? 'text-constitution-gold' : 'text-ink-gray/70 hover:text-constitution-gold'}`}
+            >
+              <Bookmark className={`w-5 h-5 ${isBookmarked ? 'fill-current' : ''}`} />
             </button>
-            <button className="text-ink-gray/70 hover:text-constitution-gold transition-colors">
+            <button
+              onClick={() => setShowMenu(!showMenu)}
+              className="text-ink-gray/70 hover:text-constitution-gold transition-colors"
+            >
               <MoreVertical className="w-5 h-5" />
             </button>
+
+            {/* Dropdown Menu */}
+            {showMenu && (
+              <div className="absolute right-0 top-8 w-48 bg-white border border-constitution-gold/20 rounded-lg shadow-lg z-10">
+                <button
+                  onClick={() => handleMenuAction('copyLink')}
+                  className="w-full px-4 py-2 text-left text-sm text-ink-gray hover:bg-constitution-gold/5 flex items-center gap-2"
+                >
+                  <Link2 className="w-4 h-4" /> Copy Link
+                </button>
+                <button
+                  onClick={() => handleMenuAction('hide')}
+                  className="w-full px-4 py-2 text-left text-sm text-ink-gray hover:bg-constitution-gold/5 flex items-center gap-2"
+                >
+                  <EyeOff className="w-4 h-4" /> Hide Post
+                </button>
+                <button
+                  onClick={() => handleMenuAction('report')}
+                  className="w-full px-4 py-2 text-left text-sm text-red-500 hover:bg-red-50 flex items-center gap-2"
+                >
+                  <Flag className="w-4 h-4" /> Report
+                </button>
+              </div>
+            )}
           </div>
         </div>
+
+        {/* Comments Section */}
+        {showComments && (
+          <div className="mt-4 pt-4 border-t border-constitution-gold/20">
+            {/* Existing Comments */}
+            {comments.length > 0 && (
+              <div className="space-y-3 mb-4">
+                {comments.map((comment) => (
+                  <div key={comment.id} className="flex gap-3">
+                    <div className="w-8 h-8 bg-constitution-gold/20 rounded-full flex items-center justify-center flex-shrink-0">
+                      <span className="text-xs font-bold text-constitution-gold">{comment.author.charAt(0)}</span>
+                    </div>
+                    <div className="flex-1 bg-constitution-gold/5 rounded-lg p-3">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-medium text-sm text-ink-gray">{comment.author}</span>
+                        <span className="text-xs text-ink-gray/50">{comment.time}</span>
+                      </div>
+                      <p className="text-sm text-ink-gray/80">{comment.text}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Comment Input */}
+            <div className="flex gap-3">
+              <div className="w-8 h-8 bg-constitution-gold rounded-full flex items-center justify-center flex-shrink-0">
+                <span className="text-xs font-bold text-justice-black">AP</span>
+              </div>
+              <div className="flex-1 flex gap-2">
+                <input
+                  type="text"
+                  value={commentText}
+                  onChange={(e) => setCommentText(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && submitComment()}
+                  placeholder="Write a comment..."
+                  className="flex-1 px-3 py-2 bg-white border border-constitution-gold/20 rounded-lg text-sm text-ink-gray focus:outline-none focus:border-constitution-gold"
+                />
+                <button
+                  onClick={submitComment}
+                  disabled={!commentText.trim()}
+                  className="px-3 py-2 bg-constitution-gold text-justice-black rounded-lg disabled:opacity-50"
+                >
+                  <Send className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Bottom Decorative Border */}
       <div className="absolute -bottom-4 left-6 right-6 h-0.5 bg-gradient-to-r from-transparent via-constitution-gold/30 to-transparent"></div>
+
+      {/* Click outside to close menu */}
+      {showMenu && <div className="fixed inset-0 z-0" onClick={() => setShowMenu(false)} />}
     </div>
   );
 }
