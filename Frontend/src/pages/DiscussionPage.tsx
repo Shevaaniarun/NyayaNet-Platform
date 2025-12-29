@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Plus, Search, Filter, MessageSquare, TrendingUp, Users, BookOpen } from 'lucide-react';
-import { DiscussionCard, Discussion } from '../components/DiscussionCard';
-import { DiscussionDetail } from '../components/DiscussionDetail';
-import { CreateDiscussion } from '../components/CreateDiscussion';
-import { DiscussionFilters } from '../components/DiscussionFilters';
+import { DiscussionCard, Discussion } from '../components/Discussion/DiscussionCard';
+import { DiscussionDetail } from '../components/Discussion/DiscussionDetail';
+import { CreateDiscussion } from '../components/Discussion/CreateDiscussion';
+import { DiscussionFilters } from '../components/Discussion/DiscussionFilters';
 
 // Mock data - Replace with API calls
 const mockDiscussions: Discussion[] = [

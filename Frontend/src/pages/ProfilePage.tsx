@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { ProfileHeader } from '../components/ProfileHeader';
-import { ProfileStats } from '../components/ProfileStats';
+import { ProfileHeader } from '../components/Profile/ProfileHeader';
+import { ProfileStats } from '../components/Profile/ProfileStats';
 import { CertificationCard } from '../components/CertificationCard';
-import { ProfileTabs } from '../components/ProfileTabs';
+import { ProfileTabs } from '../components/Profile/ProfileTabs';
 import { JusticeLoader } from '../components/JusticeLoader';
 import { Search, Award, Plus, ArrowLeft, X } from 'lucide-react';
 import * as profileApi from '../api/profile';

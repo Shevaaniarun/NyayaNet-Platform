@@ -1,7 +1,3 @@
-/**
- * NyayaNet - Indian Legal Professional Networking & AI Assistance Platform
- */
-
 import { useState, useEffect } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { PostCard, Post } from './components/PostCard';

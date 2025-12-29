@@ -70,15 +70,6 @@ export function Sidebar({ currentPath = '/', onNavigate }: SidebarProps) {
 
             <div className="px-4 py-3"><div className="h-px bg-gradient-to-r from-transparent via-constitution-gold/30 to-transparent"></div></div>
 
-            <div className="p-4 space-y-3">
-                <h3 className="px-4 font-bold text-constitution-gold/50 tracking-wider uppercase text-xs">Quick Justice</h3>
-                <button className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-constitution-gold text-justice-black rounded-lg font-bold tracking-wide hover:bg-constitution-gold/90 transition-colors">
-                    <Zap className="w-4 h-4" /><span>AI Prediction</span>
-                </button>
-                <button className="w-full flex items-center justify-center space-x-2 px-4 py-3 border-2 border-constitution-gold text-constitution-gold rounded-lg font-bold tracking-wide hover:bg-constitution-gold/5 transition-colors">
-                    <Search className="w-4 h-4" /><span>Find Precedents</span>
-                </button>
-            </div>
 
             <div className="p-4 border-t border-constitution-gold/20">
                 <div className="text-center">
