@@ -1,4 +1,4 @@
-```sql
+
 -- =============================================
 -- Database: nyayanet
 -- Description: Legal Professional Platform Database

@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import discussionRoutes from './routes/discussionRoutes';
+import postRoutes from './routes/postRoutes';
 
 dotenv.config();
 
@@ -28,6 +29,9 @@ app.get('/api/health', (req, res) => {
 
 // Discussion routes
 app.use('/api/discussions', discussionRoutes);
+
+// post routes
+app.use('/api/posts', postRoutes);
 
 // 404 handler
 app.use((req, res) => {
