@@ -1,0 +1,91 @@
+================================================================================
+NYAYANET TECHNICAL DOCUMENTATION: BACKEND & FRONTEND
+================================================================================
+
+--------------------------------------------------------------------------------
+PART 1: BACKEND API SPECIFICATION
+--------------------------------------------------------------------------------
+API Base URL: http://localhost:3000/api/v1
+Authentication: JWT token (Authorization: Bearer <jwt_token>)
+WebSocket: ws://localhost:3000/ws?token=jwt_token
+
+1. AUTHENTICATION
+- POST /auth/register: email, password, fullName, role, designation, organization, areaofInterest, experienceYears, barCouncilNumber, location, bio.
+- POST /auth/login: returns user data, token, and refreshToken.
+- POST /auth/refresh-token: get new access token.
+- POST /auth/forgot-password & /auth/reset-password.
+
+2. PROFILE MENU
+- GET /profile/:userId: Full profile details, counts (follower/following/posts), and follow status.
+- PUT /profile: Update bio, location, website, etc.
+- POST /profile/photo & cover-photo: Multipart/form-data upload.
+- GET/POST/DELETE /profile/certifications: Title, issuingOrg, credentialId, dates, certificate file.
+- GET /profile/:userId/posts & /discussions: User-specific content lists.
+- GET /profile/bookmarks: Folder-based saving of posts/discussions/AI results.
+
+3. FEED/HOME MENU
+- GET /feed: Personalized feed with tags/following filters.
+- POST /feed/posts: Create content with max 5 media files (10MB each).
+- GET /feed/posts/:postId: Single view with comments thread.
+- POST /feed/posts/:postId/like & /save: Engagement toggles.
+
+4. DISCUSSION ROOM
+- GET /discussions: Categories like CONSUMER_LAW, types like CASE_ANALYSIS.
+- POST /discussions/:discussionId/replies: Threaded replies with upvote/downvote support.
+- POST /discussions/:discussionId/best-answer: Mark a solution.
+
+5. NETWORK MENU
+- GET /network/followers & /following.
+- POST /network/requests: Connection request management.
+- GET /network/conversations & POST /network/messages: Real-time messaging with file support (20MB).
+
+7. AI ROOM
+- GET/POST /ai/sessions: Modes (RETRIEVAL, PREDICTION) for CONSUMER_LAW.
+- POST /ai/sessions/:sessionId/messages: Async processing with 202 Accepted.
+- GET /ai/requests/:requestId: Polling status (PENDING/COMPLETED) and confidence scores.
+
+8. LAW SEARCH
+- GET /laws/categories: Browse counts of acts/sections.
+- GET /laws/acts & /sections: Full law text, amendments, and related sections.
+
+9. CASE WORKSPACE
+- GET/POST /workspace/notes: Folder-based research (ACTIVE_CASES, RESEARCH).
+- Notes support cross-references to PostId, DiscussionId, and LawSectionId.
+
+10. COMMON & LIMITS
+- POST /media/upload: Universal upload for entity-linked media.
+- Rate Limits: Auth (10/hr), AI (20/day), Feed (100/min).
+
+--------------------------------------------------------------------------------
+PART 2: FRONTEND ARCHITECTURE GUIDE
+--------------------------------------------------------------------------------
+Theme: Justice-Black / Constitution-Gold
+
+FOLDER STRUCTURE:
+src/
+  app/
+  components/
+    ui/         (Reusable: Button, Input, Modal, Badge)
+    layout/     (Sidebar, Header, Footer, MobileNotice)
+    profile/    (ProfileHeader, CertificationCard, ProfileStats)
+    feed/       (CreatePost, PostCard, PostActions)
+    discussions/(DiscussionCard, ReplyCard, DiscussionThread)
+    network/    (UserCard, ChatWindow, MessageBubble)
+    ai-room/    (AIModeToggle, AIChatMessage, AIHistoryList)
+    law-search/ (LawCategoryGrid, LawSectionView, LawSearchBar)
+    workspace/  (NoteEditor, NoteCard, WorkspaceSearch)
+    notifications/(NotificationItem, NotificationBadge)
+    shared/     (JusticeLoader, AIAssistant, SearchBar)
+  pages/        (ProfilePage, FeedPage, NetworkPage, LawSearchPage, etc.)
+  lib/
+    api/        (Auth.ts, Profile.ts, AI.ts, etc.)
+    hooks/      (useAuth, useWebSocket, useFeed)
+    utils/      (Formatters, Validators, Types)
+  store/        (authStore, uiStore, notificationStore)
+  styles/       (globals, theme, animations)
+
+COMPONENT SPECIFICATIONS:
+- Footer: Copyright, quick links, Constitution quote of the day.
+- ProfileHeader: Avatar edit, professional details, connection action buttons.
+- CertificationCard: Verification status and PDF viewing.
+- JusticeLoader: Custom themed loading state.
