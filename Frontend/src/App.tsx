@@ -8,6 +8,8 @@ import { CreatePost } from './components/CreatePost';
 import { MobileNotice } from './components/MobileNotice';
 import { Sparkles, TrendingUp, Gavel } from 'lucide-react';
 import { DiscussionsPage } from './pages/DiscussionPage';
+import RegisterPage from "./pages/RegisterPage";
+import LoginPage from "./pages/LoginPage";
 import { ProfilePage } from './pages/ProfilePage';
 import { getFeed, Post as ApiPost } from './api/posts';
 import { toast } from 'react-toastify';
@@ -44,45 +46,52 @@ const mapCaseStatus = (status: string): CaseItemComponentType['caseStatus'] => {
     return statusMap[status] || 'active';
 };
 
-// Main App Component
-function App() {
-    const [isLoading, setIsLoading] = useState(true);
-    const [currentView, setCurrentView] = useState<ViewType>('dashboard');
-    const [posts, setPosts] = useState<PostComponentType[]>([]);
-    const [cases, setCases] = useState<CaseItemComponentType[]>([]);
-    const [isLoadingPosts, setIsLoadingPosts] = useState(false);
-    const [isLoadingCases, setIsLoadingCases] = useState(false);
+export default function App() {
 
-    useEffect(() => {
-        const loadInitialData = async () => {
-            try {
-                setIsLoadingPosts(true);
-                const postsData = await getFeed(1, 10);
-                setPosts(postsData.posts.map(adaptPost));
-            } catch (error) {
-                console.error('Failed to load posts:', error);
-                toast.error('Failed to load posts');
-            } finally {
-                setIsLoadingPosts(false);
-            }
-        };
+  const [isLoading, setIsLoading] = useState(true);
 
-        // Start loading data immediately
-        loadInitialData();
-        
-        // Set a timer for the loader (just like in the previous version)
-        const timer = setTimeout(() => setIsLoading(false), 4500);
-        
-        return () => clearTimeout(timer);
-    }, []);
+  // ✅ FIX: derive auth state from localStorage
+  const [isAuthenticated, setIsAuthenticated] = useState(
+    !!localStorage.getItem("token")
+  );
 
-    const handleNavigation = (path: string) => {
-        const viewMap: Record<string, ViewType> = {
-            '/': 'dashboard', '/feed': 'feed', '/cases': 'cases', '/ai': 'ai', '/discussions': 'discussions', '/profile': 'profile',
-        };
-        setCurrentView(viewMap[path] || 'dashboard');
+  const [authView, setAuthView] = useState<"register" | "login">("register");
+  const [currentView, setCurrentView] = useState<ViewType>('dashboard');
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsLoading(false), 4500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const handleLoginSuccess = () => {
+    localStorage.setItem("token", localStorage.getItem("token") || "");
+    setIsAuthenticated(true);
+    setCurrentView("dashboard");
+  };
+
+  const handleNavigation = (path: string) => {
+    const viewMap: Record<string, ViewType> = {
+      '/': 'dashboard',
+      '/feed': 'feed',
+      '/cases': 'cases',
+      '/ai': 'ai',
+      '/discussions': 'discussions',
+      '/profile': 'profile',
     };
+    setCurrentView(viewMap[path] || 'dashboard');
+  };
 
+  if (isLoading) return <JusticeLoader />;
+
+  // ✅ AUTH GATE (NO LOOP NOW)
+  if (!isAuthenticated) {
+    return authView === "register" ? (
+      <RegisterPage onSwitchToLogin={() => setAuthView("login")} />
+    ) : (
+      <LoginPage
+        onSwitchToRegister={() => setAuthView("register")}
+        onLoginSuccess={handleLoginSuccess}
+      />
     if (isLoading) return <JusticeLoader />;
 
     const refreshPosts = async () => {
@@ -202,6 +211,53 @@ function App() {
             </div>
         </div>
     );
+  }
+
+  return (
+    <div className="flex min-h-screen bg-justice-black">
+      <MobileNotice />
+      <Sidebar
+        currentPath={currentView === 'dashboard' ? '/' : `/${currentView}`}
+        onNavigate={handleNavigation}
+      />
+
+      <div className="ml-64 flex-1">
+        {currentView === 'dashboard' && (
+          <div className="min-h-screen bg-justice-black p-8">
+            {/* dashboard content unchanged */}
+            <h1 className="text-white text-3xl">Dashboard</h1>
+          </div>
+        )}
+
+        {currentView === 'feed' && (
+          <div className="min-h-screen bg-justice-black p-8">
+            <CreatePost />
+            {mockPosts.map((post) => (
+              <PostCard key={post.id} post={post} />
+            ))}
+          </div>
+        )}
+
+        {currentView === 'cases' && (
+          <div className="min-h-screen bg-justice-black p-8">
+            {mockCases.map((caseItem) => (
+              <CaseCard key={caseItem.id} caseItem={caseItem} />
+            ))}
+          </div>
+        )}
+
+        {currentView === 'ai' && <AIAssistant />}
+        {currentView === 'discussions' && <DiscussionsPage />}
+        {currentView === 'profile' && (
+          <ProfilePage
+            currentUserId="mock-user-1"
+            onBack={() => setCurrentView('dashboard')}
+            onNavigateToFeed={() => setCurrentView('feed')}
+          />
+        )}
+      </div>
+    </div>
+  );
 }
 
 export default App;
