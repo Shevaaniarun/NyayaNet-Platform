@@ -47,54 +47,68 @@ const mapCaseStatus = (status: string): CaseItemComponentType['caseStatus'] => {
 };
 
 export default function App() {
+    const [isLoading, setIsLoading] = useState(true);
+    const [isLoadingPosts, setIsLoadingPosts] = useState(false);
+    const [posts, setPosts] = useState<PostComponentType[]>([]);
+    const [cases] = useState<CaseItemComponentType[]>([]);
 
-  const [isLoading, setIsLoading] = useState(true);
+    // Initialize auth state properly
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [authView, setAuthView] = useState<"register" | "login">("register");
+    const [currentView, setCurrentView] = useState<ViewType>('dashboard');
 
-  // ✅ FIX: derive auth state from localStorage
-  const [isAuthenticated, setIsAuthenticated] = useState(
-    !!localStorage.getItem("token")
-  );
+    useEffect(() => {
+        // Check authentication immediately
+        const token = localStorage.getItem("token");
+        const isAuth = !!token;
+        setIsAuthenticated(isAuth);
+        
+        // If authenticated, set the dashboard view and load posts
+        if (isAuth) {
+            setCurrentView('dashboard');
+            refreshPosts();
+        }
+        
+        // Show loader for 2 seconds (shorter time)
+        const timer = setTimeout(() => {
+            setIsLoading(false);
+        }, 4500);
+        
+        return () => clearTimeout(timer);
+    }, []);
 
-  const [authView, setAuthView] = useState<"register" | "login">("register");
-  const [currentView, setCurrentView] = useState<ViewType>('dashboard');
+    // Listen for storage events (for when RegisterPage redirects)
+    useEffect(() => {
+        const handleStorageChange = () => {
+            const token = localStorage.getItem("token");
+            if (token) {
+                setIsAuthenticated(true);
+                setCurrentView('dashboard');
+                refreshPosts();
+            }
+        };
 
-  useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 4500);
-    return () => clearTimeout(timer);
-  }, []);
+        window.addEventListener('storage', handleStorageChange);
+        
+        // Also check periodically for token changes within same tab
+        const interval = setInterval(() => {
+            const token = localStorage.getItem("token");
+            if (token && !isAuthenticated) {
+                setIsAuthenticated(true);
+                setCurrentView('dashboard');
+                refreshPosts();
+            }
+        }, 1000);
 
-  const handleLoginSuccess = () => {
-    localStorage.setItem("token", localStorage.getItem("token") || "");
-    setIsAuthenticated(true);
-    setCurrentView("dashboard");
-  };
-
-  const handleNavigation = (path: string) => {
-    const viewMap: Record<string, ViewType> = {
-      '/': 'dashboard',
-      '/feed': 'feed',
-      '/cases': 'cases',
-      '/ai': 'ai',
-      '/discussions': 'discussions',
-      '/profile': 'profile',
-    };
-    setCurrentView(viewMap[path] || 'dashboard');
-  };
-
-  if (isLoading) return <JusticeLoader />;
-
-  // ✅ AUTH GATE (NO LOOP NOW)
-  if (!isAuthenticated) {
-    return authView === "register" ? (
-      <RegisterPage onSwitchToLogin={() => setAuthView("login")} />
-    ) : (
-      <LoginPage
-        onSwitchToRegister={() => setAuthView("register")}
-        onLoginSuccess={handleLoginSuccess}
-      />
-    if (isLoading) return <JusticeLoader />;
+        return () => {
+            window.removeEventListener('storage', handleStorageChange);
+            clearInterval(interval);
+        };
+    }, [isAuthenticated]);
 
     const refreshPosts = async () => {
+        if (!isAuthenticated) return;
+        
         try {
             setIsLoadingPosts(true);
             const postsData = await getFeed(1, 10);
@@ -107,11 +121,71 @@ export default function App() {
         }
     };
 
+    const handleLoginSuccess = () => {
+        // Check for token in localStorage (LoginPage should have set it)
+        const token = localStorage.getItem("token");
+        if (token) {
+            setIsAuthenticated(true);
+            setCurrentView("dashboard");
+            refreshPosts();
+        }
+    };
 
+    // Remove handleRegisterSuccess since RegisterPage doesn't use it
+
+    const handleLogout = () => {
+        localStorage.removeItem("token");
+        setIsAuthenticated(false);
+        setAuthView("login");
+        setPosts([]); // Clear posts on logout
+    };
+
+    const handleNavigation = (path: string) => {
+        const viewMap: Record<string, ViewType> = {
+            '/': 'dashboard',
+            '/feed': 'feed',
+            '/cases': 'cases',
+            '/ai': 'ai',
+            '/discussions': 'discussions',
+            '/profile': 'profile',
+        };
+        const newView = viewMap[path] || 'dashboard';
+        setCurrentView(newView);
+        
+        // Refresh posts when navigating to feed or dashboard
+        if (newView === 'feed' || newView === 'dashboard') {
+            refreshPosts();
+        }
+    };
+
+    // 1. Show loader first
+    if (isLoading) {
+        return <JusticeLoader />;
+    }
+
+    // 2. After loader, check authentication
+    if (!isAuthenticated) {
+        return authView === "register" ? (
+            <RegisterPage 
+                onSwitchToLogin={() => setAuthView("login")}
+                // Note: RegisterPage uses window.location.href instead of callback
+            />
+        ) : (
+            <LoginPage
+                onSwitchToRegister={() => setAuthView("register")}
+                onLoginSuccess={handleLoginSuccess}
+            />
+        );
+    }
+
+    // 3. Only show main app if authenticated
     return (
         <div className="flex min-h-screen bg-justice-black">
             <MobileNotice />
-            <Sidebar currentPath={currentView === 'dashboard' ? '/' : `/${currentView}`} onNavigate={handleNavigation} />
+            <Sidebar 
+                currentPath={currentView === 'dashboard' ? '/' : `/${currentView}`} 
+                onNavigate={handleNavigation}
+            />
 
             <div className="ml-64 flex-1">
                 {currentView === 'dashboard' && (
@@ -125,11 +199,23 @@ export default function App() {
                                         India's premier legal professional networking and AI-powered assistance platform.
                                     </p>
                                     <div className="flex space-x-4">
-                                        <button onClick={() => setCurrentView('ai')} className="px-8 py-4 bg-constitution-gold text-justice-black rounded-lg font-bold hover:bg-constitution-gold/90 transition-colors flex items-center space-x-2">
+                                        <button 
+                                            onClick={() => setCurrentView('ai')} 
+                                            className="px-8 py-4 bg-constitution-gold text-justice-black rounded-lg font-bold hover:bg-constitution-gold/90 transition-colors flex items-center space-x-2"
+                                        >
                                             <Sparkles className="w-5 h-5" /><span>Try Legal AI</span>
                                         </button>
-                                        <button onClick={() => setCurrentView('profile')} className="px-8 py-4 border-2 border-constitution-gold text-constitution-gold rounded-lg font-bold hover:bg-constitution-gold/5 transition-colors flex items-center space-x-2">
+                                        <button 
+                                            onClick={() => setCurrentView('profile')} 
+                                            className="px-8 py-4 border-2 border-constitution-gold text-constitution-gold rounded-lg font-bold hover:bg-constitution-gold/5 transition-colors flex items-center space-x-2"
+                                        >
                                             <Sparkles className="w-5 h-5" /><span>View Profile</span>
+                                        </button>
+                                        <button 
+                                            onClick={handleLogout} 
+                                            className="px-8 py-4 border-2 border-red-500 text-red-500 rounded-lg font-bold hover:bg-red-500/5 transition-colors flex items-center space-x-2"
+                                        >
+                                            <span>Logout</span>
                                         </button>
                                     </div>
                                 </div>
@@ -161,9 +247,19 @@ export default function App() {
                         <div>
                             <h2 className="font-heading font-bold text-judge-ivory mb-6">Recent Legal Updates</h2>
                             <div className="space-y-6">
-                                {posts.map((post) => (
-                                    <PostCard key={post.id} post={post} />
-                                ))}
+                                {isLoadingPosts ? (
+                                    <div className="flex justify-center p-8">
+                                        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-justice-blue"></div>
+                                    </div>
+                                ) : posts.length > 0 ? (
+                                    posts.map((post) => (
+                                        <PostCard key={post.id} post={post} />
+                                    ))
+                                ) : (
+                                    <div className="text-center py-12 text-gray-400">
+                                        <p>No posts found. Be the first to post something!</p>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -206,58 +302,13 @@ export default function App() {
                 {currentView === 'ai' && <AIAssistant />}
                 {currentView === 'discussions' && <DiscussionsPage />}
                 {currentView === 'profile' && (
-                    <ProfilePage currentUserId="mock-user-1" onBack={() => setCurrentView('dashboard')} onNavigateToFeed={() => setCurrentView('feed')} />
+                    <ProfilePage 
+                        currentUserId="mock-user-1" 
+                        onBack={() => setCurrentView('dashboard')} 
+                        onNavigateToFeed={() => setCurrentView('feed')}
+                    />
                 )}
             </div>
         </div>
     );
-  }
-
-  return (
-    <div className="flex min-h-screen bg-justice-black">
-      <MobileNotice />
-      <Sidebar
-        currentPath={currentView === 'dashboard' ? '/' : `/${currentView}`}
-        onNavigate={handleNavigation}
-      />
-
-      <div className="ml-64 flex-1">
-        {currentView === 'dashboard' && (
-          <div className="min-h-screen bg-justice-black p-8">
-            {/* dashboard content unchanged */}
-            <h1 className="text-white text-3xl">Dashboard</h1>
-          </div>
-        )}
-
-        {currentView === 'feed' && (
-          <div className="min-h-screen bg-justice-black p-8">
-            <CreatePost />
-            {mockPosts.map((post) => (
-              <PostCard key={post.id} post={post} />
-            ))}
-          </div>
-        )}
-
-        {currentView === 'cases' && (
-          <div className="min-h-screen bg-justice-black p-8">
-            {mockCases.map((caseItem) => (
-              <CaseCard key={caseItem.id} caseItem={caseItem} />
-            ))}
-          </div>
-        )}
-
-        {currentView === 'ai' && <AIAssistant />}
-        {currentView === 'discussions' && <DiscussionsPage />}
-        {currentView === 'profile' && (
-          <ProfilePage
-            currentUserId="mock-user-1"
-            onBack={() => setCurrentView('dashboard')}
-            onNavigateToFeed={() => setCurrentView('feed')}
-          />
-        )}
-      </div>
-    </div>
-  );
 }
-
-export default App;
