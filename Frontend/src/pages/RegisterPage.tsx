@@ -1,13 +1,35 @@
-import React from 'react';
+import React,{useState} from 'react';
+import { registerUser } from "../services/authService";
 
 type RegisterPageProps = {
   onSwitchToLogin: () => void;
 };
 
 const RegisterPage = ({ onSwitchToLogin }: RegisterPageProps) => {
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+
+  // 🔹 ADDED: form state
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [role, setRole] = useState("");
+
+  // 🔹 MODIFIED: real submit logic
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    // Form submission logic will be added later
+
+    try {
+      const result = await registerUser({
+        fullName,
+        email,
+        password,
+        role,
+      });
+
+      localStorage.setItem("token", result.token);
+      onSwitchToLogin(); // or redirect later
+    } catch (error: any) {
+      alert(error.message || "Registration failed");
+    }
   };
 
   return (
@@ -106,98 +128,110 @@ const RegisterPage = ({ onSwitchToLogin }: RegisterPageProps) => {
             <p className="text-muted-foreground mb-8">
               Join NyayaNet's legal community
             </p>
-
             <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Full Name */}
-              <div className="space-y-2">
-                <label htmlFor="name" className="text-sm font-medium text-foreground">
-                  Full Name
-                </label>
-                <input
-                  id="name"
-                  name="name"
-                  type="text"
-                  placeholder="Enter your full name"
-                  className="w-full px-4 py-3 rounded-lg border border-input bg-background/50 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-300 hover:border-primary/30"
-                  autoComplete="name"
-                />
-              </div>
+  {/* Full Name */}
+  <div className="space-y-2">
+    <label htmlFor="name" className="text-sm font-medium text-foreground">
+      Full Name
+    </label>
+    <input
+      id="name"
+      name="name"
+      type="text"
+      placeholder="Enter your full name"
+      className="w-full px-4 py-3 rounded-lg border border-input bg-background/50 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-300 hover:border-primary/30"
+      autoComplete="name"
+      value={fullName}                          
+      onChange={(e) => setFullName(e.target.value)} 
+      required
+    />
+  </div>
 
-              {/* Email */}
-              <div className="space-y-2">
-                <label htmlFor="email" className="text-sm font-medium text-foreground">
-                  Email Address
-                </label>
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  placeholder="professional@lawfirm.com"
-                  className="w-full px-4 py-3 rounded-lg border border-input bg-background/50 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-300 hover:border-primary/30"
-                  autoComplete="email"
-                />
-              </div>
+  {/* Email */}
+  <div className="space-y-2">
+    <label htmlFor="email" className="text-sm font-medium text-foreground">
+      Email Address
+    </label>
+    <input
+      id="email"
+      name="email"
+      type="email"
+      placeholder="professional@lawfirm.com"
+      className="w-full px-4 py-3 rounded-lg border border-input bg-background/50 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-300 hover:border-primary/30"
+      autoComplete="email"
+      value={email}                            
+      onChange={(e) => setEmail(e.target.value)} 
+      required
+    />
+  </div>
 
-              {/* Password */}
-              <div className="space-y-2">
-                <label htmlFor="password" className="text-sm font-medium text-foreground">
-                  Password
-                </label>
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  placeholder="Create a strong password"
-                  className="w-full px-4 py-3 rounded-lg border border-input bg-background/50 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-300 hover:border-primary/30"
-                  autoComplete="new-password"
-                />
-              </div>
+  {/* Password */}
+  <div className="space-y-2">
+    <label htmlFor="password" className="text-sm font-medium text-foreground">
+      Password
+    </label>
+    <input
+      id="password"
+      name="password"
+      type="password"
+      placeholder="Create a strong password"
+      className="w-full px-4 py-3 rounded-lg border border-input bg-background/50 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-300 hover:border-primary/30"
+      autoComplete="new-password"
+      value={password}                        
+      onChange={(e) => setPassword(e.target.value)} 
+      required
+    />
+  </div>
 
-              {/* Role */}
-              <div className="space-y-2">
-                <label htmlFor="role" className="text-sm font-medium text-foreground">
-                  Professional Role
-                </label>
-                <select
-                  id="role"
-                  name="role"
-                  className="w-full px-4 py-3 rounded-lg border border-input bg-background/50 text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-300 hover:border-primary/30 appearance-none"
-                  defaultValue=""
-                >
-                  <option value="" disabled>Select your role</option>
-                  <option value="STUDENT">Law Student</option>
-                  <option value="LAWYER">Lawyer</option>
-                  <option value="LEGAL_PROFESSIONAL">Legal Professional</option>
-                </select>
-              </div>
+  {/* Role */}
+  <div className="space-y-2">
+    <label htmlFor="role" className="text-sm font-medium text-foreground">
+      Professional Role
+    </label>
+    <select
+      id="role"
+      name="role"
+      className="w-full px-4 py-3 rounded-lg border border-input bg-background/50 text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-300 hover:border-primary/30 appearance-none"
+      value={role}                             
+      onChange={(e) => setRole(e.target.value)} 
+      required
+    >
+      <option value="" disabled>Select your role</option>
+      <option value="STUDENT">Law Student</option>
+      <option value="LAWYER">Lawyer</option>
+      <option value="LEGAL_PROFESSIONAL">Legal Professional</option>
+    </select>
+  </div>
 
-              {/* Terms agreement */}
-              <div className="text-xs text-muted-foreground">
-                By creating an account, you agree to our Terms of Service and Privacy Policy.
-              </div>
+  {/* Terms agreement */}
+  <div className="text-xs text-muted-foreground">
+    By creating an account, you agree to our Terms of Service and Privacy Policy.
+  </div>
 
-              {/* Submit Button */}
-              <button
-                type="submit"
-                className="w-full btn-primary py-3 px-4 rounded-lg font-medium text-black transition-all duration-300 hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 active:scale-[0.98] shadow-lg hover:shadow-xl"
-              >
-                Create Account
-              </button>
+  {/* Submit Button */}
+  <button
+    type="submit"
+    className="w-full btn-primary py-3 px-4 rounded-lg font-medium text-black transition-all duration-300 hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 active:scale-[0.98] shadow-lg hover:shadow-xl"
+  >
+    Create Account
+  </button>
 
-              {/* Sign in link */}
-              <div className="text-center pt-4">
-                <p className="text-sm text-muted-foreground">
-                  Already have an account?{' '}
-                  <button
-                    type="button"
-                    onClick={onSwitchToLogin}
-                    className="text-primary font-medium hover:text-primary/90 focus:outline-none focus:underline transition-colors duration-300"
-                    >
-                    Sign in
-                 </button>
-                </p>
-              </div>
-            </form>
+  {/* Sign in link */}
+  <div className="text-center pt-4">
+    <p className="text-sm text-muted-foreground">
+      Already have an account?{" "}
+      <button
+        type="button"
+        onClick={onSwitchToLogin}
+        className="text-primary font-medium hover:text-primary/90 focus:outline-none focus:underline transition-colors duration-300"
+      >
+        Sign in
+      </button>
+    </p>
+  </div>
+</form>
+
+
           </div>
         </div>
       </div>
