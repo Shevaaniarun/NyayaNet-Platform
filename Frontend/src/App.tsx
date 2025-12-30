@@ -16,6 +16,17 @@ import { toast } from 'react-toastify';
 
 type ViewType = 'feed' | 'cases' | 'ai' | 'dashboard' | 'discussions' | 'profile';
 
+// Helper to get current user from localStorage
+const getCurrentUser = () => {
+    const userStr = localStorage.getItem('user');
+    if (!userStr) return null;
+    try {
+        return JSON.parse(userStr);
+    } catch {
+        return null;
+    }
+};
+
 // Type adapters
 const adaptPost = (apiPost: ApiPost): PostComponentType => ({
     id: apiPost.id,
@@ -62,18 +73,18 @@ export default function App() {
         const token = localStorage.getItem("token");
         const isAuth = !!token;
         setIsAuthenticated(isAuth);
-        
+
         // If authenticated, set the dashboard view and load posts
         if (isAuth) {
             setCurrentView('dashboard');
             refreshPosts();
         }
-        
+
         // Show loader for 2 seconds (shorter time)
         const timer = setTimeout(() => {
             setIsLoading(false);
         }, 4500);
-        
+
         return () => clearTimeout(timer);
     }, []);
 
@@ -89,7 +100,7 @@ export default function App() {
         };
 
         window.addEventListener('storage', handleStorageChange);
-        
+
         // Also check periodically for token changes within same tab
         const interval = setInterval(() => {
             const token = localStorage.getItem("token");
@@ -108,7 +119,7 @@ export default function App() {
 
     const refreshPosts = async () => {
         if (!isAuthenticated) return;
-        
+
         try {
             setIsLoadingPosts(true);
             const postsData = await getFeed(1, 10);
@@ -135,6 +146,7 @@ export default function App() {
 
     const handleLogout = () => {
         localStorage.removeItem("token");
+        localStorage.removeItem("user");
         setIsAuthenticated(false);
         setAuthView("login");
         setPosts([]); // Clear posts on logout
@@ -151,7 +163,7 @@ export default function App() {
         };
         const newView = viewMap[path] || 'dashboard';
         setCurrentView(newView);
-        
+
         // Refresh posts when navigating to feed or dashboard
         if (newView === 'feed' || newView === 'dashboard') {
             refreshPosts();
@@ -166,9 +178,9 @@ export default function App() {
     // 2. After loader, check authentication
     if (!isAuthenticated) {
         return authView === "register" ? (
-            <RegisterPage 
+            <RegisterPage
                 onSwitchToLogin={() => setAuthView("login")}
-                // Note: RegisterPage uses window.location.href instead of callback
+            // Note: RegisterPage uses window.location.href instead of callback
             />
         ) : (
             <LoginPage
@@ -182,8 +194,8 @@ export default function App() {
     return (
         <div className="flex min-h-screen bg-justice-black">
             <MobileNotice />
-            <Sidebar 
-                currentPath={currentView === 'dashboard' ? '/' : `/${currentView}`} 
+            <Sidebar
+                currentPath={currentView === 'dashboard' ? '/' : `/${currentView}`}
                 onNavigate={handleNavigation}
             />
 
@@ -199,20 +211,20 @@ export default function App() {
                                         India's premier legal professional networking and AI-powered assistance platform.
                                     </p>
                                     <div className="flex space-x-4">
-                                        <button 
-                                            onClick={() => setCurrentView('ai')} 
+                                        <button
+                                            onClick={() => setCurrentView('ai')}
                                             className="px-8 py-4 bg-constitution-gold text-justice-black rounded-lg font-bold hover:bg-constitution-gold/90 transition-colors flex items-center space-x-2"
                                         >
                                             <Sparkles className="w-5 h-5" /><span>Try Legal AI</span>
                                         </button>
-                                        <button 
-                                            onClick={() => setCurrentView('profile')} 
+                                        <button
+                                            onClick={() => setCurrentView('profile')}
                                             className="px-8 py-4 border-2 border-constitution-gold text-constitution-gold rounded-lg font-bold hover:bg-constitution-gold/5 transition-colors flex items-center space-x-2"
                                         >
                                             <Sparkles className="w-5 h-5" /><span>View Profile</span>
                                         </button>
-                                        <button 
-                                            onClick={handleLogout} 
+                                        <button
+                                            onClick={handleLogout}
                                             className="px-8 py-4 border-2 border-red-500 text-red-500 rounded-lg font-bold hover:bg-red-500/5 transition-colors flex items-center space-x-2"
                                         >
                                             <span>Logout</span>
@@ -302,9 +314,9 @@ export default function App() {
                 {currentView === 'ai' && <AIAssistant />}
                 {currentView === 'discussions' && <DiscussionsPage />}
                 {currentView === 'profile' && (
-                    <ProfilePage 
-                        currentUserId="mock-user-1" 
-                        onBack={() => setCurrentView('dashboard')} 
+                    <ProfilePage
+                        currentUserId={getCurrentUser()?.id || ''}
+                        onBack={() => setCurrentView('dashboard')}
                         onNavigateToFeed={() => setCurrentView('feed')}
                     />
                 )}

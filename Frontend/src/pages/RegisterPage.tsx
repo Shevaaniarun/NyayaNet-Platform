@@ -1,4 +1,4 @@
-import React,{useState} from 'react';
+import React, { useState } from 'react';
 import { registerUser } from "../api/authService";
 
 type RegisterPageProps = {
@@ -32,7 +32,9 @@ const RegisterPage = ({ onSwitchToLogin }: RegisterPageProps) => {
         role: roleMap[role], // ✅ FIXED HERE
       });
 
+      // Save token and user info
       localStorage.setItem("token", result.token);
+      localStorage.setItem("user", JSON.stringify(result.user));
 
       // ✅ ONLY CHANGE: redirect to dashboard after signup
       window.location.href = "/dashboard";
@@ -62,14 +64,14 @@ const RegisterPage = ({ onSwitchToLogin }: RegisterPageProps) => {
             <div className="absolute top-7 left-3 w-14 h-1 rounded-full bg-primary/20"></div>
             <div className="absolute top-10 left-3 w-12 h-1 rounded-full bg-primary/20"></div>
           </div>
-          
+
           {/* Scales */}
           <div className="absolute top-40 right-32 w-24 h-24 bg-gradient-to-br from-secondary/20 to-secondary/5 backdrop-blur-sm rounded-full border border-secondary/20 shadow-lg animate-float-legal animation-delay-1500">
             <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-16 h-1 bg-secondary/30"></div>
             <div className="absolute top-1/2 left-1/4 transform -translate-y-1/2 w-6 h-6 rounded-full bg-secondary/30"></div>
             <div className="absolute top-1/2 right-1/4 transform -translate-y-1/2 w-6 h-6 rounded-full bg-secondary/30"></div>
           </div>
-          
+
           {/* Book */}
           <div className="absolute bottom-32 left-32 w-20 h-24 bg-gradient-to-br from-accent/20 to-accent/5 backdrop-blur-sm rounded-lg border border-accent/20 shadow-lg animate-float-legal animation-delay-2500">
             <div className="absolute top-2 left-3 w-14 h-3 rounded-lg bg-accent/30"></div>
@@ -102,7 +104,7 @@ const RegisterPage = ({ onSwitchToLogin }: RegisterPageProps) => {
               <br />
               for modern legal professionals
             </p>
-            
+
             {/* Feature highlights */}
             <div className="mt-12 space-y-6">
               <div className="flex items-center gap-4 animate-fade-in-up animation-delay-500">

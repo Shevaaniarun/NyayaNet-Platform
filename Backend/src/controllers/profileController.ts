@@ -10,11 +10,14 @@ export class ProfileController {
     static async getProfile(req: Request, res: Response) {
         try {
             const { userId } = req.params;
+            console.log('getProfile called with userId:', userId);
             const requesterId = (req as AuthRequest).user?.id;
             const profile = await UserModel.findById(userId, requesterId);
+            console.log('getProfile result:', profile ? 'found' : 'not found');
             if (!profile) return res.status(404).json({ success: false, message: 'User not found' });
             return res.json({ success: true, data: profile });
         } catch (error: any) {
+            console.error('getProfile error:', error.message);
             return res.status(500).json({ success: false, message: 'Error fetching profile', error: error.message });
         }
     }

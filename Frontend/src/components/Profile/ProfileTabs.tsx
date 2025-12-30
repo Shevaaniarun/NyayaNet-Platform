@@ -34,7 +34,7 @@ export function ProfileTabs({ posts, discussions, bookmarks, isOwnProfile, onCre
             return;
         }
         // In a real app, this would call an API
-        alert(`Post created: "${newPost.title}"\n\nIn demo mode, refresh will reset this. Connect a database for persistent storage.`);
+        alert(`Post created: "${newPost.title}"`);
         setNewPost({ title: '', content: '', postType: 'POST' });
         setShowCreatePostModal(false);
     };
