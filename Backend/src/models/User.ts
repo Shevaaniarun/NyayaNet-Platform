@@ -126,16 +126,15 @@ export class UserModel {
         u.website_url, u.linkedin_url, u.profile_photo_url, u.cover_photo_url,
         u.follower_count, u.following_count, u.post_count, u.discussion_count,
         u.created_at,
-        ${
-          requesterId
-            ? `EXISTS(
+        ${requesterId
+        ? `EXISTS(
                 SELECT 1 FROM user_follows uf
                 WHERE uf.follower_id = $2
                 AND uf.following_id = u.id
                 AND uf.status = 'ACCEPTED'
               ) AS is_following`
-            : "false AS is_following"
-        }
+        : "false AS is_following"
+      }
       FROM users u
       WHERE u.id = $1 AND u.is_active = true
     `;
@@ -210,5 +209,109 @@ export class UserModel {
     );
 
     return this.findById(userId);
+  }
+
+  static async getUserPosts(userId: string, page = 1, limit = 20, sort = 'newest') {
+    const offset = (page - 1) * limit;
+    const orderBy = sort === 'newest' ? 'created_at DESC' : 'created_at ASC';
+
+    const result = await pool.query(
+      `SELECT id, title, content, post_type, tags, like_count, comment_count, created_at
+       FROM posts 
+       WHERE user_id = $1 AND is_public = true
+       ORDER BY ${orderBy}
+       LIMIT $2 OFFSET $3`,
+      [userId, limit, offset]
+    );
+
+    const countResult = await pool.query(
+      'SELECT COUNT(*) FROM posts WHERE user_id = $1 AND is_public = true',
+      [userId]
+    );
+
+    return {
+      posts: result.rows.map(row => ({
+        id: row.id,
+        title: row.title,
+        content: row.content,
+        postType: row.post_type,
+        tags: row.tags || [],
+        likeCount: row.like_count || 0,
+        commentCount: row.comment_count || 0,
+        createdAt: row.created_at?.toISOString()
+      })),
+      pagination: {
+        total: parseInt(countResult.rows[0].count),
+        page,
+        limit,
+        pages: Math.ceil(parseInt(countResult.rows[0].count) / limit)
+      }
+    };
+  }
+
+  static async getUserDiscussions(userId: string, page = 1, limit = 20) {
+    const offset = (page - 1) * limit;
+
+    const result = await pool.query(
+      `SELECT id, title, description, category, reply_count, upvote_count, is_resolved, created_at
+       FROM discussions 
+       WHERE created_by = $1 AND is_public = true
+       ORDER BY created_at DESC
+       LIMIT $2 OFFSET $3`,
+      [userId, limit, offset]
+    );
+
+    const countResult = await pool.query(
+      'SELECT COUNT(*) FROM discussions WHERE created_by = $1 AND is_public = true',
+      [userId]
+    );
+
+    return {
+      discussions: result.rows.map(row => ({
+        id: row.id,
+        title: row.title,
+        description: row.description,
+        category: row.category,
+        replyCount: row.reply_count || 0,
+        upvoteCount: row.upvote_count || 0,
+        isResolved: row.is_resolved || false,
+        createdAt: row.created_at?.toISOString()
+      })),
+      pagination: {
+        total: parseInt(countResult.rows[0].count),
+        page,
+        limit,
+        pages: Math.ceil(parseInt(countResult.rows[0].count) / limit)
+      }
+    };
+  }
+
+  static async getUserBookmarks(userId: string, folder?: string, type?: string, page = 1, limit = 20) {
+    // Return empty bookmarks for now (bookmarks table may not exist)
+    return {
+      bookmarks: [],
+      pagination: { total: 0, page, limit, pages: 0 }
+    };
+  }
+
+  static async searchUserContent(userId: string, query: string, type?: string) {
+    // Return empty results for now
+    return { results: { posts: [], discussions: [] } };
+  }
+
+  static async updateProfilePhoto(userId: string, photoUrl: string, thumbnailUrl?: string) {
+    const result = await pool.query(
+      'UPDATE users SET profile_photo_url = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 AND is_active = true RETURNING id',
+      [photoUrl, userId]
+    );
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  static async updateCoverPhoto(userId: string, coverPhotoUrl: string) {
+    const result = await pool.query(
+      'UPDATE users SET cover_photo_url = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 AND is_active = true RETURNING id',
+      [coverPhotoUrl, userId]
+    );
+    return (result.rowCount ?? 0) > 0;
   }
 }

@@ -31,52 +31,82 @@ export function ProfilePage({ userId, currentUserId, onBack, onNavigateToFeed }:
     const targetUserId = userId || currentUserId;
 
     useEffect(() => {
+        console.log('ProfilePage: currentUserId =', currentUserId, ', targetUserId =', targetUserId);
         if (targetUserId) loadProfileData();
     }, [targetUserId]);
 
     async function loadProfileData() {
         setIsLoading(true);
+
+        // Load profile first - this is required
+        let profileData = null;
         try {
-            const [profileData, certsData, postsData, discussionsData] = await Promise.all([
-                profileApi.getProfile(targetUserId!),
-                profileApi.getCertifications(targetUserId!),
-                profileApi.getUserPosts(targetUserId!),
-                profileApi.getUserDiscussions(targetUserId!),
-            ]);
+            profileData = await profileApi.getProfile(targetUserId!);
+            console.log('Profile loaded:', profileData?.fullName);
             setProfile(profileData);
             setEditForm(profileData);
-            setCertifications(certsData);
-            setPosts(postsData.posts);
-            setDiscussions(discussionsData.discussions);
-            if (isOwnProfile) {
-                const bookmarksData = await profileApi.getBookmarks();
-                setBookmarks(bookmarksData.bookmarks);
-            }
-        } catch (err) {
-            // Use mock data for demo
-            const mockProfile = {
-                id: targetUserId || 'mock-user-1', fullName: 'Adv. Priya Sharma', email: 'priya.sharma@example.com', role: 'LAWYER',
-                designation: 'Senior Advocate', organization: 'Sharma & Associates', areaOfInterest: ['Consumer Law', 'Contract Law'],
-                experienceYears: 12, bio: 'Senior Advocate specializing in Consumer Protection Act and Contract Law.',
-                profilePhotoUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&fit=crop',
-                location: 'New Delhi, India', websiteUrl: 'https://sharmaassociates.com', linkedinUrl: 'https://linkedin.com/in/priyasharma',
-                followerCount: 248, followingCount: 156, postCount: 32, discussionCount: 18, isFollowing: false
+        } catch (err: any) {
+            console.error('Failed to load profile:', err);
+            // Show empty profile as fallback
+            const emptyProfile = {
+                id: targetUserId || '',
+                fullName: 'New User',
+                email: '',
+                role: 'USER',
+                designation: null,
+                organization: null,
+                areaOfInterest: [],
+                experienceYears: 0,
+                bio: 'Welcome! Edit your profile to add your information.',
+                profilePhotoUrl: null,
+                location: null,
+                websiteUrl: null,
+                linkedinUrl: null,
+                followerCount: 0,
+                followingCount: 0,
+                postCount: 0,
+                discussionCount: 0,
+                isFollowing: false
             };
-            setProfile(mockProfile);
-            setEditForm(mockProfile);
-            setCertifications([
-                { id: 'cert-1', title: 'Advocate on Record - Supreme Court', issuingOrganization: 'Supreme Court of India', issueDate: '2021-06-15', certificateUrl: '#', fileType: 'PDF', tags: ['Supreme Court', 'AOR'] },
-                { id: 'cert-2', title: 'Certificate in Consumer Law', issuingOrganization: 'National Law University, Delhi', issueDate: '2019-03-20', expiryDate: '2024-03-20', certificateUrl: '#', fileType: 'PDF', tags: ['Consumer Law'] }
-            ]);
-            setPosts([
-                { id: 'post-1', title: 'Understanding Consumer Protection Act 2019', content: 'A comprehensive analysis of the new Consumer Protection Act and its implications...', postType: 'ARTICLE', tags: ['Consumer Law'], likeCount: 45, commentCount: 12, createdAt: '2024-01-15T14:00:00Z' },
-                { id: 'post-2', title: 'Contract Drafting Best Practices', content: 'Essential tips for drafting bulletproof contracts that protect your clients...', postType: 'POST', tags: ['Contract Law'], likeCount: 28, commentCount: 8, createdAt: '2024-01-10T09:00:00Z' }
-            ]);
-            setDiscussions([{ id: 'disc-1', title: 'How to handle defective product cases?', description: 'Looking for practical advice on filing consumer complaints...', category: 'CONSUMER_LAW', replyCount: 15, upvoteCount: 23, isResolved: false, createdAt: '2024-01-14T10:30:00Z' }]);
-            setBookmarks([{ id: 'bm-1', entityType: 'POST', entityId: 'ext-post-1', folder: 'CONSUMER_LAW', title: 'Landmark Consumer Rights Judgment', authorName: 'Hon. Justice Mehta', createdAt: '2024-01-08T15:00:00Z' }]);
-        } finally {
-            setIsLoading(false);
+            setProfile(emptyProfile);
+            setEditForm(emptyProfile);
         }
+
+        // Load other data separately - failures shouldn't break profile loading
+        try {
+            const certsData = await profileApi.getCertifications(targetUserId!);
+            setCertifications(certsData || []);
+        } catch (e) {
+            console.log('Certifications not available');
+            setCertifications([]);
+        }
+
+        try {
+            const postsData = await profileApi.getUserPosts(targetUserId!);
+            setPosts(postsData?.posts || []);
+        } catch (e) {
+            console.log('Posts not available');
+            setPosts([]);
+        }
+
+        try {
+            const discussionsData = await profileApi.getUserDiscussions(targetUserId!);
+            setDiscussions(discussionsData?.discussions || []);
+        } catch (e) {
+            console.log('Discussions not available');
+            setDiscussions([]);
+        }
+
+        if (isOwnProfile) {
+            try {
+                const bookmarksData = await profileApi.getBookmarks();
+                setBookmarks(bookmarksData?.bookmarks || []);
+            } catch (e) {
+                setBookmarks([]);
+            }
+        }
+
+        setIsLoading(false);
     }
 
     const handleEditProfile = () => {

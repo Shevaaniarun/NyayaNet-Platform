@@ -18,6 +18,22 @@ export function CreatePost() {
   const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
   const [isPublishing, setIsPublishing] = useState(false);
 
+  // Get current user from localStorage
+  const getCurrentUser = () => {
+    const userStr = localStorage.getItem('user');
+    if (!userStr) return null;
+    try {
+      return JSON.parse(userStr);
+    } catch {
+      return null;
+    }
+  };
+
+  const user = getCurrentUser();
+  const userInitials = user?.fullName
+    ? user.fullName.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)
+    : 'U';
+
   const imageInputRef = useRef<HTMLInputElement>(null);
   const documentInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
@@ -68,6 +84,10 @@ export function CreatePost() {
 
     try {
       const { createPost } = await import('../api/posts');
+
+      // Debug: Check if token exists
+      const token = localStorage.getItem('token');
+      console.log('Token available:', !!token, token ? token.substring(0, 20) + '...' : 'null');
 
       await createPost({
         content: postContent.trim(),
@@ -125,7 +145,7 @@ export function CreatePost() {
       <div className="flex items-start space-x-4">
         {/* Profile Picture */}
         <div className="w-12 h-12 bg-constitution-gold rounded-full border-2 border-constitution-gold/30 flex items-center justify-center flex-shrink-0">
-          <span className="font-heading font-bold text-justice-black">AP</span>
+          <span className="font-heading font-bold text-justice-black">{userInitials}</span>
         </div>
 
         {/* Input Area */}

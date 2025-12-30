@@ -87,7 +87,7 @@ export function ProfileHeader({ profile, isOwnProfile, onEditProfile, onFollow, 
             onPhotoUpdate(showPhotoModal, selectedFile, previewUrl);
         }
 
-        alert(`${showPhotoModal === 'profile' ? 'Profile' : 'Cover'} photo updated!\n\n(Connect a database to persist this change)`);
+        alert(`${showPhotoModal === 'profile' ? 'Profile' : 'Cover'} photo updated!`);
         setShowPhotoModal(null);
         setSelectedFile(null);
     };

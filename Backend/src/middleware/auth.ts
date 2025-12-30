@@ -6,6 +6,7 @@ import jwt, { JwtPayload } from "jsonwebtoken";
  */
 interface AuthPayload extends JwtPayload {
   userId: string;
+  id?: string;  // Added for controller compatibility
   role: string;
 }
 
@@ -43,7 +44,11 @@ export const authenticate = (
 
     const decoded = jwt.verify(token, JWT_SECRET) as AuthPayload;
 
-    req.user = decoded;
+    // Map userId to id for controller compatibility
+    req.user = {
+      ...decoded,
+      id: decoded.userId
+    };
     next();
   } catch (error) {
     return res.status(401).json({

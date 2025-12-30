@@ -25,8 +25,9 @@ const LoginPage: React.FC<LoginPageProps> = ({
         password,
       });
 
-      // Save token
+      // Save token and user info
       localStorage.setItem("token", result.token);
+      localStorage.setItem("user", JSON.stringify(result.user));
 
       // Notify app we are logged in
       onLoginSuccess();
@@ -54,13 +55,13 @@ const LoginPage: React.FC<LoginPageProps> = ({
             <div className="absolute top-7 left-3 w-14 h-1 rounded-full bg-primary/20"></div>
             <div className="absolute top-10 left-3 w-12 h-1 rounded-full bg-primary/20"></div>
           </div>
-          
+
           <div className="absolute top-40 right-32 w-24 h-24 bg-gradient-to-br from-secondary/20 to-secondary/5 backdrop-blur-sm rounded-full border border-secondary/20 shadow-lg animate-float-legal animation-delay-1500">
             <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-16 h-1 bg-secondary/30"></div>
             <div className="absolute top-1/2 left-1/4 transform -translate-y-1/2 w-6 h-6 rounded-full bg-secondary/30"></div>
             <div className="absolute top-1/2 right-1/4 transform -translate-y-1/2 w-6 h-6 rounded-full bg-secondary/30"></div>
           </div>
-          
+
           <div className="absolute bottom-32 left-32 w-20 h-24 bg-gradient-to-br from-accent/20 to-accent/5 backdrop-blur-sm rounded-lg border border-accent/20 shadow-lg animate-float-legal animation-delay-2500">
             <div className="absolute top-2 left-3 w-14 h-3 rounded-lg bg-accent/30"></div>
             <div className="absolute top-8 left-3 w-14 h-1 rounded-full bg-accent/20"></div>
@@ -112,8 +113,8 @@ const LoginPage: React.FC<LoginPageProps> = ({
                   placeholder="professional@lawfirm.com"
                   className="w-full px-4 py-3 rounded-lg border border-input bg-background/50 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-300 hover:border-primary/30"
                   autoComplete="email"
-                  value={email}                          
-                  onChange={(e) => setEmail(e.target.value)} 
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   required
                 />
               </div>
@@ -130,8 +131,8 @@ const LoginPage: React.FC<LoginPageProps> = ({
                   placeholder="Enter your password"
                   className="w-full px-4 py-3 rounded-lg border border-input bg-background/50 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-300 hover:border-primary/30"
                   autoComplete="current-password"
-                  value={password}                          
-                  onChange={(e) => setPassword(e.target.value)} 
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   required
                 />
               </div>
