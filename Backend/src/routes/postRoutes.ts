@@ -4,9 +4,6 @@ import { authenticate } from '../middleware/auth';
 
 const router = Router();
 
-// Public routes (none for now, assuming feed requires login based on existing frontend)
-// If public feed is needed, remove authenticate from getFeed
-
 // Protected Routes
 router.use(authenticate);
 

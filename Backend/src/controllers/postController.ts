@@ -1,9 +1,6 @@
 import { Request, Response } from 'express';
 import { PostModel } from '../models/Post';
-
-interface AuthRequest extends Request {
-    user?: { userId: string; role: string };
-}
+import { AuthRequest } from '../middleware/auth';
 
 export class PostController {
     static async createPost(req: AuthRequest, res: Response) {
@@ -20,7 +17,7 @@ export class PostController {
             const post = await PostModel.create(userId, {
                 userId,
                 content,
-                postType,
+                postType: postType as any,
                 tags,
                 isPublic
             });
