@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { loginUser } from "../services/authService";
+import { loginUser } from "../api/authService";
 
 type LoginPageProps = {
   onSwitchToRegister: () => void;

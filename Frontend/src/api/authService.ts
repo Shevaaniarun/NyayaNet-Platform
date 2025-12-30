@@ -13,7 +13,7 @@ interface LoginPayload {
 }
 
 export const registerUser = async (data: RegisterPayload) => {
-  const response = await fetch(`${API_BASE_URL}/auth/register`, {
+  const response = await fetch(`${API_BASE_URL}/register`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -31,7 +31,7 @@ export const registerUser = async (data: RegisterPayload) => {
 };
 
 export const loginUser = async (data: LoginPayload) => {
-  const response = await fetch(`${API_BASE_URL}/auth/login`, {
+  const response = await fetch(`${API_BASE_URL}/login`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
