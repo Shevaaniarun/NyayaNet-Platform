@@ -26,6 +26,8 @@ export function ProfilePage({ userId, currentUserId, onBack, onNavigateToFeed }:
     const [showAddCertModal, setShowAddCertModal] = useState(false);
     const [editForm, setEditForm] = useState<any>({});
     const [newCert, setNewCert] = useState({ title: '', issuingOrganization: '', issueDate: '', expiryDate: '', certificateUrl: '', fileType: 'PDF', description: '', tags: '' });
+    const [certificateFile, setCertificateFile] = useState<File | null>(null);
+    const [uploadingCert, setUploadingCert] = useState(false);
 
     const isOwnProfile = !userId || userId === currentUserId;
     const targetUserId = userId || currentUserId;
@@ -187,8 +189,29 @@ export function ProfilePage({ userId, currentUserId, onBack, onNavigateToFeed }:
             alert('Please fill in required fields');
             return;
         }
+
+        let certificateUrl = newCert.certificateUrl;
+        let fileType = newCert.fileType;
+
+        // Upload certificate file if selected
+        if (certificateFile) {
+            setUploadingCert(true);
+            try {
+                const uploadResult = await profileApi.uploadCertificateFile(certificateFile);
+                certificateUrl = uploadResult.certificateUrl;
+                fileType = uploadResult.fileType;
+            } catch (err) {
+                alert('Failed to upload certificate file');
+                setUploadingCert(false);
+                return;
+            }
+            setUploadingCert(false);
+        }
+
         const certData = {
             ...newCert,
+            certificateUrl,
+            fileType,
             tags: newCert.tags ? newCert.tags.split(',').map(t => t.trim()).filter(t => t) : []
         };
         try {
@@ -199,6 +222,7 @@ export function ProfilePage({ userId, currentUserId, onBack, onNavigateToFeed }:
             setCertifications([...certifications, { ...certData, id: `cert-${Date.now()}` }]);
         }
         setNewCert({ title: '', issuingOrganization: '', issueDate: '', expiryDate: '', certificateUrl: '', fileType: 'PDF', description: '', tags: '' });
+        setCertificateFile(null);
         setShowAddCertModal(false);
     };
 
@@ -400,9 +424,16 @@ export function ProfilePage({ userId, currentUserId, onBack, onNavigateToFeed }:
                                 </div>
                             </div>
                             <div>
-                                <label className="block text-sm text-ink-gray/70 mb-1">Certificate URL</label>
-                                <input type="url" value={newCert.certificateUrl} onChange={(e) => setNewCert({ ...newCert, certificateUrl: e.target.value })} placeholder="https://..."
-                                    className="w-full px-3 py-2 bg-white border border-constitution-gold/20 rounded-lg text-ink-gray focus:outline-none focus:border-constitution-gold" />
+                                <label className="block text-sm text-ink-gray/70 mb-1">Certificate File (PDF or Image)</label>
+                                <input
+                                    type="file"
+                                    accept=".pdf,.jpg,.jpeg,.png,.webp"
+                                    onChange={(e) => setCertificateFile(e.target.files?.[0] || null)}
+                                    className="w-full px-3 py-2 bg-white border border-constitution-gold/20 rounded-lg text-ink-gray focus:outline-none focus:border-constitution-gold file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:bg-constitution-gold/10 file:text-constitution-gold file:cursor-pointer"
+                                />
+                                {certificateFile && (
+                                    <p className="mt-1 text-sm text-constitution-gold">Selected: {certificateFile.name}</p>
+                                )}
                             </div>
                             <div>
                                 <label className="block text-sm text-ink-gray/70 mb-1">Description</label>

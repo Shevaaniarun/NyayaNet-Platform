@@ -1,5 +1,5 @@
 import { Router, Request, Response, NextFunction } from 'express';
-import { UploadController, upload } from '../controllers/uploadController';
+import { UploadController, upload, uploadCertificate } from '../controllers/uploadController';
 import { authenticate } from '../middleware/auth';
 
 const router = Router();
@@ -28,4 +28,13 @@ router.post(
     UploadController.uploadCoverPhoto
 );
 
+// Certificate file upload
+router.post(
+    '/certificate',
+    authenticate,
+    uploadCertificate.single('certificate'),
+    UploadController.uploadCertificateFile
+);
+
 export default router;
+

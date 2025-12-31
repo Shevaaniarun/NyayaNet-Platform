@@ -112,3 +112,18 @@ export async function uploadCoverPhoto(file: File): Promise<{ coverPhotoUrl: str
     return data.data;
 }
 
+export async function uploadCertificateFile(file: File): Promise<{ certificateUrl: string; fileType: string; originalName: string }> {
+    const formData = new FormData();
+    formData.append('certificate', file);
+
+    const token = getAuthToken();
+    const response = await fetch(`${API_BASE_URL}/upload/certificate`, {
+        method: 'POST',
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+        body: formData
+    });
+
+    if (!response.ok) throw new Error('Failed to upload certificate');
+    const data = await response.json();
+    return data.data;
+}
