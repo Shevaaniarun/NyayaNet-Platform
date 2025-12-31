@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { DiscussionController } from '../controllers/discussionController';
-import { authenticate } from '../middleware/auth';
+import { authenticate, optionalAuthenticate } from '../middleware/auth';
 import { validate } from '../utils/validation';
 
 const router = Router();
@@ -60,16 +60,18 @@ const markBestAnswerSchema = {
   }
 };
 
-// Public routes
-router.get('/', DiscussionController.getDiscussions);
-router.get('/search', DiscussionController.searchDiscussions);
-router.get('/:discussionId', DiscussionController.getDiscussionDetails);
+// Public routes (now with optional authentication for personalization)
+router.get('/', optionalAuthenticate, DiscussionController.getDiscussions);
+router.get('/search', optionalAuthenticate, DiscussionController.searchDiscussions);
+router.get('/:discussionId', optionalAuthenticate, DiscussionController.getDiscussionDetails);
 
 // Protected routes (require authentication)
 router.post('/', authenticate, validate(createDiscussionSchema), DiscussionController.createDiscussion);
 router.post('/:discussionId/replies', authenticate, validate(createReplySchema), DiscussionController.addReply);
 router.post('/replies/:replyId/upvote', authenticate, DiscussionController.toggleUpvote);
 router.post('/:discussionId/follow', authenticate, DiscussionController.toggleFollow);
+router.post('/:discussionId/upvote', authenticate, DiscussionController.toggleDiscussionUpvote);
+router.post('/:discussionId/save', authenticate, DiscussionController.toggleSave);
 router.post('/:discussionId/best-answer', authenticate, validate(markBestAnswerSchema), DiscussionController.markBestAnswer);
 router.post('/:discussionId/resolve', authenticate, DiscussionController.markResolved);
 

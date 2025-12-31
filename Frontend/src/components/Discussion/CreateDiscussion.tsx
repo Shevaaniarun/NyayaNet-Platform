@@ -30,16 +30,19 @@ export function CreateDiscussion({ onSubmit, onCancel }: CreateDiscussionProps) 
   ];
 
   const categories = [
-    'Constitutional Law',
-    'Criminal Law',
-    'Civil Law',
-    'Corporate Law',
-    'IPR Law',
-    'Tax Law',
-    'Family Law',
-    'Consumer Law',
-    'Environmental Law',
-    'Cyber Law',
+    'CONSTITUTIONAL_LAW',
+    'CRIMINAL_LAW',
+    'CIVIL_LAW',
+    'CORPORATE_LAW',
+    'INTELLECTUAL_PROPERTY',
+    'TAX_LAW',
+    'FAMILY_LAW',
+    'CONSUMER_LAW',
+    'CYBER_LAW',
+    'ARBITRATION',
+    'PROPERTY_LAW',
+    'LEGAL_ETHICS',
+    'INTERNATIONAL_LAW',
   ];
 
   const handleAddTag = () => {

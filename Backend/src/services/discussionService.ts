@@ -2,12 +2,13 @@ import { DiscussionModel } from '../models/Discussion';
 import { DiscussionReplyModel } from '../models/DiscussionReply';
 import { DiscussionFollowerModel } from '../models/DiscussionFollower';
 import { DiscussionUpvoteModel } from '../models/DiscussionUpvote';
-import { 
-  CreateDiscussionInput, 
-  CreateReplyInput, 
-  DiscussionFilters, 
+import { UserBookmarkModel } from '../models/UserBookmark';
+import {
+  CreateDiscussionInput,
+  CreateReplyInput,
+  DiscussionFilters,
   SearchFilters,
-  DiscussionReplyWithAuthor 
+  DiscussionReplyWithAuthor
 } from '../types/discussionTypes';
 
 interface FormattedReply {
@@ -105,7 +106,7 @@ export class DiscussionService {
   // Get all discussions
   static async getDiscussions(filters: DiscussionFilters, userId?: string): Promise<PaginatedDiscussions> {
     const { discussions, total } = await DiscussionModel.findAll(filters, userId);
-    
+
     const page = filters.page || 1;
     const limit = filters.limit || 20;
     const pages = Math.ceil(total / limit);
@@ -153,59 +154,28 @@ export class DiscussionService {
   }
 
   // Create a new discussion
-  static async createDiscussion(data: CreateDiscussionInput, userId: string): Promise<{ id: string; title: string; createdAt: Date }> {
+  static async createDiscussion(data: CreateDiscussionInput, userId: string): Promise<DiscussionDetails | null> {
     const discussion = await DiscussionModel.create(data, userId);
-    
-    return {
-      id: discussion.id,
-      title: discussion.title,
-      createdAt: discussion.created_at
-    };
+    // Note: We don't have ipAddress during creation to pass for view increment here, 
+    // but the next fetch call in getDiscussionDetails will handle it if needed.
+    return this.getDiscussionDetails(discussion.id, userId);
   }
 
   // Get discussion details
-  static async getDiscussionDetails(id: string, userId?: string): Promise<DiscussionDetails | null> {
+  static async getDiscussionDetails(id: string, userId?: string, ipAddress?: string): Promise<DiscussionDetails | null> {
     const discussionResult = await DiscussionModel.findById(id, userId);
-    
+
     if (!discussionResult) {
       return null;
     }
 
     // Increment view count
-    await DiscussionModel.incrementViewCount(id);
+    await DiscussionModel.incrementViewCount(id, userId, ipAddress);
 
     // Get replies
     const replies = await DiscussionReplyModel.findByDiscussionId(id, userId);
 
-    // Helper function to format replies hierarchically
-    const formatReplies = (repliesArray: DiscussionReplyWithAuthor[], parentId: string | null = null): FormattedReply[] => {
-      return repliesArray
-        .filter(reply => {
-          if (parentId === null) {
-            return reply.parent_reply_id === null;
-          } else {
-            return reply.parent_reply_id === parentId;
-          }
-        })
-        .map(reply => ({
-          id: reply.id,
-          content: reply.content,
-          upvoteCount: reply.upvote_count,
-          replyCount: reply.reply_count,
-          isEdited: reply.is_edited,
-          createdAt: reply.created_at,
-          author: {
-            id: reply.user_id,
-            fullName: reply.author_name,
-            role: reply.author_role,
-            profilePhotoUrl: reply.author_photo
-          },
-          hasUpvoted: reply.has_upvoted,
-          replies: formatReplies(repliesArray, reply.id)
-        }));
-    };
-
-    const formattedReplies = formatReplies(replies);
+    const formattedReplies = this.formatRepliesForResponse(replies, null, discussionResult.best_answer_id);
 
     return {
       id: discussionResult.id,
@@ -238,14 +208,80 @@ export class DiscussionService {
   }
 
   // Add reply to discussion
-  static async addReply(discussionId: string, data: CreateReplyInput, userId: string): Promise<{ id: string; content: string; createdAt: Date }> {
+  static async addReply(discussionId: string, data: CreateReplyInput, userId: string): Promise<FormattedReply | null> {
+    // Check depth if parentReplyId is provided
+    if (data.parentReplyId) {
+      const parentReply = await DiscussionReplyModel.findById(data.parentReplyId);
+      if (!parentReply) throw new Error('Parent reply not found');
+
+      // We can check depth from the path if we fetch it, or just use a query
+      // For simplicity, let's fetch the reply tree and find parent depth
+      const allReplies = await DiscussionReplyModel.findByDiscussionId(discussionId);
+      const findDepth = (replies: any[], id: string, currentDepth: number): number | null => {
+        for (const r of replies) {
+          if (r.id === id) return currentDepth;
+          // Note: replies from findByDiscussionId are already flat but have parent_reply_id
+        }
+        return null;
+      };
+
+      const parentRecord = allReplies.find(r => r.id === data.parentReplyId);
+      if (parentRecord && parentRecord.depth >= 3) {
+        throw new Error('Maximum nesting depth reached');
+      }
+    }
+
     const reply = await DiscussionReplyModel.create(data, discussionId, userId);
-    
-    return {
-      id: reply.id,
-      content: reply.content,
-      createdAt: reply.created_at
+
+    // Fetch all replies to get the formatted structure
+    const allReplies = await DiscussionReplyModel.findByDiscussionId(discussionId, userId);
+    const discussion = await DiscussionModel.findById(discussionId);
+
+    const formattedReplies = this.formatRepliesForResponse(allReplies, null, discussion?.best_answer_id);
+
+    const flatFind = (replies: FormattedReply[]): FormattedReply | null => {
+      for (const r of replies) {
+        if (r.id === reply.id) return r;
+        const found = flatFind(r.replies);
+        if (found) return found;
+      }
+      return null;
     };
+
+    return flatFind(formattedReplies);
+  }
+
+  // Helper moved from getDiscussionDetails to be reusable
+  private static formatRepliesForResponse(
+    repliesArray: DiscussionReplyWithAuthor[],
+    parentId: string | null = null,
+    bestAnswerId?: string
+  ): any[] {
+    return repliesArray
+      .filter(reply => {
+        if (parentId === null) {
+          return reply.parent_reply_id === null;
+        } else {
+          return reply.parent_reply_id === parentId;
+        }
+      })
+      .map(reply => ({
+        id: reply.id,
+        content: reply.content,
+        upvoteCount: reply.upvote_count,
+        replyCount: reply.reply_count,
+        isEdited: reply.is_edited,
+        isBestAnswer: reply.id === bestAnswerId,
+        createdAt: reply.created_at,
+        author: {
+          id: reply.user_id,
+          fullName: reply.author_name,
+          role: reply.author_role,
+          profilePhotoUrl: reply.author_photo
+        },
+        hasUpvoted: reply.has_upvoted,
+        replies: this.formatRepliesForResponse(repliesArray, reply.id, bestAnswerId)
+      }));
   }
 
   // Toggle upvote on reply
@@ -254,10 +290,15 @@ export class DiscussionService {
     return result;
   }
 
+  // Toggle upvote on discussion
+  static async toggleDiscussionUpvote(discussionId: string, userId: string): Promise<{ upvoted: boolean; count: number }> {
+    return DiscussionModel.toggleUpvote(discussionId, userId);
+  }
+
   // Follow/unfollow discussion
   static async toggleFollow(discussionId: string, userId: string): Promise<{ following: boolean; followerCount: number }> {
     const isFollowing = await DiscussionFollowerModel.isFollowing(discussionId, userId);
-    
+
     if (isFollowing) {
       await DiscussionFollowerModel.unfollow(discussionId, userId);
     } else {
@@ -265,17 +306,27 @@ export class DiscussionService {
     }
 
     const newFollowerCount = await DiscussionFollowerModel.getFollowerCount(discussionId);
-    
+
     return {
       following: !isFollowing,
       followerCount: newFollowerCount
     };
   }
 
+  // Toggle save (bookmark) on discussion
+  static async toggleSave(discussionId: string, userId: string): Promise<{ saved: boolean; saveCount: number }> {
+    const result = await UserBookmarkModel.toggleBookmark(userId, 'DISCUSSION', discussionId);
+
+    return {
+      saved: result.bookmarked,
+      saveCount: result.saveCount
+    };
+  }
+
   // Mark reply as best answer
   static async markBestAnswer(discussionId: string, replyId: string, userId: string): Promise<boolean> {
     const discussion = await DiscussionModel.setBestAnswer(discussionId, replyId, userId);
-    
+
     if (!discussion) {
       throw new Error('Discussion not found or unauthorized');
     }
@@ -286,7 +337,7 @@ export class DiscussionService {
   // Mark discussion as resolved
   static async markResolved(discussionId: string, userId: string): Promise<boolean> {
     const discussion = await DiscussionModel.markAsResolved(discussionId, userId);
-    
+
     if (!discussion) {
       throw new Error('Discussion not found or unauthorized');
     }
@@ -318,7 +369,7 @@ export class DiscussionService {
     };
   }> {
     const { discussions, total } = await DiscussionModel.search(filters, userId);
-    
+
     const page = filters.page || 1;
     const limit = filters.limit || 20;
     const pages = Math.ceil(total / limit);
@@ -326,12 +377,14 @@ export class DiscussionService {
     const formattedDiscussions = discussions.map(discussion => ({
       id: discussion.id,
       title: discussion.title,
-      excerpt: discussion.description.length > 150 
-        ? discussion.description.substring(0, 150) + '...' 
+      excerpt: discussion.description.length > 150
+        ? discussion.description.substring(0, 150) + '...'
         : discussion.description,
       category: discussion.category,
+      tags: discussion.tags,
       replyCount: discussion.reply_count,
       upvoteCount: discussion.upvote_count,
+      viewCount: discussion.view_count,
       createdAt: discussion.created_at,
       author: {
         fullName: discussion.author_name,
