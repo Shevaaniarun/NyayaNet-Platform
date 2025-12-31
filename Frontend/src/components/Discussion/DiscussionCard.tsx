@@ -33,18 +33,6 @@ interface DiscussionCardProps {
 }
 
 export function DiscussionCard({ discussion, onClick, onFollow, onSave }: DiscussionCardProps) {
-  const getDiscussionTypeIcon = (type: string) => {
-    switch (type) {
-      case 'CASE_ANALYSIS':
-        return <Gavel className="w-3.5 h-3.5" />;
-      case 'LEGAL_QUERY':
-        return <MessageSquare className="w-3.5 h-3.5" />;
-      case 'OPINION_POLL':
-        return <Users className="w-3.5 h-3.5" />;
-      default:
-        return <MessageSquare className="w-3.5 h-3.5" />;
-    }
-  };
 
   const getTypeColor = (type: string) => {
     switch (type) {
@@ -139,8 +127,7 @@ export function DiscussionCard({ discussion, onClick, onFollow, onSave }: Discus
         {/* Content Section */}
         <div className="mb-4">
           <div className="flex items-center gap-3 mb-2">
-            <span className={`px-2.5 py-1 rounded-md border flex items-center gap-1.5 font-bold uppercase tracking-tight ${getTypeColor(discussion.discussionType)}`} style={{ fontSize: '0.65rem' }}>
-              {getDiscussionTypeIcon(discussion.discussionType)}
+            <span className="px-2.5 py-1 bg-ink-gray/5 text-ink-gray/60 border border-ink-gray/10 rounded-md font-bold uppercase tracking-tight" style={{ fontSize: '0.65rem' }}>
               <span>{discussion.discussionType.replace('_', ' ')}</span>
             </span>
 
@@ -173,7 +160,7 @@ export function DiscussionCard({ discussion, onClick, onFollow, onSave }: Discus
             {discussion.tags.slice(0, 3).map((tag, index) => (
               <span
                 key={index}
-                className="px-2 py-0.5 bg-ink-gray/5 rounded text-link-blue hover:text-link-blue/80 transition-colors font-medium"
+                className="px-2 py-0.5 bg-constitution-gold/10 text-constitution-gold border border-constitution-gold/30 rounded-full text-[10px] font-bold uppercase tracking-widest"
                 style={{ fontSize: '0.7rem' }}
               >
                 #{tag}

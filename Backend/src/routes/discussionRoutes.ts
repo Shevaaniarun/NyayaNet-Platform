@@ -10,13 +10,13 @@ const createDiscussionSchema = {
   title: {
     type: 'string',
     required: true,
-    minLength: 10,
+    minLength: 1,
     maxLength: 500
   },
   description: {
     type: 'string',
     required: true,
-    minLength: 20,
+    minLength: 1,
     maxLength: 5000
   },
   discussionType: {
@@ -29,7 +29,6 @@ const createDiscussionSchema = {
     required: true
   },
   tags: {
-    type: 'array',
     required: false,
     default: []
   },
@@ -44,7 +43,7 @@ const createReplySchema = {
   content: {
     type: 'string',
     required: true,
-    minLength: 5,
+    minLength: 1,
     maxLength: 5000
   },
   parentReplyId: {

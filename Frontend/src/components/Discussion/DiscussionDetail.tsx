@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Send, Bookmark, Share2, Flag, CheckCircle, Gavel, Users, MessageSquare, Eye, Calendar, ChevronLeft, User, TrendingUp, Heart } from 'lucide-react';
+import { Send, Bookmark, Share2, Flag, CheckCircle, Gavel, Users, MessageSquare, Eye, Calendar, ChevronLeft, User, TrendingUp, Heart, Lock } from 'lucide-react';
 import { ReplyCard, ReplyType } from './ReplyCard';
 
 interface Discussion {
@@ -120,8 +120,8 @@ export function DiscussionDetail({
               <button
                 onClick={onDiscussionUpvote}
                 className={`flex items-center gap-2 px-4 py-2 rounded-full font-bold text-xs uppercase tracking-wider transition-all shadow-lg ${discussion.isUpvoted
-                  ? 'bg-seal-red text-judge-ivory'
-                  : 'border border-seal-red/30 text-seal-red hover:bg-seal-red/10'
+                  ? 'bg-constitution-gold text-justice-black'
+                  : 'border border-constitution-gold/30 text-constitution-gold hover:bg-constitution-gold/10'
                   }`}
               >
                 <Heart className={`w-4 h-4 ${discussion.isUpvoted ? 'fill-current' : ''}`} />
@@ -172,7 +172,7 @@ export function DiscussionDetail({
               <span className="px-3 py-1 bg-constitution-gold/10 text-constitution-gold border border-constitution-gold/30 rounded-full text-[10px] font-bold uppercase tracking-widest">
                 {discussion.discussionType.replace('_', ' ')}
               </span>
-              <span className="px-3 py-1 bg-judge-ivory/5 text-judge-ivory/60 border border-judge-ivory/10 rounded-full text-[10px] font-bold uppercase tracking-widest">
+              <span className="px-3 py-1 bg-constitution-gold/10 text-constitution-gold border border-constitution-gold/30 rounded-full text-[10px] font-bold uppercase tracking-widest">
                 {discussion.category}
               </span>
               {discussion.isResolved && (
@@ -323,13 +323,6 @@ export function DiscussionDetail({
               <MessageSquare className="w-6 h-6 text-constitution-gold" />
               <span>{discussion.replies.length} Insights</span>
             </h3>
-            <div className="flex items-center gap-4 text-judge-ivory/40">
-              <span className="text-xs uppercase font-bold tracking-widest">Sort By:</span>
-              <select className="bg-transparent border-none text-constitution-gold font-bold text-xs uppercase tracking-widest focus:ring-0 cursor-pointer">
-                <option value="upvotes">Most Relevant</option>
-                <option value="newest">Newest First</option>
-              </select>
-            </div>
           </div>
 
           <div className="space-y-4">
@@ -356,61 +349,134 @@ export function DiscussionDetail({
           </div>
         </div>
 
-        {/* Global Reply Form */}
-        <div id="reply-form" className="aged-paper rounded-2xl p-6 md:p-8 border-2 border-constitution-gold shadow-2xl sticky bottom-8 transform transition-transform hover:-translate-y-1">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="p-2 bg-constitution-gold rounded-lg">
-              <Send className="w-5 h-5 text-justice-black" />
+        {/* Global Reply Form – FIXED & TOP LAYER */}
+        {discussion.isResolved ? (
+          <div className="aged-paper rounded-2xl p-8 border-2 border-constitution-gold/30 shadow-xl text-center mb-8 animate-in fade-in slide-in-from-bottom-4">
+            <div className="p-4 bg-constitution-gold/10 rounded-full w-20 h-20 mx-auto mb-6 flex items-center justify-center">
+              <Lock className="w-10 h-10 text-constitution-gold" />
             </div>
-            <h3 className="font-heading font-black text-ink-gray uppercase tracking-tighter text-xl">
-              Add your Insight
+            <h3 className="font-heading font-black text-ink-gray uppercase tracking-tighter text-2xl mb-2">
+              Discussion Resolved
             </h3>
+            <p className="font-body text-ink-gray/70 leading-relaxed max-w-md mx-auto">
+              This legal exploration has reached its conclusion. No further insights or replies are being accepted at this time.
+            </p>
           </div>
+        ) : (
+          <div
+            id="reply-form"
+            className="
+              aged-paper
+              rounded-2xl
+              p-6
+              md:p-8
+              border-2
+              border-constitution-gold
+              shadow-2xl
+              sticky
+              bottom-8
+              z-[9999]
+              relative
+              transform
+              transition-transform
+              hover:-translate-y-1
+            "
+          >
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2 bg-constitution-gold rounded-lg">
+                <Send className="w-5 h-5 text-justice-black" />
+              </div>
+              <h3 className="font-heading font-black text-ink-gray uppercase tracking-tighter text-xl">
+                Add your Insight
+              </h3>
+            </div>
 
-          <form onSubmit={handleSubmitReply}>
-            <div className="flex flex-col gap-4">
-              {replyingTo && (
-                <div className="flex items-center justify-between bg-constitution-gold/10 px-4 py-2 rounded-lg border border-constitution-gold/20 animate-in fade-in slide-in-from-left-2 transition-all">
-                  <div className="flex items-center gap-2 text-xs font-bold text-constitution-gold uppercase tracking-wider">
-                    <User className="w-4 h-4" />
-                    <span>Replying to {replyingTo.name}</span>
+            <form onSubmit={handleSubmitReply}>
+              <div className="flex flex-col gap-4">
+                {replyingTo && (
+                  <div className="flex items-center justify-between bg-constitution-gold/10 px-4 py-2 rounded-lg border border-constitution-gold/20 animate-in fade-in slide-in-from-left-2">
+                    <div className="flex items-center gap-2 text-xs font-bold text-constitution-gold uppercase tracking-wider">
+                      <User className="w-4 h-4" />
+                      <span>Replying to {replyingTo.name}</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setReplyingTo(null)}
+                      className="text-constitution-gold hover:text-seal-red transition-colors text-[10px] font-black uppercase tracking-widest"
+                    >
+                      Cancel
+                    </button>
                   </div>
+                )}
+
+                <div className="relative group">
+                  <textarea
+                    value={replyContent}
+                    onChange={(e) => setReplyContent(e.target.value)}
+                    placeholder={
+                      replyingTo
+                        ? 'Write your counter-argument or supporting analysis...'
+                        : 'Share your legal insights, analysis or questions...'
+                    }
+                    className="
+                    w-full
+                    parchment-bg
+                    border-2
+                    border-constitution-gold/20
+                    rounded-xl
+                    p-5
+                    text-ink-gray
+                    font-body
+                    focus:outline-none
+                    focus:border-constitution-gold
+                    resize-none
+                    shadow-inner
+                    text-lg
+                    leading-relaxed
+                    placeholder:opacity-30
+                  "
+                    rows={4}
+                  />
+                  <div className="absolute bottom-4 right-4 text-[10px] font-bold text-ink-gray/20 uppercase tracking-widest group-focus-within:text-constitution-gold/50 transition-colors">
+                    Markdown Supported
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-end">
                   <button
-                    type="button"
-                    onClick={() => setReplyingTo(null)}
-                    className="text-constitution-gold hover:text-seal-red transition-colors text-[10px] font-black uppercase tracking-widest"
+                    type="submit"
+                    disabled={!replyContent.trim()}
+                    className="
+                    group
+                    relative
+                    px-10
+                    py-4
+                    bg-constitution-gold
+                    text-justice-black
+                    rounded-xl
+                    font-black
+                    text-sm
+                    uppercase
+                    tracking-widest
+                    hover:bg-constitution-gold/90
+                    transition-all
+                    disabled:opacity-50
+                    disabled:grayscale
+                    flex
+                    items-center
+                    gap-3
+                    shadow-xl
+                    active:scale-95
+                  "
                   >
-                    Cancel
+                    <Send className="w-5 h-5 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+                    <span>Post Insight</span>
                   </button>
                 </div>
-              )}
-
-              <div className="relative group">
-                <textarea
-                  value={replyContent}
-                  onChange={(e) => setReplyContent(e.target.value)}
-                  placeholder={replyingTo ? "Write your counter-argument or supporting analysis..." : "Share your legal insights, analysis or questions..."}
-                  className="w-full parchment-bg border-2 border-constitution-gold/20 rounded-xl p-5 text-ink-gray font-body focus:outline-none focus:border-constitution-gold transition-all resize-none shadow-inner text-lg leading-relaxed placeholder:opacity-30"
-                  rows={4}
-                />
-                <div className="absolute bottom-4 right-4 text-[10px] font-bold text-ink-gray/20 uppercase tracking-widest group-focus-within:text-constitution-gold/50 transition-colors">
-                  Markdown Supported
-                </div>
               </div>
-
-              <div className="flex items-center justify-end">
-                <button
-                  type="submit"
-                  disabled={!replyContent.trim()}
-                  className="group relative px-10 py-4 bg-constitution-gold text-justice-black rounded-xl font-black text-sm uppercase tracking-widest hover:bg-constitution-gold/90 transition-all disabled:opacity-50 disabled:grayscale flex items-center gap-3 shadow-xl active:scale-95"
-                >
-                  <Send className="w-5 h-5 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
-                  <span>Post Insight</span>
-                </button>
-              </div>
-            </div>
-          </form>
-        </div>
+            </form>
+          </div>
+        )}
       </div>
     </div>
   );

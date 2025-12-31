@@ -371,27 +371,6 @@ export function DiscussionsPage() {
     return (
       <div className="min-h-screen bg-justice-black p-4 md:p-8">
         <div className="max-w-5xl mx-auto">
-          <button
-            onClick={handleBackToList}
-            className="flex items-center text-constitution-gold hover:text-constitution-gold/80 mb-6 transition-colors"
-          >
-            <svg
-              className="w-5 h-5 mr-2"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M10 19l-7-7m0 0l7-7m-7 7h18"
-              />
-            </svg>
-            Back to Discussions
-          </button>
-
           <DiscussionDetail
             discussion={selectedDiscussion}
             currentUserId={currentUserId}
@@ -508,9 +487,6 @@ export function DiscussionsPage() {
             <h1 className="font-heading font-bold text-judge-ivory text-2xl md:text-3xl mb-1 md:mb-2">
               Legal Debates
             </h1>
-            <p className="text-ink-gray/70 text-sm md:text-base">
-              Professional discussions, case analyses, and legal queries
-            </p>
           </div>
           <button
             onClick={() => setShowCreateForm(true)}

@@ -2,6 +2,18 @@ import pool from '../config/database';
 import { Discussion, CreateDiscussionInput } from '../types/discussionTypes';
 
 export class DiscussionModel {
+  // Helper to normalize tags (UPPERCASE and handling comma-separated string)
+  private static normalizeTags(tags: any): string[] {
+    if (!tags) return [];
+    if (typeof tags === 'string') {
+      return tags.split(',').map(tag => tag.toUpperCase().trim()).filter(Boolean);
+    }
+    if (Array.isArray(tags)) {
+      return tags.map(tag => tag.toUpperCase().trim()).filter(Boolean);
+    }
+    return [];
+  }
+
   // Create a new discussion
   static async create(discussionData: CreateDiscussionInput, userId: string): Promise<Discussion> {
     const query = `
@@ -11,7 +23,7 @@ export class DiscussionModel {
       RETURNING *;
     `;
 
-    const normalizedTags = (discussionData.tags || []).map(tag => tag.toLowerCase().trim());
+    const normalizedTags = this.normalizeTags(discussionData.tags);
 
     const values = [
       userId,
@@ -151,6 +163,10 @@ export class DiscussionModel {
         EXISTS(
           SELECT 1 FROM users u 
           WHERE u.id = d.user_id AND u.full_name ILIKE $${pIdx}
+        ) OR
+        EXISTS(
+          SELECT 1 FROM unnest(d.tags) AS t 
+          WHERE t ILIKE $${pIdx} OR ('#' || t) ILIKE $${pIdx}
         )
       )`);
       commonParams.push(`%${q}%`);
@@ -170,10 +186,10 @@ export class DiscussionModel {
     }
 
     if (tags && (Array.isArray(tags) ? tags.length > 0 : !!tags)) {
-      const tagsArray = (Array.isArray(tags) ? tags : [tags]).map(t => t.toLowerCase().trim());
+      const tagsArray = this.normalizeTags(tags);
       baseConditions.push(`EXISTS (
         SELECT 1 FROM unnest(d.tags) AS t 
-        WHERE LOWER(t) = ANY($${pIdx}::text[])
+        WHERE UPPER(t) = ANY($${pIdx}::text[])
       )`);
       commonParams.push(tagsArray);
       pIdx++;
@@ -253,7 +269,7 @@ export class DiscussionModel {
     let paramIndex = 1;
 
     if (updates.tags) {
-      updates.tags = updates.tags.map(tag => tag.toLowerCase().trim());
+      updates.tags = this.normalizeTags(updates.tags);
     }
 
     Object.entries(updates).forEach(([key, value]) => {
@@ -418,6 +434,10 @@ export class DiscussionModel {
         EXISTS(
           SELECT 1 FROM users u 
           WHERE u.id = d.user_id AND u.full_name ILIKE $${pIdx}
+        ) OR
+        EXISTS(
+          SELECT 1 FROM unnest(d.tags) AS t 
+          WHERE t ILIKE $${pIdx} OR ('#' || t) ILIKE $${pIdx}
         )
       )`);
       commonParams.push(`%${q}%`);
@@ -437,10 +457,10 @@ export class DiscussionModel {
     }
 
     if (tags && (Array.isArray(tags) ? tags.length > 0 : !!tags)) {
-      const tagsArray = (Array.isArray(tags) ? tags : [tags]).map(t => t.toLowerCase().trim());
+      const tagsArray = this.normalizeTags(tags);
       baseConditions.push(`EXISTS (
         SELECT 1 FROM unnest(d.tags) AS t 
-        WHERE LOWER(t) = ANY($${pIdx}::text[])
+        WHERE UPPER(t) = ANY($${pIdx}::text[])
       )`);
       commonParams.push(tagsArray);
       pIdx++;

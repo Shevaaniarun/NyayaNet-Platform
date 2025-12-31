@@ -209,6 +209,10 @@ export class DiscussionService {
 
   // Add reply to discussion
   static async addReply(discussionId: string, data: CreateReplyInput, userId: string): Promise<FormattedReply | null> {
+    const discussion = await DiscussionModel.findById(discussionId);
+    if (!discussion) throw new Error('Discussion not found');
+    if (discussion.is_resolved) throw new Error('Cannot add insights to a resolved discussion');
+
     // Check depth if parentReplyId is provided
     if (data.parentReplyId) {
       const parentReply = await DiscussionReplyModel.findById(data.parentReplyId);
@@ -235,7 +239,6 @@ export class DiscussionService {
 
     // Fetch all replies to get the formatted structure
     const allReplies = await DiscussionReplyModel.findByDiscussionId(discussionId, userId);
-    const discussion = await DiscussionModel.findById(discussionId);
 
     const formattedReplies = this.formatRepliesForResponse(allReplies, null, discussion?.best_answer_id);
 
