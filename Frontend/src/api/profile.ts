@@ -79,3 +79,36 @@ export async function searchUserContent(query: string, type?: string) {
     const data = await response.json();
     return data.data;
 }
+
+export async function uploadProfilePhoto(file: File): Promise<{ profilePhotoUrl: string }> {
+    const formData = new FormData();
+    formData.append('photo', file);
+
+    const token = getAuthToken();
+    const response = await fetch(`${API_BASE_URL}/upload/profile-photo`, {
+        method: 'POST',
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+        body: formData
+    });
+
+    if (!response.ok) throw new Error('Failed to upload profile photo');
+    const data = await response.json();
+    return data.data;
+}
+
+export async function uploadCoverPhoto(file: File): Promise<{ coverPhotoUrl: string }> {
+    const formData = new FormData();
+    formData.append('photo', file);
+
+    const token = getAuthToken();
+    const response = await fetch(`${API_BASE_URL}/upload/cover-photo`, {
+        method: 'POST',
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+        body: formData
+    });
+
+    if (!response.ok) throw new Error('Failed to upload cover photo');
+    const data = await response.json();
+    return data.data;
+}
+

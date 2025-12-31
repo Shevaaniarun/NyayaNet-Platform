@@ -5,7 +5,7 @@ import { registerUser, loginUser } from "../services/authServices";
 
 export const register = async (req: Request, res: Response) => {
   try {
-    const { email, password, fullName, role } = req.body;
+    const { email, password, fullName, role, barCouncilNumber, experienceYears } = req.body;
 
     if (!email || !password || !fullName || !role) {
       return res.status(400).json({
@@ -18,6 +18,8 @@ export const register = async (req: Request, res: Response) => {
       password,
       fullName,
       role,
+      barCouncilNumber,
+      experienceYears,
     });
 
     return res.status(201).json({

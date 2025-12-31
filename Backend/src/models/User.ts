@@ -10,6 +10,8 @@ export interface CreateUserInput {
   passwordHash: string;
   fullName: string;
   role: string;
+  barCouncilNumber?: string;
+  experienceYears?: number;
 }
 
 export interface User {
@@ -84,9 +86,11 @@ export const createUser = async (
       email,
       password_hash,
       full_name,
-      role
+      role,
+      bar_council_number,
+      experience_years
     )
-    VALUES ($1, $2, $3, $4)
+    VALUES ($1, $2, $3, $4, $5, $6)
     RETURNING
       id,
       email,
@@ -97,7 +101,7 @@ export const createUser = async (
       created_at,
       last_login_at
     `,
-    [data.email, data.passwordHash, data.fullName, data.role]
+    [data.email, data.passwordHash, data.fullName, data.role, data.barCouncilNumber || null, data.experienceYears ?? 0]
   );
 
   return result.rows[0];
@@ -122,7 +126,7 @@ export class UserModel {
     const query = `
       SELECT 
         u.id, u.email, u.full_name, u.role, u.designation, u.organization,
-        u.area_of_interest, u.experience_years, u.bio, u.location,
+        u.area_of_interest, u.bar_council_number, u.experience_years, u.bio, u.location,
         u.website_url, u.linkedin_url, u.profile_photo_url, u.cover_photo_url,
         u.follower_count, u.following_count, u.post_count, u.discussion_count,
         u.created_at,
@@ -153,6 +157,7 @@ export class UserModel {
       designation: row.designation,
       organization: row.organization,
       areaOfInterest: row.area_of_interest || [],
+      barCouncilNumber: row.bar_council_number,
       experienceYears: row.experience_years,
       bio: row.bio,
       location: row.location,
@@ -181,7 +186,9 @@ export class UserModel {
       bio: "bio",
       location: "location",
       websiteUrl: "website_url",
-      linkedinUrl: "linkedin_url"
+      linkedinUrl: "linkedin_url",
+      barCouncilNumber: "bar_council_number",
+      experienceYears: "experience_years"
     };
 
     const fields: string[] = [];

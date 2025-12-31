@@ -7,20 +7,27 @@ type RegisterPageProps = {
 
 const RegisterPage = ({ onSwitchToLogin }: RegisterPageProps) => {
 
-  // 🔹 ADDED: form state
+  // Form state
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("");
+  const [barCouncilNumber, setBarCouncilNumber] = useState("");
+  const [experienceYears, setExperienceYears] = useState<number | "">("");
 
-  // ✅ ADDED: UI → Backend enum mapping (ONLY NEW LOGIC)
+  // UI → Backend enum mapping
   const roleMap: Record<string, string> = {
     "Law Student": "LAW_STUDENT",
     "Lawyer": "LAWYER",
+    "Judge": "JUDGE",
+    "Advocate": "ADVOCATE",
     "Legal Professional": "LEGAL_PROFESSIONAL",
   };
 
-  // 🔹 MODIFIED: real submit logic
+  // Roles that require bar council number
+  const requiresBarCouncil = ["Lawyer", "Judge", "Advocate"].includes(role);
+  const isStudent = role === "Law Student";
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
@@ -29,14 +36,16 @@ const RegisterPage = ({ onSwitchToLogin }: RegisterPageProps) => {
         fullName,
         email,
         password,
-        role: roleMap[role], // ✅ FIXED HERE
+        role: roleMap[role],
+        barCouncilNumber: requiresBarCouncil ? barCouncilNumber : undefined,
+        experienceYears: isStudent ? 0 : (experienceYears === "" ? undefined : experienceYears),
       });
 
       // Save token and user info
       localStorage.setItem("token", result.token);
       localStorage.setItem("user", JSON.stringify(result.user));
 
-      // ✅ ONLY CHANGE: redirect to dashboard after signup
+      // Redirect to dashboard after signup
       window.location.href = "/dashboard";
 
     } catch (error: any) {
@@ -211,9 +220,49 @@ const RegisterPage = ({ onSwitchToLogin }: RegisterPageProps) => {
                   <option value="" disabled>Select your role</option>
                   <option value="Law Student">Law Student</option>
                   <option value="Lawyer">Lawyer</option>
+                  <option value="Judge">Judge</option>
+                  <option value="Advocate">Advocate</option>
                   <option value="Legal Professional">Legal Professional</option>
                 </select>
               </div>
+
+              {/* Bar Council Number - Only for Lawyer, Judge, Advocate */}
+              {requiresBarCouncil && (
+                <div className="space-y-2">
+                  <label htmlFor="barCouncilNumber" className="text-sm font-medium text-foreground">
+                    Bar Council Number
+                  </label>
+                  <input
+                    id="barCouncilNumber"
+                    name="barCouncilNumber"
+                    type="text"
+                    placeholder="Enter your Bar Council Registration Number"
+                    className="w-full px-4 py-3 rounded-lg border border-input bg-background/50 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-300 hover:border-primary/30"
+                    value={barCouncilNumber}
+                    onChange={(e) => setBarCouncilNumber(e.target.value)}
+                    required
+                  />
+                </div>
+              )}
+
+              {/* Experience Years - Not shown for Law Student */}
+              {!isStudent && role && (
+                <div className="space-y-2">
+                  <label htmlFor="experienceYears" className="text-sm font-medium text-foreground">
+                    Years of Experience
+                  </label>
+                  <input
+                    id="experienceYears"
+                    name="experienceYears"
+                    type="number"
+                    min="0"
+                    placeholder="Enter your years of experience"
+                    className="w-full px-4 py-3 rounded-lg border border-input bg-background/50 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-300 hover:border-primary/30"
+                    value={experienceYears}
+                    onChange={(e) => setExperienceYears(e.target.value === "" ? "" : parseInt(e.target.value))}
+                  />
+                </div>
+              )}
 
               {/* Terms */}
               <div className="text-xs text-muted-foreground">

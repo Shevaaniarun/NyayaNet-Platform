@@ -37,6 +37,9 @@ export function CertificationCard({ certification, isOwnProfile, onDelete }: Cer
                         <div className="flex items-center gap-1"><Calendar className="w-3 h-3" /><span>Issued {formatDate(certification.issueDate)}</span></div>
                         {certification.expiryDate && <span className={isExpired ? 'text-red-400' : ''}>{isExpired ? 'Expired' : 'Expires'} {formatDate(certification.expiryDate)}</span>}
                     </div>
+                    {certification.description && (
+                        <p className="mt-2 text-sm text-ink-gray/70">{certification.description}</p>
+                    )}
                     {certification.tags && certification.tags.length > 0 && (
                         <div className="flex flex-wrap gap-1 mt-2">
                             {certification.tags.map((tag, i) => <span key={i} className="px-2 py-0.5 bg-constitution-gold/10 text-constitution-gold rounded text-xs">{tag}</span>)}

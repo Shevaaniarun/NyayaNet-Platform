@@ -25,7 +25,7 @@ export function ProfilePage({ userId, currentUserId, onBack, onNavigateToFeed }:
     const [showEditModal, setShowEditModal] = useState(false);
     const [showAddCertModal, setShowAddCertModal] = useState(false);
     const [editForm, setEditForm] = useState<any>({});
-    const [newCert, setNewCert] = useState({ title: '', issuingOrganization: '', issueDate: '', certificateUrl: '', fileType: 'PDF' });
+    const [newCert, setNewCert] = useState({ title: '', issuingOrganization: '', issueDate: '', expiryDate: '', certificateUrl: '', fileType: 'PDF', description: '', tags: '' });
 
     const isOwnProfile = !userId || userId === currentUserId;
     const targetUserId = userId || currentUserId;
@@ -136,6 +136,26 @@ export function ProfilePage({ userId, currentUserId, onBack, onNavigateToFeed }:
         alert(`Message feature coming soon! Would message ${profile.fullName}`);
     };
 
+    const handlePhotoUpdate = async (type: 'profile' | 'cover', file: File, previewUrl: string) => {
+        try {
+            if (type === 'profile') {
+                const result = await profileApi.uploadProfilePhoto(file);
+                setProfile({ ...profile, profilePhotoUrl: result.profilePhotoUrl });
+            } else {
+                const result = await profileApi.uploadCoverPhoto(file);
+                setProfile({ ...profile, coverPhotoUrl: result.coverPhotoUrl });
+            }
+        } catch (err) {
+            console.error('Photo upload failed:', err);
+            // Use local preview as fallback
+            if (type === 'profile') {
+                setProfile({ ...profile, profilePhotoUrl: previewUrl });
+            } else {
+                setProfile({ ...profile, coverPhotoUrl: previewUrl });
+            }
+        }
+    };
+
     const handleSearch = async () => {
         if (!searchQuery.trim()) return;
         try {
@@ -167,14 +187,18 @@ export function ProfilePage({ userId, currentUserId, onBack, onNavigateToFeed }:
             alert('Please fill in required fields');
             return;
         }
+        const certData = {
+            ...newCert,
+            tags: newCert.tags ? newCert.tags.split(',').map(t => t.trim()).filter(t => t) : []
+        };
         try {
-            const added = await profileApi.addCertification(newCert);
+            const added = await profileApi.addCertification(certData);
             setCertifications([...certifications, added]);
         } catch (err) {
             // Demo mode - add locally
-            setCertifications([...certifications, { ...newCert, id: `cert-${Date.now()}`, tags: [] }]);
+            setCertifications([...certifications, { ...certData, id: `cert-${Date.now()}` }]);
         }
-        setNewCert({ title: '', issuingOrganization: '', issueDate: '', certificateUrl: '', fileType: 'PDF' });
+        setNewCert({ title: '', issuingOrganization: '', issueDate: '', expiryDate: '', certificateUrl: '', fileType: 'PDF', description: '', tags: '' });
         setShowAddCertModal(false);
     };
 
@@ -216,6 +240,7 @@ export function ProfilePage({ userId, currentUserId, onBack, onNavigateToFeed }:
                     onEditProfile={handleEditProfile}
                     onFollow={handleFollow}
                     onMessage={handleMessage}
+                    onPhotoUpdate={handlePhotoUpdate}
                 />
 
                 <div className="mt-6">
@@ -313,6 +338,21 @@ export function ProfilePage({ userId, currentUserId, onBack, onNavigateToFeed }:
                                 <input type="url" value={editForm.linkedinUrl || ''} onChange={(e) => setEditForm({ ...editForm, linkedinUrl: e.target.value })}
                                     className="w-full px-3 py-2 bg-white border border-constitution-gold/20 rounded-lg text-ink-gray focus:outline-none focus:border-constitution-gold" />
                             </div>
+                            {/* Bar Council Number - Only for LAWYER, JUDGE, ADVOCATE */}
+                            {['LAWYER', 'JUDGE', 'ADVOCATE'].includes(profile?.role) && (
+                                <div>
+                                    <label className="block text-sm text-ink-gray/70 mb-1">Bar Council Number</label>
+                                    <input type="text" value={editForm.barCouncilNumber || ''} onChange={(e) => setEditForm({ ...editForm, barCouncilNumber: e.target.value })}
+                                        placeholder="Enter your Bar Council Registration Number"
+                                        className="w-full px-3 py-2 bg-white border border-constitution-gold/20 rounded-lg text-ink-gray focus:outline-none focus:border-constitution-gold" />
+                                </div>
+                            )}
+                            {/* Experience Years */}
+                            <div>
+                                <label className="block text-sm text-ink-gray/70 mb-1">Years of Experience</label>
+                                <input type="number" min="0" value={editForm.experienceYears || 0} onChange={(e) => setEditForm({ ...editForm, experienceYears: parseInt(e.target.value) || 0 })}
+                                    className="w-full px-3 py-2 bg-white border border-constitution-gold/20 rounded-lg text-ink-gray focus:outline-none focus:border-constitution-gold" />
+                            </div>
                         </div>
                         <div className="flex justify-end gap-3 p-4 border-t border-constitution-gold/20">
                             <button onClick={() => setShowEditModal(false)} className="px-4 py-2 border border-constitution-gold/30 text-constitution-gold rounded-lg hover:bg-constitution-gold/5">
@@ -347,14 +387,31 @@ export function ProfilePage({ userId, currentUserId, onBack, onNavigateToFeed }:
                                 <input type="text" value={newCert.issuingOrganization} onChange={(e) => setNewCert({ ...newCert, issuingOrganization: e.target.value })} placeholder="e.g., Supreme Court of India"
                                     className="w-full px-3 py-2 bg-white border border-constitution-gold/20 rounded-lg text-ink-gray focus:outline-none focus:border-constitution-gold" />
                             </div>
-                            <div>
-                                <label className="block text-sm text-ink-gray/70 mb-1">Issue Date *</label>
-                                <input type="date" value={newCert.issueDate} onChange={(e) => setNewCert({ ...newCert, issueDate: e.target.value })}
-                                    className="w-full px-3 py-2 bg-white border border-constitution-gold/20 rounded-lg text-ink-gray focus:outline-none focus:border-constitution-gold" />
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm text-ink-gray/70 mb-1">Issue Date *</label>
+                                    <input type="date" value={newCert.issueDate} onChange={(e) => setNewCert({ ...newCert, issueDate: e.target.value })}
+                                        className="w-full px-3 py-2 bg-white border border-constitution-gold/20 rounded-lg text-ink-gray focus:outline-none focus:border-constitution-gold" />
+                                </div>
+                                <div>
+                                    <label className="block text-sm text-ink-gray/70 mb-1">Expiry Date</label>
+                                    <input type="date" value={newCert.expiryDate} onChange={(e) => setNewCert({ ...newCert, expiryDate: e.target.value })}
+                                        className="w-full px-3 py-2 bg-white border border-constitution-gold/20 rounded-lg text-ink-gray focus:outline-none focus:border-constitution-gold" />
+                                </div>
                             </div>
                             <div>
                                 <label className="block text-sm text-ink-gray/70 mb-1">Certificate URL</label>
                                 <input type="url" value={newCert.certificateUrl} onChange={(e) => setNewCert({ ...newCert, certificateUrl: e.target.value })} placeholder="https://..."
+                                    className="w-full px-3 py-2 bg-white border border-constitution-gold/20 rounded-lg text-ink-gray focus:outline-none focus:border-constitution-gold" />
+                            </div>
+                            <div>
+                                <label className="block text-sm text-ink-gray/70 mb-1">Description</label>
+                                <textarea value={newCert.description} onChange={(e) => setNewCert({ ...newCert, description: e.target.value })} placeholder="Brief description of the certification" rows={2}
+                                    className="w-full px-3 py-2 bg-white border border-constitution-gold/20 rounded-lg text-ink-gray focus:outline-none focus:border-constitution-gold resize-none" />
+                            </div>
+                            <div>
+                                <label className="block text-sm text-ink-gray/70 mb-1">Tags (comma-separated)</label>
+                                <input type="text" value={newCert.tags} onChange={(e) => setNewCert({ ...newCert, tags: e.target.value })} placeholder="e.g., Constitutional Law, Litigation, Supreme Court"
                                     className="w-full px-3 py-2 bg-white border border-constitution-gold/20 rounded-lg text-ink-gray focus:outline-none focus:border-constitution-gold" />
                             </div>
                         </div>
