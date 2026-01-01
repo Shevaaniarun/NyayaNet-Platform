@@ -2,14 +2,13 @@
   "name": "nyayanet-backend",
   "version": "1.0.0",
   "description": "NyayaNet - Legal Professional Platform Backend",
-  "main": "src/index.ts",
+  "main": "src/index.ts",  
   "scripts": {
+    "db:setup": "node setup-db.js",
+    "db:seed": "node seed-data.js",
+    "db:reset": "npm run db:setup -- --force && npm run db:seed -- --force",
     "dev": "tsx watch src/server.ts",
-    "start": "node dist/server.js",
-    "build": "tsup src/server.ts --out-dir dist",
-    "db:setup": "node scripts/setup-db.js",
-    "db:seed": "node scripts/seed-data.js",
-    "db:reset": "npm run db:setup && npm run db:seed"
+    "build": "tsc"
   },
   "dependencies": {
     "bcrypt": "^5.1.1",
