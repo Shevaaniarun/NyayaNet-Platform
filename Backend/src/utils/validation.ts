@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 
 interface ValidationRule {
-  type: string;
+  type?: string;
   required?: boolean;
   minLength?: number;
   maxLength?: number;
