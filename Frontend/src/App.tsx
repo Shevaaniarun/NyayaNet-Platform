@@ -73,13 +73,13 @@ export default function App() {
         const token = localStorage.getItem("token");
         const isAuth = !!token;
         setIsAuthenticated(isAuth);
-
+        
         // If authenticated, set the dashboard view and load posts
         if (isAuth) {
             setCurrentView('dashboard');
             refreshPosts();
         }
-
+        
         // Show loader for 2 seconds (shorter time)
         const timer = setTimeout(() => {
             setIsLoading(false);
@@ -119,7 +119,7 @@ export default function App() {
 
     const refreshPosts = async () => {
         if (!isAuthenticated) return;
-
+        
         try {
             setIsLoadingPosts(true);
             const postsData = await getFeed(1, 10);
@@ -163,7 +163,7 @@ export default function App() {
         };
         const newView = viewMap[path] || 'dashboard';
         setCurrentView(newView);
-
+        
         // Refresh posts when navigating to feed or dashboard
         if (newView === 'feed' || newView === 'dashboard') {
             refreshPosts();
@@ -180,7 +180,7 @@ export default function App() {
         return authView === "register" ? (
             <RegisterPage
                 onSwitchToLogin={() => setAuthView("login")}
-            // Note: RegisterPage uses window.location.href instead of callback
+                // Note: RegisterPage uses window.location.href instead of callback
             />
         ) : (
             <LoginPage
@@ -194,8 +194,8 @@ export default function App() {
     return (
         <div className="flex min-h-screen bg-justice-black">
             <MobileNotice />
-            <Sidebar
-                currentPath={currentView === 'dashboard' ? '/' : `/${currentView}`}
+            <Sidebar 
+                currentPath={currentView === 'dashboard' ? '/' : `/${currentView}`} 
                 onNavigate={handleNavigation}
             />
 
@@ -211,14 +211,14 @@ export default function App() {
                                         India's premier legal professional networking and AI-powered assistance platform.
                                     </p>
                                     <div className="flex space-x-4">
-                                        <button
-                                            onClick={() => setCurrentView('ai')}
+                                        <button 
+                                            onClick={() => setCurrentView('ai')} 
                                             className="px-8 py-4 bg-constitution-gold text-justice-black rounded-lg font-bold hover:bg-constitution-gold/90 transition-colors flex items-center space-x-2"
                                         >
                                             <Sparkles className="w-5 h-5" /><span>Try Legal AI</span>
                                         </button>
-                                        <button
-                                            onClick={() => setCurrentView('profile')}
+                                        <button 
+                                            onClick={() => setCurrentView('profile')} 
                                             className="px-8 py-4 border-2 border-constitution-gold text-constitution-gold rounded-lg font-bold hover:bg-constitution-gold/5 transition-colors flex items-center space-x-2"
                                         >
                                             <Sparkles className="w-5 h-5" /><span>View Profile</span>

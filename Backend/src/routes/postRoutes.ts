@@ -4,13 +4,12 @@ import { authenticate } from '../middleware/auth';
 
 const router = Router();
 
-// Public routes
-router.get('/feed', PostController.getFeed);
-router.get('/:postId', PostController.getPost);
+// Protected Routes
+router.use(authenticate);
 
-// Protected routes (require authentication)
-router.post('/', authenticate, PostController.createPost);
-router.put('/:postId', authenticate, PostController.updatePost);
-router.delete('/:postId', authenticate, PostController.deletePost);
+router.post('/', PostController.createPost);
+router.get('/feed', PostController.getFeed);
+router.get('/:id', PostController.getPostById);
+router.delete('/:id', PostController.deletePost);
 
 export default router;
