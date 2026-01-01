@@ -7,10 +7,14 @@ const router = Router();
 // Public routes
 router.get('/feed', PostController.getFeed);
 router.get('/:postId', PostController.getPost);
+router.get('/:postId/comments', PostController.getComments);
 
 // Protected routes (require authentication)
 router.post('/', authenticate, PostController.createPost);
 router.put('/:postId', authenticate, PostController.updatePost);
 router.delete('/:postId', authenticate, PostController.deletePost);
+router.post('/:postId/like', authenticate, PostController.likePost);
+router.post('/:postId/save', authenticate, PostController.savePost);
+router.post('/:postId/comments', authenticate, PostController.createComment);
 
 export default router;
