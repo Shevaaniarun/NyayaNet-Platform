@@ -11,8 +11,7 @@ import { DiscussionsPage } from './pages/DiscussionPage';
 import RegisterPage from "./pages/RegisterPage";
 import LoginPage from "./pages/LoginPage";
 import { ProfilePage } from './pages/ProfilePage';
-import NotesPage from './pages/NotesPage'; // ✅ ADDED
-import { getFeed, Post as ApiPost } from './api/posts';
+import { getFeed, Post as ApiPost } from './api/postsAPI';
 import { toast } from 'react-toastify';
 
 type ViewType =
