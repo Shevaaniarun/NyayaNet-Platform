@@ -8,7 +8,7 @@ import {
   discussionService,
   Discussion as ApiDiscussion,
   DiscussionFilters as ApiDiscussionFilters
-} from '../api/discussionService';
+} from '../api/discussionAPI';
 import { toast } from 'react-toastify';
 
 // Types for the component
