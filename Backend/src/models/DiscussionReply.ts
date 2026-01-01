@@ -5,33 +5,33 @@ export class DiscussionReplyModel {
   // Create a new reply
   static async create(replyData: CreateReplyInput, discussionId: string, userId: string): Promise<DiscussionReply> {
     const client = await pool.connect();
-    
+
     try {
       await client.query('BEGIN');
-      
+
       const query = `
         INSERT INTO discussion_replies (
           discussion_id, user_id, content, parent_reply_id
         ) VALUES ($1, $2, $3, $4)
         RETURNING *;
       `;
-      
+
       const values = [
         discussionId,
         userId,
         replyData.content,
         replyData.parentReplyId || null
       ];
-      
+
       const result = await client.query(query, values);
       const reply = result.rows[0];
-      
+
       // Update discussion reply count and last activity
       await client.query(
         'UPDATE discussions SET reply_count = reply_count + 1, last_activity_at = CURRENT_TIMESTAMP WHERE id = $1',
         [discussionId]
       );
-      
+
       // If it's a reply to another reply, increment reply count
       if (replyData.parentReplyId) {
         await client.query(
@@ -39,7 +39,7 @@ export class DiscussionReplyModel {
           [replyData.parentReplyId]
         );
       }
-      
+
       await client.query('COMMIT');
       return reply;
     } catch (error) {
@@ -62,7 +62,9 @@ export class DiscussionReplyModel {
           u.profile_photo_url as author_photo,
           1 as depth,
           ARRAY[dr.created_at] as path,
-          ${userId ? `EXISTS(SELECT 1 FROM discussion_upvotes du WHERE du.reply_id = dr.id AND du.user_id = $2) as has_upvoted` : 'false as has_upvoted'}
+          CASE WHEN $2::uuid IS NULL THEN false 
+               ELSE EXISTS(SELECT 1 FROM discussion_upvotes du WHERE du.reply_id = dr.id AND du.user_id = $2) 
+          END as has_upvoted
         FROM discussion_replies dr
         LEFT JOIN users u ON dr.user_id = u.id
         WHERE dr.discussion_id = $1 AND dr.parent_reply_id IS NULL AND dr.is_deleted = false
@@ -77,16 +79,18 @@ export class DiscussionReplyModel {
           u.profile_photo_url as author_photo,
           rt.depth + 1 as depth,
           rt.path || dr.created_at as path,
-          ${userId ? `EXISTS(SELECT 1 FROM discussion_upvotes du WHERE du.reply_id = dr.id AND du.user_id = $2) as has_upvoted` : 'false as has_upvoted'}
+          CASE WHEN $2::uuid IS NULL THEN false 
+               ELSE EXISTS(SELECT 1 FROM discussion_upvotes du WHERE du.reply_id = dr.id AND du.user_id = $2) 
+          END as has_upvoted
         FROM discussion_replies dr
         JOIN reply_tree rt ON dr.parent_reply_id = rt.id
         LEFT JOIN users u ON dr.user_id = u.id
-        WHERE dr.is_deleted = false
+        WHERE dr.is_deleted = false AND rt.depth < 10 -- Safety limit, though we enforce 3 in service
       )
       SELECT * FROM reply_tree
       ORDER BY path;
     `;
-    
+
     const result = await pool.query(query, [discussionId, userId || null]);
     return result.rows;
   }
@@ -108,7 +112,7 @@ export class DiscussionReplyModel {
       WHERE id = $2 AND user_id = $3
       RETURNING *;
     `;
-    
+
     const result = await pool.query(query, [content, id, userId]);
     return result.rows[0] || null;
   }

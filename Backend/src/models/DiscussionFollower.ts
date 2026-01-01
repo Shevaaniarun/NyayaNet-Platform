@@ -3,24 +3,32 @@ import pool from '../config/database';
 export class DiscussionFollowerModel {
   // Follow a discussion
   static async follow(discussionId: string, userId: string): Promise<boolean> {
+    const client = await pool.connect();
     try {
-      await pool.query(
+      await client.query('BEGIN');
+      const insertResult = await client.query(
         `INSERT INTO discussion_followers (discussion_id, user_id) 
          VALUES ($1, $2) 
          ON CONFLICT (discussion_id, user_id) DO NOTHING`,
         [discussionId, userId]
       );
-      
-      // Update follower count
-      await pool.query(
-        'UPDATE discussions SET follower_count = follower_count + 1 WHERE id = $1',
-        [discussionId]
-      );
-      
+
+      if (insertResult.rowCount && insertResult.rowCount > 0) {
+        // Update follower count only if inserted
+        await client.query(
+          'UPDATE discussions SET follower_count = follower_count + 1 WHERE id = $1',
+          [discussionId]
+        );
+      }
+
+      await client.query('COMMIT');
       return true;
     } catch (error) {
+      await client.query('ROLLBACK');
       console.error('Error following discussion:', error);
       return false;
+    } finally {
+      client.release();
     }
   }
 
@@ -30,7 +38,7 @@ export class DiscussionFollowerModel {
       'DELETE FROM discussion_followers WHERE discussion_id = $1 AND user_id = $2',
       [discussionId, userId]
     );
-    
+
     if (result.rowCount && result.rowCount > 0) {
       // Update follower count
       await pool.query(
@@ -39,7 +47,7 @@ export class DiscussionFollowerModel {
       );
       return true;
     }
-    
+
     return false;
   }
 
