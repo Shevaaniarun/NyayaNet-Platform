@@ -25,7 +25,7 @@ export function ProfilePage({ userId, currentUserId, onBack, onNavigateToFeed }:
     const [showEditModal, setShowEditModal] = useState(false);
     const [showAddCertModal, setShowAddCertModal] = useState(false);
     const [editForm, setEditForm] = useState<any>({});
-    const [newCert, setNewCert] = useState({ title: '', issuingOrganization: '', issueDate: '', expiryDate: '', certificateUrl: '', fileType: 'PDF', description: '', tags: '' });
+    const [newCert, setNewCert] = useState({ title: '', issuingOrganization: '', credentialId: '', issueDate: '', expiryDate: '', certificateUrl: '', fileType: 'PDF', description: '', tags: '' });
     const [certificateFile, setCertificateFile] = useState<File | null>(null);
     const [uploadingCert, setUploadingCert] = useState(false);
 
@@ -227,7 +227,7 @@ export function ProfilePage({ userId, currentUserId, onBack, onNavigateToFeed }:
             // Demo mode - add locally
             setCertifications([...certifications, { ...certData, id: `cert-${Date.now()}` }]);
         }
-        setNewCert({ title: '', issuingOrganization: '', issueDate: '', expiryDate: '', certificateUrl: '', fileType: 'PDF', description: '', tags: '' });
+        setNewCert({ title: '', issuingOrganization: '', credentialId: '', issueDate: '', expiryDate: '', certificateUrl: '', fileType: 'PDF', description: '', tags: '' });
         setCertificateFile(null);
         setShowAddCertModal(false);
     };
@@ -370,8 +370,15 @@ export function ProfilePage({ userId, currentUserId, onBack, onNavigateToFeed }:
                             </div>
                             <div>
                                 <label className="block text-sm text-ink-gray/70 mb-1">Area of Interest</label>
-                                <input type="text" value={(editForm.areaOfInterest || []).join(', ')}
-                                    onChange={(e) => setEditForm({ ...editForm, areaOfInterest: e.target.value.split(',').map((s: string) => s.trim()).filter((s: string) => s) })}
+                                <input type="text" value={editForm._areaOfInterestString ?? (editForm.areaOfInterest || []).join(', ')}
+                                    onChange={(e) => {
+                                        const val = e.target.value;
+                                        setEditForm({
+                                            ...editForm,
+                                            _areaOfInterestString: val,
+                                            areaOfInterest: val.split(',').map((s: string) => s.trim()).filter((s: string) => s)
+                                        });
+                                    }}
                                     placeholder="e.g., Constitutional Law, Criminal Law, Corporate Law"
                                     className="w-full px-3 py-2 bg-white border border-constitution-gold/20 rounded-lg text-ink-gray focus:outline-none focus:border-constitution-gold" />
                                 <p className="text-xs text-ink-gray/50 mt-1">Separate multiple interests with commas</p>
@@ -426,6 +433,11 @@ export function ProfilePage({ userId, currentUserId, onBack, onNavigateToFeed }:
                             <div>
                                 <label className="block text-sm text-ink-gray/70 mb-1">Issuing Organization *</label>
                                 <input type="text" value={newCert.issuingOrganization} onChange={(e) => setNewCert({ ...newCert, issuingOrganization: e.target.value })} placeholder="e.g., Supreme Court of India"
+                                    className="w-full px-3 py-2 bg-white border border-constitution-gold/20 rounded-lg text-ink-gray focus:outline-none focus:border-constitution-gold" />
+                            </div>
+                            <div>
+                                <label className="block text-sm text-ink-gray/70 mb-1">Credential ID</label>
+                                <input type="text" value={newCert.credentialId} onChange={(e) => setNewCert({ ...newCert, credentialId: e.target.value })} placeholder="e.g., AOR-2024-123"
                                     className="w-full px-3 py-2 bg-white border border-constitution-gold/20 rounded-lg text-ink-gray focus:outline-none focus:border-constitution-gold" />
                             </div>
                             <div className="grid grid-cols-2 gap-4">

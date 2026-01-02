@@ -25,6 +25,22 @@ router.get("/:userId/following", authenticate, (req, res) => {
     res.json({ success: true, data: { following: [] } });
 });
 
+// Certifications
+router.get("/:userId/certifications", ProfileController.getCertifications);
+router.post("/certifications", authenticate, ProfileController.addCertification);
+router.delete("/certifications/:certificationId", authenticate, ProfileController.deleteCertification);
+
+// Bookmarks
+router.get("/bookmarks", authenticate, ProfileController.getBookmarks);
+
+// Certifications
+router.get("/:userId/certifications", ProfileController.getCertifications);
+router.post("/certifications", authenticate, ProfileController.addCertification);
+router.delete("/certifications/:certificationId", authenticate, ProfileController.deleteCertification);
+
+// Bookmarks
+router.get("/bookmarks", authenticate, ProfileController.getBookmarks);
+
 // Content
 router.get("/:userId/posts", authenticate, ProfileController.getUserPosts);
 router.get("/:userId/discussions", authenticate, ProfileController.getUserDiscussions);

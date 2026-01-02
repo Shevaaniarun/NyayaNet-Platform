@@ -27,7 +27,7 @@ export async function updateProfile(updates: any) {
 }
 
 export async function getCertifications(userId: string) {
-    const response = await fetch(`${API_BASE_URL}/profile/${userId}/certifications`, { headers: createHeaders() });
+    const response = await fetch(`${API_BASE_URL}/profile/${userId}/certifications`, { headers: createHeaders(true) });
     if (!response.ok) throw new Error('Failed to fetch certifications');
     const data = await response.json();
     return data.data.certifications;
@@ -47,7 +47,7 @@ export async function deleteCertification(certificationId: string) {
 
 export async function getUserPosts(userId: string, page = 1, limit = 20, sort = 'newest') {
     const params = new URLSearchParams({ page: page.toString(), limit: limit.toString(), sort });
-    const response = await fetch(`${API_BASE_URL}/profile/${userId}/posts?${params}`, { headers: createHeaders() });
+    const response = await fetch(`${API_BASE_URL}/profile/${userId}/posts?${params}`, { headers: createHeaders(true) });
     if (!response.ok) throw new Error('Failed to fetch user posts');
     const data = await response.json();
     return data.data;
@@ -55,7 +55,7 @@ export async function getUserPosts(userId: string, page = 1, limit = 20, sort = 
 
 export async function getUserDiscussions(userId: string, page = 1, limit = 20) {
     const params = new URLSearchParams({ page: page.toString(), limit: limit.toString() });
-    const response = await fetch(`${API_BASE_URL}/profile/${userId}/discussions?${params}`, { headers: createHeaders() });
+    const response = await fetch(`${API_BASE_URL}/profile/${userId}/discussions?${params}`, { headers: createHeaders(true) });
     if (!response.ok) throw new Error('Failed to fetch discussions');
     const data = await response.json();
     return data.data;
