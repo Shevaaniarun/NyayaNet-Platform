@@ -23,6 +23,7 @@ import { toast } from 'react-toastify';
 export interface Post {
   id: string;
   userId: string;
+  title?: string;
   author: {
     fullName: string;
     profilePhotoUrl: string;
@@ -306,6 +307,13 @@ export function PostCard({ post, currentUserId, onDelete }: PostCardProps) {
               {getPostTypeLabel(post.postType)}
             </span>
           </div>
+
+          {/* Title (if present) */}
+          {post.title && (
+            <h2 className="text-2xl font-heading font-bold text-ink-gray mb-4">
+              {post.title}
+            </h2>
+          )}
 
           {/* Content */}
           <div className="constitution-texture p-6 rounded">
