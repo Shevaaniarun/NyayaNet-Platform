@@ -36,6 +36,8 @@ export interface UpdateProfileInput {
     location?: string;
     websiteUrl?: string;
     linkedinUrl?: string;
+    barCouncilNumber?: string;
+    experienceYears?: number;
 }
 
 export interface ProfileResponse {
@@ -46,6 +48,7 @@ export interface ProfileResponse {
     designation?: string;
     organization?: string;
     areaOfInterest: string[];
+    barCouncilNumber?: string;
     experienceYears: number;
     bio?: string;
     profilePhotoUrl?: string;
