@@ -117,6 +117,12 @@ export function ProfilePage({ userId, currentUserId, onBack, onNavigateToFeed }:
     };
 
     const handleSaveProfile = async () => {
+        // Validate required fields
+        if (['LAWYER', 'JUDGE', 'ADVOCATE'].includes(profile?.role) && !editForm.barCouncilNumber?.trim()) {
+            alert('Bar Council Number is required for your role');
+            return;
+        }
+
         try {
             await profileApi.updateProfile(editForm);
             setProfile({ ...profile, ...editForm });
@@ -362,21 +368,32 @@ export function ProfilePage({ userId, currentUserId, onBack, onNavigateToFeed }:
                                 <input type="url" value={editForm.linkedinUrl || ''} onChange={(e) => setEditForm({ ...editForm, linkedinUrl: e.target.value })}
                                     className="w-full px-3 py-2 bg-white border border-constitution-gold/20 rounded-lg text-ink-gray focus:outline-none focus:border-constitution-gold" />
                             </div>
-                            {/* Bar Council Number - Only for LAWYER, JUDGE, ADVOCATE */}
+                            <div>
+                                <label className="block text-sm text-ink-gray/70 mb-1">Area of Interest</label>
+                                <input type="text" value={(editForm.areaOfInterest || []).join(', ')}
+                                    onChange={(e) => setEditForm({ ...editForm, areaOfInterest: e.target.value.split(',').map((s: string) => s.trim()).filter((s: string) => s) })}
+                                    placeholder="e.g., Constitutional Law, Criminal Law, Corporate Law"
+                                    className="w-full px-3 py-2 bg-white border border-constitution-gold/20 rounded-lg text-ink-gray focus:outline-none focus:border-constitution-gold" />
+                                <p className="text-xs text-ink-gray/50 mt-1">Separate multiple interests with commas</p>
+                            </div>
+                            {/* Bar Council Number - Required for LAWYER, JUDGE, ADVOCATE */}
                             {['LAWYER', 'JUDGE', 'ADVOCATE'].includes(profile?.role) && (
                                 <div>
-                                    <label className="block text-sm text-ink-gray/70 mb-1">Bar Council Number</label>
+                                    <label className="block text-sm text-ink-gray/70 mb-1">Bar Council Number *</label>
                                     <input type="text" value={editForm.barCouncilNumber || ''} onChange={(e) => setEditForm({ ...editForm, barCouncilNumber: e.target.value })}
                                         placeholder="Enter your Bar Council Registration Number"
+                                        required
                                         className="w-full px-3 py-2 bg-white border border-constitution-gold/20 rounded-lg text-ink-gray focus:outline-none focus:border-constitution-gold" />
                                 </div>
                             )}
-                            {/* Experience Years */}
-                            <div>
-                                <label className="block text-sm text-ink-gray/70 mb-1">Years of Experience</label>
-                                <input type="number" min="0" value={editForm.experienceYears || 0} onChange={(e) => setEditForm({ ...editForm, experienceYears: parseInt(e.target.value) || 0 })}
-                                    className="w-full px-3 py-2 bg-white border border-constitution-gold/20 rounded-lg text-ink-gray focus:outline-none focus:border-constitution-gold" />
-                            </div>
+                            {/* Experience Years - Not shown for students */}
+                            {profile?.role !== 'LAW_STUDENT' && (
+                                <div>
+                                    <label className="block text-sm text-ink-gray/70 mb-1">Years of Experience</label>
+                                    <input type="number" min="0" value={editForm.experienceYears || 0} onChange={(e) => setEditForm({ ...editForm, experienceYears: parseInt(e.target.value) || 0 })}
+                                        className="w-full px-3 py-2 bg-white border border-constitution-gold/20 rounded-lg text-ink-gray focus:outline-none focus:border-constitution-gold" />
+                                </div>
+                            )}
                         </div>
                         <div className="flex justify-end gap-3 p-4 border-t border-constitution-gold/20">
                             <button onClick={() => setShowEditModal(false)} className="px-4 py-2 border border-constitution-gold/30 text-constitution-gold rounded-lg hover:bg-constitution-gold/5">
