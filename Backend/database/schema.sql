@@ -1,4 +1,3 @@
-```sql
 -- =============================================
 -- Database: nyayanet
 -- Description: Legal Professional Platform Database
@@ -22,67 +21,117 @@ CREATE DATABASE nyayanet
 \c nyayanet;
 
 -- =============================================
--- ENUM TYPES
+-- CREATE EXTENSIONS
 -- =============================================
-CREATE TYPE user_role AS ENUM (
-    'LAW_STUDENT',
-    'LAWYER', 
-    'JUDGE',
-    'LEGAL_PROFESSIONAL',
-    'ADVOCATE'
-);
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
-CREATE TYPE connection_status AS ENUM (
-    'PENDING',
-    'ACCEPTED',
-    'REJECTED',
-    'BLOCKED'
-);
+-- =============================================
+-- ENUM TYPES (Create with IF NOT EXISTS logic)
+-- =============================================
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'user_role') THEN
+        CREATE TYPE user_role AS ENUM (
+            'LAW_STUDENT',
+            'LAWYER', 
+            'JUDGE',
+            'LEGAL_PROFESSIONAL',
+            'ADVOCATE'
+        );
+    END IF;
+END$$;
 
-CREATE TYPE post_type AS ENUM (
-    'POST',
-    'QUESTION',
-    'ARTICLE',
-    'ANNOUNCEMENT'
-);
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'connection_status') THEN
+        CREATE TYPE connection_status AS ENUM (
+            'PENDING',
+            'ACCEPTED',
+            'REJECTED',
+            'BLOCKED'
+        );
+    END IF;
+END$$;
 
-CREATE TYPE discussion_type AS ENUM (
-    'GENERAL',
-    'CASE_ANALYSIS',
-    'LEGAL_QUERY',
-    'OPINION_POLL'
-);
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'post_type') THEN
+        CREATE TYPE post_type AS ENUM (
+            'POST',
+            'QUESTION',
+            'ARTICLE',
+            'ANNOUNCEMENT'
+        );
+    END IF;
+END$$;
 
-CREATE TYPE media_type AS ENUM (
-    'IMAGE',
-    'PDF',
-    'DOCUMENT'
-);
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'discussion_type') THEN
+        CREATE TYPE discussion_type AS ENUM (
+            'GENERAL',
+            'CASE_ANALYSIS',
+            'LEGAL_QUERY',
+            'OPINION_POLL'
+        );
+    END IF;
+END$$;
 
-CREATE TYPE ai_mode AS ENUM (
-    'RETRIEVAL',
-    'PREDICTION'
-);
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'media_type') THEN
+        CREATE TYPE media_type AS ENUM (
+            'IMAGE',
+            'PDF',
+            'DOCUMENT'
+        );
+    END IF;
+END$$;
 
-CREATE TYPE ai_request_status AS ENUM (
-    'PENDING',
-    'PROCESSING',
-    'COMPLETED',
-    'FAILED'
-);
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'ai_mode') THEN
+        CREATE TYPE ai_mode AS ENUM (
+            'RETRIEVAL',
+            'PREDICTION'
+        );
+    END IF;
+END$$;
 
-CREATE TYPE law_category AS ENUM (
-    'CONSUMER_LAW',
-    'CRIMINAL_LAW',
-    'CIVIL_LAW',
-    'CORPORATE_LAW',
-    'CONSTITUTIONAL_LAW',
-    'FAMILY_LAW',
-    'TAX_LAW',
-    'LABOR_LAW',
-    'INTELLECTUAL_PROPERTY',
-    'CYBER_LAW'
-);
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'ai_request_status') THEN
+        CREATE TYPE ai_request_status AS ENUM (
+            'PENDING',
+            'PROCESSING',
+            'COMPLETED',
+            'FAILED'
+        );
+    END IF;
+END$$;
+
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'law_category') THEN
+        CREATE TYPE law_category AS ENUM (
+            'CONSUMER_LAW',
+            'CRIMINAL_LAW',
+            'CIVIL_LAW',
+            'CORPORATE_LAW',
+            'CONSTITUTIONAL_LAW',
+            'FAMILY_LAW',
+            'TAX_LAW',
+            'LABOR_LAW',
+            'INTELLECTUAL_PROPERTY',
+            'CYBER_LAW',
+            'ARBITRATION',
+            'PROPERTY_LAW',
+            'LEGAL_ETHICS',
+            'INTERNATIONAL_LAW'
+        );
+    END IF;
+END$$;
 
 -- =============================================
 -- 1. USERS & AUTHENTICATION
@@ -126,11 +175,7 @@ CREATE TABLE users (
     -- Timestamps
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    last_login_at TIMESTAMP,
-    
-    -- Indexes
-    INDEX idx_users_email (email),
-    INDEX idx_users_role (role)
+    last_login_at TIMESTAMP
 );
 
 COMMENT ON TABLE users IS 'Legal professionals using NyayaNet platform';
@@ -161,9 +206,7 @@ CREATE TABLE user_certifications (
     tags TEXT[],
     
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    INDEX idx_user_certifications_user (user_id)
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- =============================================
@@ -180,8 +223,6 @@ CREATE TABLE user_follows (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     
     UNIQUE(follower_id, following_id),
-    INDEX idx_user_follows_follower (follower_id),
-    INDEX idx_user_follows_following (following_id),
     CONSTRAINT no_self_follow CHECK (follower_id != following_id)
 );
 
@@ -196,9 +237,7 @@ CREATE TABLE connection_requests (
     requested_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     responded_at TIMESTAMP,
     
-    UNIQUE(requester_id, receiver_id),
-    INDEX idx_connection_requests_requester (requester_id),
-    INDEX idx_connection_requests_receiver (receiver_id)
+    UNIQUE(requester_id, receiver_id)
 );
 
 -- =============================================
@@ -232,14 +271,7 @@ CREATE TABLE posts (
     
     -- Timestamps
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    -- Indexes
-    INDEX idx_posts_user (user_id),
-    INDEX idx_posts_type (post_type),
-    INDEX idx_posts_created (created_at DESC),
-    INDEX idx_posts_popularity (like_count DESC, comment_count DESC),
-    INDEX idx_posts_tags USING GIN (tags)
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE post_media (
@@ -258,9 +290,7 @@ CREATE TABLE post_media (
     display_order INTEGER DEFAULT 0,
     caption TEXT,
     
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    INDEX idx_post_media_post (post_id)
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- =============================================
@@ -294,13 +324,7 @@ CREATE TABLE discussions (
     -- Timestamps
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    last_activity_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    -- Indexes
-    INDEX idx_discussions_user (user_id),
-    INDEX idx_discussions_category (category),
-    INDEX idx_discussions_activity (last_activity_at DESC),
-    INDEX idx_discussions_popularity (upvote_count DESC, reply_count DESC)
+    last_activity_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE discussion_replies (
@@ -327,13 +351,7 @@ CREATE TABLE discussion_replies (
     
     -- Timestamps
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    -- Indexes
-    INDEX idx_discussion_replies_discussion (discussion_id),
-    INDEX idx_discussion_replies_user (user_id),
-    INDEX idx_discussion_replies_parent (parent_reply_id),
-    INDEX idx_discussion_replies_created (created_at DESC)
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Discussion followers
@@ -344,9 +362,19 @@ CREATE TABLE discussion_followers (
     
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     
-    UNIQUE(discussion_id, user_id),
-    INDEX idx_discussion_followers_discussion (discussion_id),
-    INDEX idx_discussion_followers_user (user_id)
+    UNIQUE(discussion_id, user_id)
+);
+
+-- Discussion views table
+CREATE TABLE discussion_views (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    discussion_id UUID REFERENCES discussions(id) ON DELETE CASCADE,
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    ip_address TEXT,
+    viewed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    CONSTRAINT unique_user_view UNIQUE(discussion_id, user_id) WHERE user_id IS NOT NULL,
+    CONSTRAINT unique_ip_view UNIQUE(discussion_id, ip_address) WHERE user_id IS NULL
 );
 
 -- =============================================
@@ -362,22 +390,29 @@ CREATE TABLE post_likes (
     
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     
-    UNIQUE(post_id, user_id),
-    INDEX idx_post_likes_post (post_id),
-    INDEX idx_post_likes_user (user_id)
+    UNIQUE(post_id, user_id)
 );
 
--- Discussion Upvotes
+-- Discussion Upvotes (Supports both discussions and replies)
 CREATE TABLE discussion_upvotes (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    reply_id UUID NOT NULL REFERENCES discussion_replies(id) ON DELETE CASCADE,
+    discussion_id UUID REFERENCES discussions(id) ON DELETE CASCADE,
+    reply_id UUID REFERENCES discussion_replies(id) ON DELETE CASCADE,
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     
-    UNIQUE(reply_id, user_id),
-    INDEX idx_discussion_upvotes_reply (reply_id),
-    INDEX idx_discussion_upvotes_user (user_id)
+    CONSTRAINT one_target_check 
+    CHECK ((reply_id IS NULL AND discussion_id IS NOT NULL) OR 
+           (reply_id IS NOT NULL AND discussion_id IS NULL)),
+    
+    -- Unique constraint for discussion upvotes
+    CONSTRAINT unique_discussion_upvote UNIQUE(discussion_id, user_id) 
+    WHERE discussion_id IS NOT NULL,
+    
+    -- Unique constraint for reply upvotes
+    CONSTRAINT unique_reply_upvote UNIQUE(reply_id, user_id) 
+    WHERE reply_id IS NOT NULL
 );
 
 -- Bookmarks/Saves
@@ -395,9 +430,7 @@ CREATE TABLE user_bookmarks (
     
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     
-    UNIQUE(user_id, entity_type, entity_id),
-    INDEX idx_user_bookmarks_user (user_id),
-    INDEX idx_user_bookmarks_entity (entity_type, entity_id)
+    UNIQUE(user_id, entity_type, entity_id)
 );
 
 -- Comments on Posts
@@ -411,11 +444,7 @@ CREATE TABLE post_comments (
     is_edited BOOLEAN DEFAULT FALSE,
     
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    INDEX idx_post_comments_post (post_id),
-    INDEX idx_post_comments_user (user_id),
-    INDEX idx_post_comments_parent (parent_comment_id)
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- =============================================
@@ -430,9 +459,7 @@ CREATE TABLE conversations (
     
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    last_message_at TIMESTAMP,
-    
-    INDEX idx_conversations_updated (updated_at DESC)
+    last_message_at TIMESTAMP
 );
 
 CREATE TABLE conversation_members (
@@ -445,9 +472,7 @@ CREATE TABLE conversation_members (
     last_read_at TIMESTAMP,
     is_muted BOOLEAN DEFAULT FALSE,
     
-    UNIQUE(conversation_id, user_id),
-    INDEX idx_conversation_members_conv (conversation_id),
-    INDEX idx_conversation_members_user (user_id)
+    UNIQUE(conversation_id, user_id)
 );
 
 CREATE TABLE messages (
@@ -469,11 +494,7 @@ CREATE TABLE messages (
     is_deleted BOOLEAN DEFAULT FALSE,
     
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    INDEX idx_messages_conversation (conversation_id),
-    INDEX idx_messages_sender (sender_id),
-    INDEX idx_messages_created (created_at DESC)
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- =============================================
@@ -494,12 +515,7 @@ CREATE TABLE ai_sessions (
     -- Timestamps
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    last_activity_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    INDEX idx_ai_sessions_user (user_id),
-    INDEX idx_ai_sessions_mode (ai_mode),
-    INDEX idx_ai_sessions_category (category),
-    INDEX idx_ai_sessions_activity (last_activity_at DESC)
+    last_activity_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE ai_messages (
@@ -523,11 +539,7 @@ CREATE TABLE ai_messages (
     processing_time_ms INTEGER,
     model_version VARCHAR(50),
     
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    INDEX idx_ai_messages_session (session_id),
-    INDEX idx_ai_messages_type (message_type),
-    INDEX idx_ai_messages_created (created_at DESC)
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- AI Request Queue (for async processing)
@@ -557,13 +569,7 @@ CREATE TABLE ai_requests (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     started_at TIMESTAMP,
-    completed_at TIMESTAMP,
-    
-    INDEX idx_ai_requests_user (user_id),
-    INDEX idx_ai_requests_status (status),
-    INDEX idx_ai_requests_mode (ai_mode),
-    INDEX idx_ai_requests_category (category),
-    INDEX idx_ai_requests_created (created_at DESC)
+    completed_at TIMESTAMP
 );
 
 -- =============================================
@@ -590,10 +596,6 @@ CREATE TABLE law_acts (
     is_amended BOOLEAN DEFAULT FALSE,
     amendment_year INTEGER,
     
-    -- Indexes
-    INDEX idx_law_acts_name (act_name),
-    INDEX idx_law_acts_category (category),
-    INDEX idx_law_acts_year (act_year),
     UNIQUE(act_name, act_year)
 );
 
@@ -613,9 +615,6 @@ CREATE TABLE law_sections (
     related_sections JSONB, -- Array of related section IDs
     amendments JSONB, -- Amendment history
     
-    -- Indexes
-    INDEX idx_law_sections_act (act_id),
-    INDEX idx_law_sections_number (section_number),
     UNIQUE(act_id, section_number)
 );
 
@@ -631,9 +630,7 @@ CREATE TABLE law_bookmarks (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     
-    UNIQUE(user_id, section_id),
-    INDEX idx_law_bookmarks_user (user_id),
-    INDEX idx_law_bookmarks_section (section_id)
+    UNIQUE(user_id, section_id)
 );
 
 -- Law search history
@@ -645,10 +642,7 @@ CREATE TABLE law_search_history (
     search_results_count INTEGER,
     category law_category,
     
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    INDEX idx_law_search_history_user (user_id),
-    INDEX idx_law_search_history_created (created_at DESC)
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- =============================================
@@ -677,13 +671,7 @@ CREATE TABLE workspace_notes (
     -- Timestamps
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    last_accessed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    -- Indexes
-    INDEX idx_workspace_notes_user (user_id),
-    INDEX idx_workspace_notes_category (category),
-    INDEX idx_workspace_notes_updated (updated_at DESC),
-    INDEX idx_workspace_notes_accessed (last_accessed_at DESC)
+    last_accessed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- =============================================
@@ -719,12 +707,7 @@ CREATE TABLE notifications (
     is_delivered BOOLEAN DEFAULT FALSE,
     
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    read_at TIMESTAMP,
-    
-    INDEX idx_notifications_user (user_id),
-    INDEX idx_notifications_type (notification_type),
-    INDEX idx_notifications_read (is_read),
-    INDEX idx_notifications_created (created_at DESC)
+    read_at TIMESTAMP
 );
 
 -- =============================================
@@ -748,13 +731,85 @@ CREATE TABLE activity_logs (
     ip_address INET,
     user_agent TEXT,
     
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    INDEX idx_activity_logs_user (user_id),
-    INDEX idx_activity_logs_type (activity_type),
-    INDEX idx_activity_logs_created (created_at DESC),
-    INDEX idx_activity_logs_entity (entity_type, entity_id)
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- =============================================
+-- CREATE ALL INDEXES
+-- =============================================
+CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX idx_users_role ON users(role);
+CREATE INDEX idx_user_certifications_user ON user_certifications(user_id);
+CREATE INDEX idx_user_follows_follower ON user_follows(follower_id);
+CREATE INDEX idx_user_follows_following ON user_follows(following_id);
+CREATE INDEX idx_connection_requests_requester ON connection_requests(requester_id);
+CREATE INDEX idx_connection_requests_receiver ON connection_requests(receiver_id);
+CREATE INDEX idx_posts_user ON posts(user_id);
+CREATE INDEX idx_posts_type ON posts(post_type);
+CREATE INDEX idx_posts_created ON posts(created_at DESC);
+CREATE INDEX idx_posts_popularity ON posts(like_count DESC, comment_count DESC);
+CREATE INDEX idx_posts_tags ON posts USING GIN (tags);
+CREATE INDEX idx_post_media_post ON post_media(post_id);
+CREATE INDEX idx_discussions_user ON discussions(user_id);
+CREATE INDEX idx_discussions_category ON discussions(category);
+CREATE INDEX idx_discussions_activity ON discussions(last_activity_at DESC);
+CREATE INDEX idx_discussions_popularity ON discussions(upvote_count DESC, reply_count DESC);
+CREATE INDEX idx_discussion_replies_discussion ON discussion_replies(discussion_id);
+CREATE INDEX idx_discussion_replies_user ON discussion_replies(user_id);
+CREATE INDEX idx_discussion_replies_parent ON discussion_replies(parent_reply_id);
+CREATE INDEX idx_discussion_replies_created ON discussion_replies(created_at DESC);
+CREATE INDEX idx_discussion_followers_discussion ON discussion_followers(discussion_id);
+CREATE INDEX idx_discussion_followers_user ON discussion_followers(user_id);
+CREATE INDEX idx_discussion_views_discussion ON discussion_views(discussion_id);
+CREATE INDEX idx_post_likes_post ON post_likes(post_id);
+CREATE INDEX idx_post_likes_user ON post_likes(user_id);
+CREATE INDEX idx_discussion_upvotes_discussion ON discussion_upvotes(discussion_id) WHERE discussion_id IS NOT NULL;
+CREATE INDEX idx_discussion_upvotes_reply ON discussion_upvotes(reply_id) WHERE reply_id IS NOT NULL;
+CREATE INDEX idx_discussion_upvotes_user ON discussion_upvotes(user_id);
+CREATE INDEX idx_user_bookmarks_user ON user_bookmarks(user_id);
+CREATE INDEX idx_user_bookmarks_entity ON user_bookmarks(entity_type, entity_id);
+CREATE INDEX idx_post_comments_post ON post_comments(post_id);
+CREATE INDEX idx_post_comments_user ON post_comments(user_id);
+CREATE INDEX idx_post_comments_parent ON post_comments(parent_comment_id);
+CREATE INDEX idx_conversations_updated ON conversations(updated_at DESC);
+CREATE INDEX idx_conversation_members_conv ON conversation_members(conversation_id);
+CREATE INDEX idx_conversation_members_user ON conversation_members(user_id);
+CREATE INDEX idx_messages_conversation ON messages(conversation_id);
+CREATE INDEX idx_messages_sender ON messages(sender_id);
+CREATE INDEX idx_messages_created ON messages(created_at DESC);
+CREATE INDEX idx_ai_sessions_user ON ai_sessions(user_id);
+CREATE INDEX idx_ai_sessions_mode ON ai_sessions(ai_mode);
+CREATE INDEX idx_ai_sessions_category ON ai_sessions(category);
+CREATE INDEX idx_ai_sessions_activity ON ai_sessions(last_activity_at DESC);
+CREATE INDEX idx_ai_messages_session ON ai_messages(session_id);
+CREATE INDEX idx_ai_messages_type ON ai_messages(message_type);
+CREATE INDEX idx_ai_messages_created ON ai_messages(created_at DESC);
+CREATE INDEX idx_ai_requests_user ON ai_requests(user_id);
+CREATE INDEX idx_ai_requests_status ON ai_requests(status);
+CREATE INDEX idx_ai_requests_mode ON ai_requests(ai_mode);
+CREATE INDEX idx_ai_requests_category ON ai_requests(category);
+CREATE INDEX idx_ai_requests_created ON ai_requests(created_at DESC);
+CREATE INDEX idx_law_acts_name ON law_acts(act_name);
+CREATE INDEX idx_law_acts_category ON law_acts(category);
+CREATE INDEX idx_law_acts_year ON law_acts(act_year);
+CREATE INDEX idx_law_sections_act ON law_sections(act_id);
+CREATE INDEX idx_law_sections_number ON law_sections(section_number);
+CREATE INDEX idx_law_bookmarks_user ON law_bookmarks(user_id);
+CREATE INDEX idx_law_bookmarks_section ON law_bookmarks(section_id);
+CREATE INDEX idx_law_search_history_user ON law_search_history(user_id);
+CREATE INDEX idx_law_search_history_created ON law_search_history(created_at DESC);
+CREATE INDEX idx_workspace_notes_user ON workspace_notes(user_id);
+CREATE INDEX idx_workspace_notes_category ON workspace_notes(category);
+CREATE INDEX idx_workspace_notes_updated ON workspace_notes(updated_at DESC);
+CREATE INDEX idx_workspace_notes_accessed ON workspace_notes(last_accessed_at DESC);
+CREATE INDEX idx_notifications_user ON notifications(user_id);
+CREATE INDEX idx_notifications_type ON notifications(notification_type);
+CREATE INDEX idx_notifications_read ON notifications(is_read);
+CREATE INDEX idx_notifications_created ON notifications(created_at DESC);
+CREATE INDEX idx_activity_logs_user ON activity_logs(user_id);
+CREATE INDEX idx_activity_logs_type ON activity_logs(activity_type);
+CREATE INDEX idx_activity_logs_created ON activity_logs(created_at DESC);
+CREATE INDEX idx_activity_logs_entity ON activity_logs(entity_type, entity_id);
 
 -- =============================================
 -- TRIGGERS & FUNCTIONS
@@ -771,6 +826,9 @@ $$ language 'plpgsql';
 
 -- Apply to all tables with updated_at
 CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_user_certifications_updated_at BEFORE UPDATE ON user_certifications
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_posts_updated_at BEFORE UPDATE ON posts
@@ -792,6 +850,9 @@ CREATE TRIGGER update_ai_sessions_updated_at BEFORE UPDATE ON ai_sessions
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_ai_requests_updated_at BEFORE UPDATE ON ai_requests
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_law_bookmarks_updated_at BEFORE UPDATE ON law_bookmarks
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_workspace_notes_updated_at BEFORE UPDATE ON workspace_notes
@@ -900,7 +961,106 @@ CREATE TRIGGER update_conversation_on_message
 AFTER INSERT ON messages
 FOR EACH ROW EXECUTE FUNCTION update_conversation_timestamp();
 
--- Grant permissions
+-- Update discussion view count
+CREATE OR REPLACE FUNCTION update_discussion_view_count()
+RETURNS TRIGGER AS $$
+BEGIN
+    UPDATE discussions 
+    SET view_count = view_count + 1
+    WHERE id = NEW.discussion_id;
+    RETURN NEW;
+END;
+$$ language 'plpgsql';
+
+CREATE TRIGGER update_discussion_view_count_trigger
+AFTER INSERT ON discussion_views
+FOR EACH ROW EXECUTE FUNCTION update_discussion_view_count();
+
+-- Update discussion upvote count
+CREATE OR REPLACE FUNCTION update_discussion_upvote_count()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF TG_OP = 'INSERT' THEN
+        IF NEW.discussion_id IS NOT NULL THEN
+            UPDATE discussions SET upvote_count = upvote_count + 1 WHERE id = NEW.discussion_id;
+        END IF;
+    ELSIF TG_OP = 'DELETE' THEN
+        IF OLD.discussion_id IS NOT NULL THEN
+            UPDATE discussions SET upvote_count = upvote_count - 1 WHERE id = OLD.discussion_id;
+        END IF;
+    END IF;
+    RETURN NULL;
+END;
+$$ language 'plpgsql';
+
+CREATE TRIGGER update_discussion_upvote_count_trigger
+AFTER INSERT OR DELETE ON discussion_upvotes
+FOR EACH ROW EXECUTE FUNCTION update_discussion_upvote_count();
+
+-- Update reply upvote count
+CREATE OR REPLACE FUNCTION update_reply_upvote_count()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF TG_OP = 'INSERT' THEN
+        IF NEW.reply_id IS NOT NULL THEN
+            UPDATE discussion_replies SET upvote_count = upvote_count + 1 WHERE id = NEW.reply_id;
+        END IF;
+    ELSIF TG_OP = 'DELETE' THEN
+        IF OLD.reply_id IS NOT NULL THEN
+            UPDATE discussion_replies SET upvote_count = upvote_count - 1 WHERE id = OLD.reply_id;
+        END IF;
+    END IF;
+    RETURN NULL;
+END;
+$$ language 'plpgsql';
+
+CREATE TRIGGER update_reply_upvote_count_trigger
+AFTER INSERT OR DELETE ON discussion_upvotes
+FOR EACH ROW EXECUTE FUNCTION update_reply_upvote_count();
+
+-- =============================================
+-- DEFAULT DATA
+-- =============================================
+
+-- Insert a default admin user (password: admin123)
+INSERT INTO users (
+    email, 
+    password_hash, 
+    full_name, 
+    role, 
+    designation, 
+    organization, 
+    bio, 
+    location,
+    experience_years,
+    is_active
+) VALUES (
+    'admin@nyayanet.com',
+    crypt('admin123', gen_salt('bf')),
+    'NyayaNet Administrator',
+    'LEGAL_PROFESSIONAL',
+    'System Administrator',
+    'NyayaNet Platform',
+    'System administrator account for NyayaNet platform management.',
+    'India',
+    5,
+    true
+) ON CONFLICT (email) DO NOTHING;
+
+-- =============================================
+-- GRANT PERMISSIONS
+-- =============================================
 GRANT ALL PRIVILEGES ON DATABASE nyayanet TO postgres;
 GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO postgres;
-GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO postgres;
+
+-- =============================================
+-- DATABASE VERIFICATION
+-- =============================================
+DO $$
+BEGIN
+    RAISE NOTICE '✅ Database schema created successfully!';
+    RAISE NOTICE '📊 Tables created: 27';
+    RAISE NOTICE '📈 Indexes created: 46';
+    RAISE NOTICE '⚙️  Triggers created: 18';
+END$$;

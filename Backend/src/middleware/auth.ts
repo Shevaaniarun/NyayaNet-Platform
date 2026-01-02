@@ -57,3 +57,39 @@ export const authenticate = (
     });
   }
 };
+
+/**
+ * Optional JWT Authentication Middleware
+ * Attaches user to req if token is valid, otherwise continues
+ */
+export const optionalAuthenticate = (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return next();
+    }
+
+    const token = authHeader.split(" ")[1];
+    const JWT_SECRET = process.env.JWT_SECRET;
+
+    if (!JWT_SECRET) {
+      return next();
+    }
+
+    const decoded = jwt.verify(token, JWT_SECRET) as AuthPayload;
+
+    req.user = {
+      ...decoded,
+      id: decoded.userId
+    };
+    next();
+  } catch (error) {
+    // If token is invalid, just continue without user
+    next();
+  }
+};

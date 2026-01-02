@@ -5,7 +5,7 @@ import { CertificationCard } from '../components/CertificationCard';
 import { ProfileTabs } from '../components/Profile/ProfileTabs';
 import { JusticeLoader } from '../components/JusticeLoader';
 import { Search, Award, Plus, ArrowLeft, X } from 'lucide-react';
-import * as profileApi from '../api/profile';
+import * as profileApi from '../api/profileAPI';
 
 interface ProfilePageProps {
     userId?: string;

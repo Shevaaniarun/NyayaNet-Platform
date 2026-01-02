@@ -4,11 +4,11 @@ import { DiscussionCard } from '../components/Discussion/DiscussionCard';
 import { DiscussionDetail } from '../components/Discussion/DiscussionDetail';
 import { CreateDiscussion } from '../components/Discussion/CreateDiscussion';
 import { DiscussionFilters } from '../components/Discussion/DiscussionFilters';
-import { 
+import {
   discussionService,
   Discussion as ApiDiscussion,
   DiscussionFilters as ApiDiscussionFilters
-} from '../api/discussionService';
+} from '../api/discussionAPI';
 import { toast } from 'react-toastify';
 
 // Types for the component
@@ -58,20 +58,21 @@ interface DiscussionFilterType {
 }
 
 // Available discussion categories
+// Available discussion categories (mapped to backend enum)
 const DISCUSSION_CATEGORIES = [
-  'Constitutional Law',
-  'Criminal Law',
-  'Civil Law',
-  'Corporate Law',
-  'Intellectual Property',
-  'Taxation',
-  'Arbitration',
-  'Consumer Law',
-  'Family Law',
-  'Property Law',
-  'Cyber Law',
-  'Legal Ethics',
-  'International Law',
+  'CONSTITUTIONAL_LAW',
+  'CRIMINAL_LAW',
+  'CIVIL_LAW',
+  'CORPORATE_LAW',
+  'INTELLECTUAL_PROPERTY',
+  'TAX_LAW',
+  'ARBITRATION',
+  'CONSUMER_LAW',
+  'FAMILY_LAW',
+  'PROPERTY_LAW',
+  'CYBER_LAW',
+  'LEGAL_ETHICS',
+  'INTERNATIONAL_LAW',
 ];
 
 export function DiscussionsPage() {
@@ -105,7 +106,7 @@ export function DiscussionsPage() {
     try {
       setIsLoading(true);
       const response = await discussionService.getDiscussions(filters);
-      
+
       setDiscussions(response.discussions || []);
       setPagination({
         total: response.pagination?.total || 0,
@@ -113,7 +114,7 @@ export function DiscussionsPage() {
         limit: response.pagination?.limit || 10,
         totalPages: response.pagination?.pages || 1
       });
-      
+
       // Update available categories from API if provided
       if (response.categories && response.categories.length > 0) {
         setAvailableCategories(response.categories);
@@ -149,9 +150,11 @@ export function DiscussionsPage() {
     try {
       setIsCreating(true);
       const newDiscussion = await discussionService.createDiscussion(data);
-      setDiscussions(prev => [newDiscussion, ...prev]);
-      setShowCreateForm(false);
-      toast.success('Discussion created successfully!');
+      if (newDiscussion) {
+        setDiscussions(prev => [newDiscussion as unknown as Discussion, ...prev]);
+        setShowCreateForm(false);
+        toast.success('Discussion created successfully!');
+      }
     } catch (error: any) {
       console.error('Failed to create discussion:', error);
       const errorMessage = error.response?.data?.message || 'Failed to create discussion. Please try again.';
@@ -163,50 +166,82 @@ export function DiscussionsPage() {
 
   const handleUpvote = async (discussionId: string) => {
     try {
-      // Since your backend doesn't have discussion upvote, we'll handle it locally
-      setDiscussions(prev => 
-        prev.map(discussion => 
-          discussion.id === discussionId 
-            ? { 
-                ...discussion, 
-                upvoteCount: (discussion.upvoteCount || 0) + 1,
-                isUpvoted: true 
-              } 
+      const result = await discussionService.toggleDiscussionUpvote(discussionId);
+
+      setDiscussions(prev =>
+        prev.map(discussion =>
+          discussion.id === discussionId
+            ? {
+              ...discussion,
+              upvoteCount: result.upvoteCount,
+              isUpvoted: result.upvoted
+            }
             : discussion
         )
       );
-      
+
       // Update selected discussion if it's the one being upvoted
       if (selectedDiscussion?.id === discussionId) {
         setSelectedDiscussion(prev => prev ? {
           ...prev,
-          upvoteCount: (prev.upvoteCount || 0) + 1,
-          isUpvoted: true
+          upvoteCount: result.upvoteCount,
+          isUpvoted: result.upvoted
         } : null);
       }
-      
-      toast.success('Discussion upvoted!');
-    } catch (error) {
+
+      toast.success(result.upvoted ? 'Discussion upvoted!' : 'Discussion unvoted!');
+    } catch (error: any) {
       console.error('Failed to upvote:', error);
-      toast.error('Failed to upvote. Please try again.');
+      const errorMessage = error.response?.data?.message || 'Failed to toggle upvote.';
+      toast.error(errorMessage);
+    }
+  };
+
+  const handleReplyUpvote = async (replyId: string) => {
+    try {
+      const result = await discussionService.toggleReplyUpvote(replyId);
+
+      if (selectedDiscussion) {
+        const updateRepliesRecursively = (replies: Reply[]): Reply[] => {
+          return replies.map(r => {
+            if (r.id === replyId) {
+              return { ...r, upvoteCount: result.upvoteCount, hasUpvoted: result.upvoted };
+            }
+            if (r.replies && r.replies.length > 0) {
+              return { ...r, replies: updateRepliesRecursively(r.replies) };
+            }
+            return r;
+          });
+        };
+
+        setSelectedDiscussion(prev => prev ? {
+          ...prev,
+          replies: updateRepliesRecursively(prev.replies)
+        } : null);
+      }
+
+      toast.success(result.upvoted ? 'Reply upvoted!' : 'Reply unvoted!');
+    } catch (error: any) {
+      console.error('Failed to upvote reply:', error);
+      toast.error('Failed to upvote reply.');
     }
   };
 
   const handleFollow = async (discussionId: string) => {
     try {
       const result = await discussionService.toggleFollow(discussionId);
-      setDiscussions(prev => 
-        prev.map(discussion => 
-          discussion.id === discussionId 
-            ? { 
-                ...discussion, 
-                followerCount: result.followerCount,
-                isFollowing: result.following 
-              } 
+      setDiscussions(prev =>
+        prev.map(discussion =>
+          discussion.id === discussionId
+            ? {
+              ...discussion,
+              followerCount: result.followerCount,
+              isFollowing: result.following
+            }
             : discussion
         )
       );
-      
+
       // Update selected discussion if it's the one being followed
       if (selectedDiscussion?.id === discussionId) {
         setSelectedDiscussion(prev => prev ? {
@@ -225,14 +260,14 @@ export function DiscussionsPage() {
   const handleSave = async (discussionId: string) => {
     try {
       const result = await discussionService.toggleSave(discussionId);
-      setDiscussions(prev => 
-        prev.map(discussion => 
-          discussion.id === discussionId 
-            ? { ...discussion, isSaved: result.saved } 
+      setDiscussions(prev =>
+        prev.map(discussion =>
+          discussion.id === discussionId
+            ? { ...discussion, isSaved: result.saved }
             : discussion
         )
       );
-      
+
       // Update selected discussion if it's the one being saved
       if (selectedDiscussion?.id === discussionId) {
         setSelectedDiscussion(prev => prev ? {
@@ -240,7 +275,7 @@ export function DiscussionsPage() {
           isSaved: result.saved
         } : null);
       }
-      
+
       toast.success(result.saved ? 'Discussion saved!' : 'Discussion unsaved!');
     } catch (error) {
       console.error('Failed to save discussion:', error);
@@ -267,19 +302,19 @@ export function DiscussionsPage() {
     try {
       // Fetch discussion details
       const discussionDetail = await discussionService.getDiscussionById(discussion.id);
-      
+
       // Transform to match DiscussionDetailState interface
       const detailState: DiscussionDetailState = {
         ...discussionDetail,
-        replies: [],
+        replies: discussionDetail.replies || [],
         isLoadingReplies: false,
-        isPublic: discussionDetail.isPublic || true,
+        isPublic: discussionDetail.isPublic !== undefined ? discussionDetail.isPublic : true,
         updatedAt: discussionDetail.updatedAt || discussionDetail.lastActivityAt || discussionDetail.createdAt,
         bestAnswer: discussionDetail.bestAnswer || undefined
       };
-      
+
       setSelectedDiscussion(detailState);
-      
+
     } catch (error: any) {
       console.error('Failed to load discussion details:', error);
       const errorMessage = error.response?.data?.message || 'Failed to load discussion details.';
@@ -290,6 +325,19 @@ export function DiscussionsPage() {
   const handleBackToList = () => {
     setSelectedDiscussion(null);
   };
+
+  // Get current user ID
+  const getCurrentUserId = () => {
+    const userStr = localStorage.getItem('user');
+    if (!userStr) return undefined;
+    try {
+      return JSON.parse(userStr).id;
+    } catch {
+      return undefined;
+    }
+  };
+
+  const currentUserId = getCurrentUserId();
 
   // Loading state
   if (isLoading && !selectedDiscussion) {
@@ -323,31 +371,11 @@ export function DiscussionsPage() {
     return (
       <div className="min-h-screen bg-justice-black p-4 md:p-8">
         <div className="max-w-5xl mx-auto">
-          <button
-            onClick={handleBackToList}
-            className="flex items-center text-constitution-gold hover:text-constitution-gold/80 mb-6 transition-colors"
-          >
-            <svg 
-              className="w-5 h-5 mr-2" 
-              fill="none" 
-              stroke="currentColor" 
-              viewBox="0 0 24 24" 
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path 
-                strokeLinecap="round" 
-                strokeLinejoin="round" 
-                strokeWidth={2} 
-                d="M10 19l-7-7m0 0l7-7m-7 7h18" 
-              />
-            </svg>
-            Back to Discussions
-          </button>
-          
           <DiscussionDetail
             discussion={selectedDiscussion}
+            currentUserId={currentUserId}
             onBack={handleBackToList}
-            onUpvote={() => handleUpvote(selectedDiscussion.id)}
+            onDiscussionUpvote={() => handleUpvote(selectedDiscussion.id)}
             onFollow={() => handleFollow(selectedDiscussion.id)}
             onSave={() => handleSave(selectedDiscussion.id)}
             onReply={async (content, parentId) => {
@@ -357,25 +385,54 @@ export function DiscussionsPage() {
                   parentReplyId: parentId
                 });
                 toast.success('Reply added successfully!');
-                
-                // Refresh discussion details
-                const updatedDiscussion = await discussionService.getDiscussionById(selectedDiscussion.id);
-                setSelectedDiscussion(prev => prev ? {
-                  ...prev,
-                  ...updatedDiscussion,
-                  replies: updatedDiscussion.replies || []
-                } : null);
+
+                if (reply) {
+                  // Add the new reply to the local state recursively
+                  const addReplyRecursively = (replies: Reply[], newReply: any): Reply[] => {
+                    if (!newReply.parentReplyId) {
+                      return [...replies, newReply as Reply];
+                    }
+                    return replies.map(r => {
+                      if (r.id === newReply.parentReplyId) {
+                        return { ...r, replies: [...(r.replies || []), newReply as Reply] };
+                      }
+                      if (r.replies && r.replies.length > 0) {
+                        return { ...r, replies: addReplyRecursively(r.replies, newReply) };
+                      }
+                      return r;
+                    });
+                  };
+
+                  setSelectedDiscussion(prev => prev ? {
+                    ...prev,
+                    replyCount: (prev.replyCount || 0) + 1,
+                    replies: addReplyRecursively(prev.replies, reply)
+                  } : null);
+
+                  // Also update in the list
+                  setDiscussions(prev => prev.map(d =>
+                    d.id === selectedDiscussion.id
+                      ? { ...d, replyCount: (d.replyCount || 0) + 1 }
+                      : d
+                  ));
+                }
               } catch (error: any) {
                 const errorMessage = error.response?.data?.message || 'Failed to add reply.';
                 toast.error(errorMessage);
               }
+            }}
+            onUpvote={handleReplyUpvote}
+            onShare={() => {
+              const url = window.location.href;
+              navigator.clipboard.writeText(url);
+              toast.info('Link copied to clipboard!');
             }}
             onMarkBestAnswer={async (replyId) => {
               try {
                 const success = await discussionService.markBestAnswer(selectedDiscussion.id, replyId);
                 if (success) {
                   toast.success('Best answer marked!');
-                  
+
                   // Refresh discussion details
                   const updatedDiscussion = await discussionService.getDiscussionById(selectedDiscussion.id);
                   setSelectedDiscussion(prev => prev ? {
@@ -393,18 +450,18 @@ export function DiscussionsPage() {
                 const success = await discussionService.markResolved(selectedDiscussion.id);
                 if (success) {
                   toast.success('Discussion marked as resolved!');
-                  
+
                   // Update local state
                   setSelectedDiscussion(prev => prev ? {
                     ...prev,
                     isResolved: true
                   } : null);
-                  
+
                   // Update discussions list
-                  setDiscussions(prev => 
-                    prev.map(d => 
-                      d.id === selectedDiscussion.id 
-                        ? { ...d, isResolved: true } 
+                  setDiscussions(prev =>
+                    prev.map(d =>
+                      d.id === selectedDiscussion.id
+                        ? { ...d, isResolved: true }
                         : d
                     )
                   );
@@ -430,9 +487,6 @@ export function DiscussionsPage() {
             <h1 className="font-heading font-bold text-judge-ivory text-2xl md:text-3xl mb-1 md:mb-2">
               Legal Debates
             </h1>
-            <p className="text-ink-gray/70 text-sm md:text-base">
-              Professional discussions, case analyses, and legal queries
-            </p>
           </div>
           <button
             onClick={() => setShowCreateForm(true)}
@@ -450,25 +504,25 @@ export function DiscussionsPage() {
 
         {/* Stats */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <StatCard 
-            icon={MessageSquare} 
-            title="Total Discussions" 
-            value={stats.total} 
+          <StatCard
+            icon={MessageSquare}
+            title="Total Discussions"
+            value={stats.total}
           />
-          <StatCard 
-            icon={TrendingUp} 
-            title="Active" 
-            value={stats.active} 
+          <StatCard
+            icon={TrendingUp}
+            title="Active"
+            value={stats.active}
           />
-          <StatCard 
-            icon={BookOpen} 
-            title="Resolved" 
-            value={stats.resolved} 
+          <StatCard
+            icon={BookOpen}
+            title="Resolved"
+            value={stats.resolved}
           />
-          <StatCard 
-            icon={Users} 
-            title="Total Replies" 
-            value={stats.totalReplies} 
+          <StatCard
+            icon={Users}
+            title="Total Replies"
+            value={stats.totalReplies}
           />
         </div>
 
@@ -487,6 +541,8 @@ export function DiscussionsPage() {
               key={discussion.id}
               discussion={discussion}
               onClick={() => handleDiscussionClick(discussion)}
+              onFollow={() => handleFollow(discussion.id)}
+              onSave={() => handleSave(discussion.id)}
             />
           ))}
         </div>
@@ -520,11 +576,10 @@ export function DiscussionsPage() {
                   key={page}
                   onClick={() => handlePageChange(page)}
                   disabled={page === pagination.page}
-                  className={`px-3 py-1 rounded-md ${
-                    page === pagination.page
-                      ? 'bg-constitution-gold text-justice-black font-bold'
-                      : 'bg-justice-black text-ink-gray hover:bg-ink-gray/10'
-                  }`}
+                  className={`px-3 py-1 rounded-md ${page === pagination.page
+                    ? 'bg-constitution-gold text-justice-black font-bold'
+                    : 'bg-justice-black text-ink-gray hover:bg-ink-gray/10'
+                    }`}
                 >
                   {page}
                 </button>

@@ -83,7 +83,7 @@ export function CreatePost() {
     setIsPublishing(true);
 
     try {
-      const { createPost } = await import('../api/posts');
+      const { createPost } = await import('../api/postsAPI');
 
       // Debug: Check if token exists
       const token = localStorage.getItem('token');
