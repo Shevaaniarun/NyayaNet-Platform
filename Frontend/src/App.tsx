@@ -13,6 +13,7 @@ import LoginPage from "./pages/LoginPage";
 import { ProfilePage } from './pages/ProfilePage';
 import { getFeed, Post as ApiPost } from './api/postsAPI';
 import { toast } from 'react-toastify';
+import NotesPage from './pages/NotesPage';
 
 type ViewType =
     | 'feed'
