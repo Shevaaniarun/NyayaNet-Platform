@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Send, Bookmark, Share2, Flag, CheckCircle, Gavel, Users, MessageSquare, Eye, Calendar, ChevronLeft, User, TrendingUp, Heart, Lock } from 'lucide-react';
+import { Send, Bookmark, Share2, Flag, CheckCircle, Gavel, Users, MessageSquare, Eye, Calendar, ChevronLeft, User, TrendingUp, Heart, Lock, ArrowBigUp } from 'lucide-react';
 import { ReplyCard, ReplyType } from './ReplyCard';
 
 interface Discussion {
@@ -124,7 +124,7 @@ export function DiscussionDetail({
                   : 'border border-constitution-gold/30 text-constitution-gold hover:bg-constitution-gold/10'
                   }`}
               >
-                <Heart className={`w-4 h-4 ${discussion.isUpvoted ? 'fill-current' : ''}`} />
+                <ArrowBigUp className={`w-4 h-4 ${discussion.isUpvoted ? 'fill-current' : ''}`} />
                 <span className="hidden sm:inline">{discussion.isUpvoted ? 'Upvoted' : 'Upvote'}</span>
               </button>
 
@@ -304,7 +304,7 @@ export function DiscussionDetail({
                 <div className="flex items-center justify-between mb-4">
                   <h4 className="font-bold text-ink-gray text-lg">{discussion.bestAnswer.author.fullName}</h4>
                   <div className="flex items-center gap-2 text-constitution-gold bg-constitution-gold/10 px-3 py-1 rounded-full border border-constitution-gold/20">
-                    <Heart className="w-4 h-4 fill-current" />
+                    <ArrowBigUp className="w-4 h-4 fill-current" />
                     <span className="text-sm font-black">{discussion.bestAnswer.upvoteCount}</span>
                   </div>
                 </div>

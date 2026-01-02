@@ -30,6 +30,7 @@ const getCurrentUser = () => {
 // Type adapters
 const adaptPost = (apiPost: ApiPost): PostComponentType => ({
     id: apiPost.id,
+    userId: apiPost.userId,
     author: {
         fullName: apiPost.author?.fullName || 'Unknown User',
         profilePhotoUrl: apiPost.author?.profilePhotoUrl || '',
@@ -42,7 +43,14 @@ const adaptPost = (apiPost: ApiPost): PostComponentType => ({
     createdAt: new Date(apiPost.createdAt).toLocaleDateString(),
     likeCount: apiPost.likeCount || 0,
     commentCount: apiPost.commentCount || 0,
-    tags: apiPost.tags || []
+    tags: apiPost.tags || [],
+    isLiked: apiPost.isLiked,
+    isSaved: apiPost.isSaved,
+    media: apiPost.media?.map(m => ({
+        id: m.id,
+        url: m.mediaUrl,
+        type: m.mediaType
+    }))
 });
 
 const mapCaseStatus = (status: string): CaseItemComponentType['caseStatus'] => {
@@ -265,7 +273,12 @@ export default function App() {
                                     </div>
                                 ) : posts.length > 0 ? (
                                     posts.map((post) => (
-                                        <PostCard key={post.id} post={post} />
+                                        <PostCard
+                                            key={post.id}
+                                            post={post}
+                                            currentUserId={getCurrentUser()?.id}
+                                            onDelete={(id) => setPosts(prev => prev.filter(p => p.id !== id))}
+                                        />
                                     ))
                                 ) : (
                                     <div className="text-center py-12 text-gray-400">
@@ -280,14 +293,19 @@ export default function App() {
                 {currentView === 'feed' && (
                     <div className="flex-1 p-6 overflow-y-auto">
                         <div className="max-w-3xl mx-auto space-y-6">
-                            <CreatePost />
+                            <CreatePost onPostCreated={refreshPosts} />
                             {isLoadingPosts ? (
                                 <div className="flex justify-center p-8">
                                     <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-justice-blue"></div>
                                 </div>
                             ) : posts.length > 0 ? (
                                 posts.map((post) => (
-                                    <PostCard key={post.id} post={post} />
+                                    <PostCard
+                                        key={post.id}
+                                        post={post}
+                                        currentUserId={getCurrentUser()?.id}
+                                        onDelete={(id) => setPosts(prev => prev.filter(p => p.id !== id))}
+                                    />
                                 ))
                             ) : (
                                 <div className="text-center py-12 text-gray-400">

@@ -7,6 +7,7 @@ import profileRoutes from './routes/profileRoutes';
 import postRoutes from './routes/postRoutes';
 import authRoutes from './routes/authRoutes';
 import uploadRoutes from './routes/uploadRoutes';
+import path from 'path';
 
 dotenv.config();
 
@@ -14,7 +15,13 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(cors({
-    origin: process.env.CORS_ORIGIN || ['http://localhost:5173', 'http://localhost:5174'],
+    origin: [
+        'http://localhost:5173',
+        'http://localhost:5175',
+        'http://localhost:5174',
+        'http://localhost:4173',
+        process.env.CORS_ORIGIN || 'http://localhost:5173'
+    ],
     credentials: true
 }));
 app.use(express.json());
@@ -22,6 +29,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // Serve uploaded files statically
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+
 
 app.get('/api/health', (req, res) => {
     res.json({ status: 'healthy', timestamp: new Date().toISOString(), service: 'NyayaNet Backend' });
