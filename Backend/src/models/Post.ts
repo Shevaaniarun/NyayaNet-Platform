@@ -298,7 +298,6 @@ export class PostModel {
 
     // Manually increment comment count
     await pool.query('UPDATE posts SET comment_count = comment_count + 1 WHERE id = $1', [postId]);
-
     const row = result.rows[0];
 
     // Fetch user details for the response
