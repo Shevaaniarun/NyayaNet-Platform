@@ -2,6 +2,18 @@ import pool from '../config/database';
 import { Discussion, CreateDiscussionInput } from '../types/discussionTypes';
 
 export class DiscussionModel {
+  // Helper to normalize tags (UPPERCASE and handling comma-separated string)
+  private static normalizeTags(tags: any): string[] {
+    if (!tags) return [];
+    if (typeof tags === 'string') {
+      return tags.split(',').map(tag => tag.toUpperCase().trim()).filter(Boolean);
+    }
+    if (Array.isArray(tags)) {
+      return tags.map(tag => tag.toUpperCase().trim()).filter(Boolean);
+    }
+    return [];
+  }
+
   // Create a new discussion
   static async create(discussionData: CreateDiscussionInput, userId: string): Promise<Discussion> {
     const query = `
@@ -10,17 +22,19 @@ export class DiscussionModel {
       ) VALUES ($1, $2, $3, $4, $5, $6, $7)
       RETURNING *;
     `;
-    
+
+    const normalizedTags = this.normalizeTags(discussionData.tags);
+
     const values = [
       userId,
       discussionData.title,
       discussionData.description,
       discussionData.discussionType,
       discussionData.category,
-      discussionData.tags,
+      normalizedTags,
       discussionData.isPublic ?? true
     ];
-    
+
     const result = await pool.query(query, values);
     return result.rows[0];
   }
@@ -33,19 +47,20 @@ export class DiscussionModel {
         u.full_name as author_name,
         u.role as author_role,
         u.profile_photo_url as author_photo,
-        EXISTS(SELECT 1 FROM discussion_followers df WHERE df.discussion_id = d.id AND df.user_id = $2) as is_following,
-        EXISTS(SELECT 1 FROM user_bookmarks ub WHERE ub.entity_type = 'DISCUSSION' AND ub.entity_id = d.id AND ub.user_id = $2) as is_saved
+        CASE WHEN $2::uuid IS NULL THEN false ELSE EXISTS(SELECT 1 FROM discussion_followers df WHERE df.discussion_id = d.id AND df.user_id = $2) END as is_following,
+        CASE WHEN $2::uuid IS NULL THEN false ELSE EXISTS(SELECT 1 FROM user_bookmarks ub WHERE ub.entity_type = 'DISCUSSION' AND ub.entity_id = d.id AND ub.user_id = $2) END as is_saved,
+        CASE WHEN $2::uuid IS NULL THEN false ELSE EXISTS(SELECT 1 FROM discussion_upvotes du WHERE du.discussion_id = d.id AND du.user_id = $2) END as is_upvoted
       FROM discussions d
       LEFT JOIN users u ON d.user_id = u.id
       WHERE d.id = $1 AND d.is_public = true;
     `;
-    
+
     const result = await pool.query(query, [id, userId || null]);
-    
+
     if (!result.rows[0]) return null;
-    
+
     const row = result.rows[0];
-    
+
     // Get best answer details if exists
     let bestAnswer = null;
     if (row.best_answer_id) {
@@ -68,19 +83,57 @@ export class DiscussionModel {
         };
       }
     }
-    
+
     return {
       ...row,
       bestAnswer
     };
   }
 
-  // Increment view count
-  static async incrementViewCount(id: string): Promise<void> {
-    await pool.query(
-      'UPDATE discussions SET view_count = view_count + 1 WHERE id = $1',
-      [id]
-    );
+  // Increment view count (unique per user/IP)
+  static async incrementViewCount(id: string, userId?: string, ipAddress?: string): Promise<void> {
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      let insertResult;
+      if (userId) {
+        // Track by userId
+        insertResult = await client.query(
+          'INSERT INTO discussion_views (discussion_id, user_id) VALUES ($1, $2) ON CONFLICT (discussion_id, user_id) DO NOTHING RETURNING id',
+          [id, userId]
+        );
+      } else if (ipAddress) {
+        // Track by IP for guests
+        insertResult = await client.query(
+          'INSERT INTO discussion_views (discussion_id, ip_address) VALUES ($1, $2) ON CONFLICT (discussion_id, ip_address) WHERE user_id IS NULL DO NOTHING RETURNING id',
+          [id, ipAddress]
+        );
+      } else {
+        // Unconditional increment if no tracking info (fallback)
+        await client.query(
+          'UPDATE discussions SET view_count = view_count + 1 WHERE id = $1',
+          [id]
+        );
+        await client.query('COMMIT');
+        return;
+      }
+
+      // If a new record was inserted, increment the main count
+      if (insertResult.rows.length > 0) {
+        await client.query(
+          'UPDATE discussions SET view_count = view_count + 1 WHERE id = $1',
+          [id]
+        );
+      }
+
+      await client.query('COMMIT');
+    } catch (error) {
+      await client.query('ROLLBACK');
+      console.error('Error incrementing view count:', error);
+    } finally {
+      client.release();
+    }
   }
 
   // Get discussions with filters
@@ -93,95 +146,117 @@ export class DiscussionModel {
       tags,
       status,
       sort = 'newest',
-      following = false
+      following = false,
+      q
     } = filters;
 
     const offset = (page - 1) * limit;
-    
-    let whereConditions = ['d.is_public = true'];
-    const queryParams: any[] = [limit, offset];
-    let paramIndex = 3;
 
-    // Apply filters
+    // Build common filter conditions
+    let baseConditions = ['d.is_public = true'];
+    const commonParams: any[] = [];
+    let pIdx = 1;
+
+    if (q) {
+      baseConditions.push(`(
+        d.title ILIKE $${pIdx} OR 
+        d.description ILIKE $${pIdx} OR 
+        EXISTS(
+          SELECT 1 FROM users u 
+          WHERE u.id = d.user_id AND u.full_name ILIKE $${pIdx}
+        ) OR
+        EXISTS(
+          SELECT 1 FROM unnest(d.tags) AS t 
+          WHERE t ILIKE $${pIdx} OR ('#' || t) ILIKE $${pIdx}
+        )
+      )`);
+      commonParams.push(`%${q}%`);
+      pIdx++;
+    }
+
     if (category) {
-      whereConditions.push(`d.category = $${paramIndex}`);
-      queryParams.push(category);
-      paramIndex++;
+      baseConditions.push(`d.category = $${pIdx}`);
+      commonParams.push(category);
+      pIdx++;
     }
 
     if (type) {
-      whereConditions.push(`d.discussion_type = $${paramIndex}`);
-      queryParams.push(type);
-      paramIndex++;
+      baseConditions.push(`d.discussion_type = $${pIdx}`);
+      commonParams.push(type);
+      pIdx++;
     }
 
-    if (tags && tags.length > 0) {
-      whereConditions.push(`d.tags && $${paramIndex}::text[]`);
-      queryParams.push(tags);
-      paramIndex++;
+    if (tags && (Array.isArray(tags) ? tags.length > 0 : !!tags)) {
+      const tagsArray = this.normalizeTags(tags);
+      baseConditions.push(`EXISTS (
+        SELECT 1 FROM unnest(d.tags) AS t 
+        WHERE UPPER(t) = ANY($${pIdx}::text[])
+      )`);
+      commonParams.push(tagsArray);
+      pIdx++;
     }
 
     if (status === 'resolved') {
-      whereConditions.push('d.is_resolved = true');
+      baseConditions.push('d.is_resolved = true');
     } else if (status === 'active') {
-      whereConditions.push('d.is_resolved = false');
+      baseConditions.push('d.is_resolved = false');
     }
 
     if (following && userId) {
-      whereConditions.push(`EXISTS(
+      baseConditions.push(`EXISTS(
         SELECT 1 FROM discussion_followers df 
-        WHERE df.discussion_id = d.id AND df.user_id = $${paramIndex}
+        WHERE df.discussion_id = d.id AND df.user_id = $${pIdx}
       )`);
-      queryParams.push(userId);
-      paramIndex++;
+      commonParams.push(userId);
+      pIdx++;
     }
 
-    // Build sort clause
+    const whereClause = baseConditions.length > 0 ? `WHERE ${baseConditions.join(' AND ')}` : '';
+
+    // 1. Get total count
+    const countQuery = `SELECT COUNT(*) as total FROM discussions d ${whereClause}`;
+    const countResult = await pool.query(countQuery, commonParams);
+    const total = parseInt(countResult.rows[0].total);
+
+    // 2. Build sort clause
     let sortClause = 'd.created_at DESC';
     switch (sort) {
       case 'active':
-        sortClause = 'd.last_activity_at DESC';
+        sortClause = 'd.reply_count DESC';
         break;
       case 'popular':
-        sortClause = 'd.reply_count DESC, d.upvote_count DESC';
+        sortClause = 'd.view_count DESC';
         break;
       case 'upvoted':
         sortClause = 'd.upvote_count DESC';
         break;
     }
 
-    const whereClause = whereConditions.length > 0 
-      ? `WHERE ${whereConditions.join(' AND ')}`
-      : '';
+    // 3. Get paginated results
+    const finalParams = [...commonParams];
+    const limitIdx = finalParams.length + 1;
+    const offsetIdx = finalParams.length + 2;
+    const userIdx = finalParams.length + 3;
+    finalParams.push(limit, offset, userId || null);
 
-    // Get total count
-    const countQuery = `
-      SELECT COUNT(*) as total 
-      FROM discussions d
-      ${whereClause}
-    `;
-    
-    const countResult = await pool.query(countQuery, queryParams.slice(2));
-    const total = parseInt(countResult.rows[0].total);
-
-    // Get paginated results
     const query = `
       SELECT 
         d.*,
         u.full_name as author_name,
         u.role as author_role,
         u.profile_photo_url as author_photo,
-        ${userId ? `EXISTS(SELECT 1 FROM discussion_followers df WHERE df.discussion_id = d.id AND df.user_id = $${paramIndex}) as is_following,` : 'false as is_following,'}
-        ${userId ? `EXISTS(SELECT 1 FROM user_bookmarks ub WHERE ub.entity_type = 'DISCUSSION' AND ub.entity_id = d.id AND ub.user_id = $${paramIndex}) as is_saved` : 'false as is_saved'}
+        CASE WHEN $${userIdx}::uuid IS NULL THEN false ELSE EXISTS(SELECT 1 FROM discussion_followers df WHERE df.discussion_id = d.id AND df.user_id = $${userIdx}) END as is_following,
+        CASE WHEN $${userIdx}::uuid IS NULL THEN false ELSE EXISTS(SELECT 1 FROM user_bookmarks ub WHERE ub.entity_type = 'DISCUSSION' AND ub.entity_id = d.id AND ub.user_id = $${userIdx}) END as is_saved,
+        CASE WHEN $${userIdx}::uuid IS NULL THEN false ELSE EXISTS(SELECT 1 FROM discussion_upvotes du WHERE du.discussion_id = d.id AND du.user_id = $${userIdx}) END as is_upvoted
       FROM discussions d
       LEFT JOIN users u ON d.user_id = u.id
       ${whereClause}
       ORDER BY ${sortClause}
-      LIMIT $1 OFFSET $2;
+      LIMIT $${limitIdx} OFFSET $${offsetIdx};
     `;
 
-    const result = await pool.query(query, queryParams);
-    
+    const result = await pool.query(query, finalParams);
+
     return {
       discussions: result.rows,
       total
@@ -194,6 +269,10 @@ export class DiscussionModel {
     const updateFields: string[] = [];
     const values: any[] = [];
     let paramIndex = 1;
+
+    if (updates.tags) {
+      updates.tags = this.normalizeTags(updates.tags);
+    }
 
     Object.entries(updates).forEach(([key, value]) => {
       if (allowedUpdates.includes(key)) {
@@ -209,7 +288,7 @@ export class DiscussionModel {
 
     updateFields.push('updated_at = CURRENT_TIMESTAMP');
     values.push(id, userId);
-    
+
     const query = `
       UPDATE discussions 
       SET ${updateFields.join(', ')}
@@ -229,7 +308,7 @@ export class DiscussionModel {
       WHERE id = $1 AND user_id = $2
       RETURNING *;
     `;
-    
+
     const result = await pool.query(query, [id, userId]);
     return result.rows[0] || null;
   }
@@ -239,18 +318,18 @@ export class DiscussionModel {
     // Verify user owns the discussion
     const verifyQuery = 'SELECT user_id FROM discussions WHERE id = $1';
     const verifyResult = await pool.query(verifyQuery, [discussionId]);
-    
+
     if (verifyResult.rows.length === 0 || verifyResult.rows[0].user_id !== userId) {
       return null;
     }
 
     const query = `
       UPDATE discussions 
-      SET best_answer_id = $1, updated_at = CURRENT_TIMESTAMP
+      SET best_answer_id = $1, is_resolved = true, updated_at = CURRENT_TIMESTAMP
       WHERE id = $2
       RETURNING *;
     `;
-    
+
     const result = await pool.query(query, [replyId, discussionId]);
     return result.rows[0] || null;
   }
@@ -262,6 +341,71 @@ export class DiscussionModel {
       [id, userId]
     );
     return result.rowCount ? result.rowCount > 0 : false;
+  }
+
+  // Toggle upvote on discussion
+  static async toggleUpvote(discussionId: string, userId: string): Promise<{ upvoted: boolean; count: number }> {
+    const client = await pool.connect();
+
+    try {
+      await client.query('BEGIN');
+
+      const checkQuery = 'SELECT 1 FROM discussion_upvotes WHERE discussion_id = $1 AND user_id = $2';
+      const checkResult = await client.query(checkQuery, [discussionId, userId]);
+
+      if (checkResult.rows.length > 0) {
+        // Remove upvote
+        await client.query(
+          'DELETE FROM discussion_upvotes WHERE discussion_id = $1 AND user_id = $2',
+          [discussionId, userId]
+        );
+
+        await client.query(
+          'UPDATE discussions SET upvote_count = upvote_count - 1 WHERE id = $1',
+          [discussionId]
+        );
+
+        await client.query('COMMIT');
+
+        const countResult = await client.query(
+          'SELECT upvote_count FROM discussions WHERE id = $1',
+          [discussionId]
+        );
+
+        return {
+          upvoted: false,
+          count: parseInt(countResult.rows[0].upvote_count)
+        };
+      } else {
+        // Add upvote
+        await client.query(
+          'INSERT INTO discussion_upvotes (discussion_id, user_id) VALUES ($1, $2)',
+          [discussionId, userId]
+        );
+
+        await client.query(
+          'UPDATE discussions SET upvote_count = upvote_count + 1 WHERE id = $1',
+          [discussionId]
+        );
+
+        await client.query('COMMIT');
+
+        const countResult = await client.query(
+          'SELECT upvote_count FROM discussions WHERE id = $1',
+          [discussionId]
+        );
+
+        return {
+          upvoted: true,
+          count: parseInt(countResult.rows[0].upvote_count)
+        };
+      }
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
   }
 
   // Search discussions
@@ -279,101 +423,106 @@ export class DiscussionModel {
     } = searchParams;
 
     const offset = (page - 1) * limit;
-    const queryParams: any[] = [limit, offset];
-    let paramIndex = 3;
-    let whereConditions = ['d.is_public = true'];
-    let orderBy = '';
 
-    // Search query
+    // Build common filter conditions
+    let baseConditions = ['d.is_public = true'];
+    const commonParams: any[] = [];
+    let pIdx = 1;
+
     if (q) {
-      whereConditions.push(`(
-        d.title ILIKE $${paramIndex} OR 
-        d.description ILIKE $${paramIndex} OR 
+      baseConditions.push(`(
+        d.title ILIKE $${pIdx} OR 
+        d.description ILIKE $${pIdx} OR 
         EXISTS(
           SELECT 1 FROM users u 
-          WHERE u.id = d.user_id AND u.full_name ILIKE $${paramIndex}
+          WHERE u.id = d.user_id AND u.full_name ILIKE $${pIdx}
+        ) OR
+        EXISTS(
+          SELECT 1 FROM unnest(d.tags) AS t 
+          WHERE t ILIKE $${pIdx} OR ('#' || t) ILIKE $${pIdx}
         )
       )`);
-      queryParams.push(`%${q}%`);
-      paramIndex++;
+      commonParams.push(`%${q}%`);
+      pIdx++;
     }
 
-    // Additional filters
     if (category) {
-      whereConditions.push(`d.category = $${paramIndex}`);
-      queryParams.push(category);
-      paramIndex++;
+      baseConditions.push(`d.category = $${pIdx}`);
+      commonParams.push(category);
+      pIdx++;
     }
 
     if (type) {
-      whereConditions.push(`d.discussion_type = $${paramIndex}`);
-      queryParams.push(type);
-      paramIndex++;
+      baseConditions.push(`d.discussion_type = $${pIdx}`);
+      commonParams.push(type);
+      pIdx++;
     }
 
-    if (tags && tags.length > 0) {
-      whereConditions.push(`d.tags && $${paramIndex}::text[]`);
-      queryParams.push(tags);
-      paramIndex++;
+    if (tags && (Array.isArray(tags) ? tags.length > 0 : !!tags)) {
+      const tagsArray = this.normalizeTags(tags);
+      baseConditions.push(`EXISTS (
+        SELECT 1 FROM unnest(d.tags) AS t 
+        WHERE UPPER(t) = ANY($${pIdx}::text[])
+      )`);
+      commonParams.push(tagsArray);
+      pIdx++;
     }
 
     if (author) {
-      whereConditions.push(`EXISTS(
+      baseConditions.push(`EXISTS(
         SELECT 1 FROM users u 
-        WHERE u.id = d.user_id AND u.full_name ILIKE $${paramIndex}
+        WHERE u.id = d.user_id AND u.full_name ILIKE $${pIdx}
       )`);
-      queryParams.push(`%${author}%`);
-      paramIndex++;
+      commonParams.push(`%${author}%`);
+      pIdx++;
     }
 
     if (status === 'resolved') {
-      whereConditions.push('d.is_resolved = true');
+      baseConditions.push('d.is_resolved = true');
     } else if (status === 'active') {
-      whereConditions.push('d.is_resolved = false');
+      baseConditions.push('d.is_resolved = false');
     }
 
-    // Build sort clause
+    const whereClause = baseConditions.length > 0 ? `WHERE ${baseConditions.join(' AND ')}` : '';
+
+    // 1. Get total count
+    const countQuery = `SELECT COUNT(*) as total FROM discussions d ${whereClause}`;
+    const countResult = await pool.query(countQuery, commonParams);
+    const total = parseInt(countResult.rows[0].total);
+
+    // 2. Build sort clause
+    let orderBy = 'd.created_at DESC';
     switch (sort) {
       case 'newest':
         orderBy = 'd.created_at DESC';
         break;
       case 'active':
-        orderBy = 'd.last_activity_at DESC';
+        orderBy = 'd.reply_count DESC';
         break;
       case 'popular':
-        orderBy = 'd.reply_count DESC, d.upvote_count DESC';
+        orderBy = 'd.view_count DESC';
         break;
       case 'relevance':
         if (q) {
           orderBy = `
             CASE 
-              WHEN d.title ILIKE '%${q}%' THEN 1
-              WHEN d.description ILIKE '%${q}%' THEN 2
+              WHEN d.title ILIKE $1 THEN 1
+              WHEN d.description ILIKE $1 THEN 2
               ELSE 3
             END,
             d.reply_count DESC
           `;
-        } else {
-          orderBy = 'd.last_activity_at DESC';
         }
         break;
     }
 
-    const whereClause = whereConditions.length > 0 
-      ? `WHERE ${whereConditions.join(' AND ')}`
-      : '';
+    // 3. Get paginated results
+    const finalParams = [...commonParams];
+    const limitIdx = finalParams.length + 1;
+    const offsetIdx = finalParams.length + 2;
+    const userIdx = finalParams.length + 3;
+    finalParams.push(limit, offset, userId || null);
 
-    // Get total count
-    const countQuery = `
-      SELECT COUNT(*) as total 
-      FROM discussions d
-      ${whereClause}
-    `;
-    
-    const countResult = await pool.query(countQuery, queryParams.slice(2));
-    const total = parseInt(countResult.rows[0].total);
-
-    // Get search results
     const query = `
       SELECT 
         d.id,
@@ -390,16 +539,17 @@ export class DiscussionModel {
         d.last_activity_at,
         u.full_name as author_name,
         u.profile_photo_url as author_photo,
-        ${userId ? `EXISTS(SELECT 1 FROM discussion_followers df WHERE df.discussion_id = d.id AND df.user_id = $${paramIndex}) as is_following` : 'false as is_following'}
+        CASE WHEN $${userIdx}::uuid IS NULL THEN false ELSE EXISTS(SELECT 1 FROM discussion_followers df WHERE df.discussion_id = d.id AND df.user_id = $${userIdx}) END as is_following,
+        CASE WHEN $${userIdx}::uuid IS NULL THEN false ELSE EXISTS(SELECT 1 FROM discussion_upvotes du WHERE du.discussion_id = d.id AND du.user_id = $${userIdx}) END as is_upvoted
       FROM discussions d
       LEFT JOIN users u ON d.user_id = u.id
       ${whereClause}
       ORDER BY ${orderBy}
-      LIMIT $1 OFFSET $2;
+      LIMIT $${limitIdx} OFFSET $${offsetIdx};
     `;
 
-    const result = await pool.query(query, queryParams);
-    
+    const result = await pool.query(query, finalParams);
+
     return {
       discussions: result.rows,
       total

@@ -5,17 +5,24 @@
 
 import { Image, FileText, Video, Send, X } from 'lucide-react';
 import { useState, useRef } from 'react';
+import { toast } from 'react-toastify';
 
 interface AttachedFile {
   id: string;
   file: File;
-  type: 'image' | 'document' | 'video';
+  type: 'image' | 'document';
   preview?: string;
 }
 
-export function CreatePost() {
+interface CreatePostProps {
+  onPostCreated?: () => void;
+}
+
+export function CreatePost({ onPostCreated }: CreatePostProps) {
   const [postContent, setPostContent] = useState('');
+  const [hashtags, setHashtags] = useState('');
   const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
+  const [postType, setPostType] = useState<'POST' | 'QUESTION' | 'ARTICLE' | 'ANNOUNCEMENT'>('POST');
   const [isPublishing, setIsPublishing] = useState(false);
 
   // Get current user from localStorage
@@ -36,15 +43,13 @@ export function CreatePost() {
 
   const imageInputRef = useRef<HTMLInputElement>(null);
   const documentInputRef = useRef<HTMLInputElement>(null);
-  const videoInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileSelect = (type: 'image' | 'document' | 'video') => {
+  const handleFileSelect = (type: 'image' | 'document') => {
     if (type === 'image') imageInputRef.current?.click();
     else if (type === 'document') documentInputRef.current?.click();
-    else if (type === 'video') videoInputRef.current?.click();
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'image' | 'document' | 'video') => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'image' | 'document') => {
     const files = e.target.files;
     if (!files) return;
 
@@ -83,30 +88,42 @@ export function CreatePost() {
     setIsPublishing(true);
 
     try {
-      const { createPost } = await import('../api/posts');
+      const { createPost, uploadFiles } = await import('../api/postsAPI');
 
-      // Debug: Check if token exists
-      const token = localStorage.getItem('token');
-      console.log('Token available:', !!token, token ? token.substring(0, 20) + '...' : 'null');
+      let media: any[] = [];
+      if (attachedFiles.length > 0) {
+        toast.info('Uploading files...');
+        media = await uploadFiles(attachedFiles.map(af => af.file));
+      }
+
+      // Process manual hashtags
+      const hashtagsArray = hashtags.split(',')
+        .map(tag => tag.trim())
+        .filter(tag => tag.length > 0)
+        .map(tag => tag.startsWith('#') ? tag.slice(1) : tag);
 
       await createPost({
         content: postContent.trim(),
-        postType: 'POST',
-        tags: [],
-        isPublic: true
+        postType,
+        tags: hashtagsArray,
+        isPublic: true,
+        media
       });
 
       // Success - reset form
       setPostContent('');
+      setHashtags('');
+      setPostType('POST');
       attachedFiles.forEach(f => {
         if (f.preview) URL.revokeObjectURL(f.preview);
       });
       setAttachedFiles([]);
 
-      alert('Post published successfully!');
+      toast.success('Post published successfully!');
+      if (onPostCreated) onPostCreated();
     } catch (error: any) {
       console.error('Failed to publish post:', error);
-      alert(`Failed to publish post: ${error.message}`);
+      toast.error(`Failed to publish post: ${error.message}`);
     } finally {
       setIsPublishing(false);
     }
@@ -134,13 +151,22 @@ export function CreatePost() {
         multiple
         className="hidden"
       />
-      <input
-        type="file"
-        ref={videoInputRef}
-        onChange={(e) => handleFileChange(e, 'video')}
-        accept="video/*"
-        className="hidden"
-      />
+
+      {/* Post Type Selector */}
+      <div className="flex items-center gap-2 mb-4 overflow-x-auto pb-2 scrollbar-hide">
+        {(['POST', 'QUESTION', 'ARTICLE', 'ANNOUNCEMENT'] as const).map((type) => (
+          <button
+            key={type}
+            onClick={() => setPostType(type)}
+            className={`px-3 py-1 rounded-full text-xs font-bold transition-all ${postType === type
+              ? 'bg-constitution-gold text-justice-black shadow-md'
+              : 'bg-constitution-gold/10 text-constitution-gold hover:bg-constitution-gold/20'
+              }`}
+          >
+            {type}
+          </button>
+        ))}
+      </div>
 
       <div className="flex items-start space-x-4">
         {/* Profile Picture */}
@@ -169,8 +195,7 @@ export function CreatePost() {
                     </div>
                   ) : (
                     <div className="px-3 py-2 bg-constitution-gold/10 border border-constitution-gold/30 rounded-lg flex items-center gap-2">
-                      {file.type === 'document' && <FileText className="w-4 h-4 text-constitution-gold" />}
-                      {file.type === 'video' && <Video className="w-4 h-4 text-constitution-gold" />}
+                      <FileText className="w-4 h-4 text-constitution-gold" />
                       <span className="text-sm text-ink-gray max-w-[100px] truncate">{file.file.name}</span>
                     </div>
                   )}
@@ -185,7 +210,20 @@ export function CreatePost() {
             </div>
           )}
 
-          {/* Post Type Selection */}
+          {/* Hashtag Input */}
+          <div className="mt-4">
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Add hashtags (comma separated, e.g. legal, court, advice)"
+                className="w-full parchment-bg border border-constitution-gold/30 rounded-lg py-2 px-4 text-ink-gray font-body focus:outline-none focus:border-constitution-gold text-sm"
+                value={hashtags}
+                onChange={(e) => setHashtags(e.target.value)}
+              />
+            </div>
+          </div>
+
+          {/* Post Actions */}
           <div className="mt-4 flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <button
@@ -203,14 +241,6 @@ export function CreatePost() {
               >
                 <FileText className="w-4 h-4" />
                 <span>Document</span>
-              </button>
-              <button
-                onClick={() => handleFileSelect('video')}
-                className="px-3 py-2 bg-constitution-gold/10 border border-constitution-gold/30 rounded-lg text-constitution-gold hover:bg-constitution-gold/20 transition-colors flex items-center space-x-2"
-                style={{ fontSize: '0.875rem' }}
-              >
-                <Video className="w-4 h-4" />
-                <span>Video</span>
               </button>
             </div>
 

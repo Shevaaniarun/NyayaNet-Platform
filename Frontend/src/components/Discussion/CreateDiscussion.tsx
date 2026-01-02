@@ -30,16 +30,19 @@ export function CreateDiscussion({ onSubmit, onCancel }: CreateDiscussionProps) 
   ];
 
   const categories = [
-    'Constitutional Law',
-    'Criminal Law',
-    'Civil Law',
-    'Corporate Law',
-    'IPR Law',
-    'Tax Law',
-    'Family Law',
-    'Consumer Law',
-    'Environmental Law',
-    'Cyber Law',
+    'CONSTITUTIONAL_LAW',
+    'CRIMINAL_LAW',
+    'CIVIL_LAW',
+    'CORPORATE_LAW',
+    'INTELLECTUAL_PROPERTY',
+    'TAX_LAW',
+    'FAMILY_LAW',
+    'CONSUMER_LAW',
+    'CYBER_LAW',
+    'ARBITRATION',
+    'PROPERTY_LAW',
+    'LEGAL_ETHICS',
+    'INTERNATIONAL_LAW',
   ];
 
   const handleAddTag = () => {
@@ -55,12 +58,22 @@ export function CreateDiscussion({ onSubmit, onCancel }: CreateDiscussionProps) 
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Auto-add any pending text in tagInput as tags
+    let finalTags = [...tags];
+    if (tagInput.trim()) {
+      const newTags = tagInput.split(',')
+        .map(t => t.trim())
+        .filter(t => t && !finalTags.includes(t));
+      finalTags = [...finalTags, ...newTags];
+    }
+
     onSubmit({
       title,
       description,
       discussionType,
       category,
-      tags,
+      tags: finalTags,
       isPublic,
     });
   };
@@ -254,13 +267,6 @@ export function CreateDiscussion({ onSubmit, onCancel }: CreateDiscussionProps) 
             )}
           </div>
           <div className="flex items-center space-x-4">
-            <button
-              type="button"
-              className="px-6 py-3 bg-constitution-gold/10 border border-constitution-gold/30 text-constitution-gold rounded-lg hover:bg-constitution-gold/20 transition-colors font-medium flex items-center space-x-2"
-            >
-              <FileText className="w-4 h-4" />
-              <span>Save Draft</span>
-            </button>
             <button
               type="submit"
               disabled={!title.trim() || !description.trim() || !category}

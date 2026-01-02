@@ -31,6 +31,18 @@ export interface DiscussionAuthor {
   profilePhotoUrl?: string | null;
 }
 
+export interface DiscussionReply {
+  id: string;
+  content: string;
+  upvoteCount: number;
+  replyCount: number;
+  isEdited: boolean;
+  createdAt: string;
+  author: DiscussionAuthor;
+  hasUpvoted?: boolean;
+  replies: DiscussionReply[];
+}
+
 export interface Discussion {
   id: string;
   title: string;
@@ -50,6 +62,7 @@ export interface Discussion {
   author: DiscussionAuthor;
   isFollowing?: boolean;
   isSaved?: boolean;
+  isUpvoted?: boolean;
 }
 
 export interface Comment {
@@ -91,7 +104,7 @@ export interface PaginatedResponse<T> {
   };
 }
 
-export interface CreateDiscussionData {
+export interface CreateDiscussionInputData {
   title: string;
   description: string;
   discussionType: 'GENERAL' | 'CASE_ANALYSIS' | 'LEGAL_QUERY' | 'OPINION_POLL';
@@ -110,7 +123,7 @@ export const discussionService = {
   // Get discussions with filters
   getDiscussions: async (filters: DiscussionFilters = {}) => {
     const params = new URLSearchParams();
-    
+
     // Add all filter parameters
     if (filters.page) params.append('page', filters.page.toString());
     if (filters.limit) params.append('limit', filters.limit.toString());
@@ -123,7 +136,7 @@ export const discussionService = {
     if (filters.tags && filters.tags.length > 0) {
       params.append('tags', filters.tags.join(','));
     }
-    
+
     const response = await api.get<PaginatedResponse<Discussion>>(`/discussions?${params.toString()}`);
     return response.data.data;
   },
@@ -135,14 +148,14 @@ export const discussionService = {
   },
 
   // Create a new discussion
-  createDiscussion: async (data: CreateDiscussionData) => {
+  createDiscussion: async (data: CreateDiscussionInputData) => {
     const response = await api.post<{ success: boolean; data: { discussion: Discussion } }>('/discussions', data);
     return response.data.data.discussion;
   },
 
   // Add reply to discussion
   addReply: async (discussionId: string, data: CreateReplyData) => {
-    const response = await api.post<{ success: boolean; data: { reply: any } }>(
+    const response = await api.post<{ success: boolean; data: { reply: Comment } }>(
       `/discussions/${discussionId}/replies`,
       data
     );
@@ -157,6 +170,14 @@ export const discussionService = {
     return response.data.data;
   },
 
+  // Toggle upvote on discussion
+  toggleDiscussionUpvote: async (discussionId: string) => {
+    const response = await api.post<{ success: boolean; data: { upvoted: boolean; upvoteCount: number } }>(
+      `/discussions/${discussionId}/upvote`
+    );
+    return response.data.data;
+  },
+
   // Toggle follow discussion
   toggleFollow: async (discussionId: string) => {
     const response = await api.post<{ success: boolean; data: { following: boolean; followerCount: number } }>(
@@ -167,9 +188,10 @@ export const discussionService = {
 
   // Toggle save discussion
   toggleSave: async (discussionId: string) => {
-    // This endpoint might not exist in your backend, you need to create it
-    // For now, we'll create a mock function
-    return { saved: true }; // Mock response
+    const response = await api.post<{ success: boolean; data: { saved: boolean; saveCount: number } }>(
+      `/discussions/${discussionId}/save`
+    );
+    return response.data.data;
   },
 
   // Mark reply as best answer
@@ -193,7 +215,7 @@ export const discussionService = {
   searchDiscussions: async (query: string, filters?: Partial<DiscussionFilters>) => {
     const params = new URLSearchParams();
     params.append('q', query);
-    
+
     if (filters) {
       if (filters.category) params.append('category', filters.category);
       if (filters.type) params.append('type', filters.type);
@@ -203,7 +225,7 @@ export const discussionService = {
         params.append('tags', filters.tags.join(','));
       }
     }
-    
+
     const response = await api.get<PaginatedResponse<Discussion>>(`/discussions/search?${params.toString()}`);
     return response.data.data;
   },
@@ -215,6 +237,7 @@ export const createDiscussion = discussionService.createDiscussion;
 export const getDiscussionById = discussionService.getDiscussionById;
 export const addReply = discussionService.addReply;
 export const upvoteReply = discussionService.toggleReplyUpvote;
+export const toggleDiscussionUpvote = discussionService.toggleDiscussionUpvote;
 export const followDiscussion = discussionService.toggleFollow;
 export const saveDiscussion = discussionService.toggleSave;
 export const markBestAnswer = discussionService.markBestAnswer;
