@@ -22,7 +22,7 @@ type ViewType =
     | 'dashboard'
     | 'discussions'
     | 'profile'
-    | 'notes'; // ✅ ADDED
+    | 'notes';
 
 // Helper to get current user from localStorage
 const getCurrentUser = () => {
