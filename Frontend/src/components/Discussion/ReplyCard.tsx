@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Heart, Reply, Flag, MessageSquare, CheckCircle, User, MessageCircle } from 'lucide-react';
+import { Heart, Reply, Flag, MessageSquare, CheckCircle, User, MessageCircle, ArrowBigUp } from 'lucide-react';
 
 export interface ReplyType {
     id: string;
@@ -109,7 +109,7 @@ export function ReplyCard({
                             className={`flex items-center gap-1.5 transition-colors group ${reply.hasUpvoted ? 'text-constitution-gold' : 'text-ink-gray/40 hover:text-constitution-gold'
                                 }`}
                         >
-                            <Heart className={`w-3.5 h-3.5 ${reply.hasUpvoted ? 'fill-current' : ''}`} />
+                            <ArrowBigUp className={`w-3.5 h-3.5 ${reply.hasUpvoted ? 'fill-current' : ''}`} />
                             <span className="text-xs font-bold">{reply.upvoteCount}</span>
                         </button>
 

@@ -62,6 +62,7 @@ export interface Discussion {
   author: DiscussionAuthor;
   isFollowing?: boolean;
   isSaved?: boolean;
+  isUpvoted?: boolean;
 }
 
 export interface Comment {

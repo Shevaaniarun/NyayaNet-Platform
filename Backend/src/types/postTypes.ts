@@ -1,16 +1,34 @@
+export interface PostMediaInput {
+  mediaType: 'IMAGE' | 'PDF' | 'DOCUMENT';
+  mediaUrl: string;
+  thumbnailUrl?: string;
+  fileName?: string;
+  fileSize?: number;
+  mimeType?: string;
+}
+
 export interface Post {
   id: string;
-  user_id: string;
-  title?: string;
+  userId: string;
+  title: string | null;
   content: string;
-  post_type: 'POST' | 'QUESTION' | 'ARTICLE' | 'ANNOUNCEMENT';
+  postType: 'POST' | 'QUESTION' | 'ARTICLE' | 'ANNOUNCEMENT';
   tags: string[];
-  is_public: boolean;
-  view_count: number;
-  like_count: number;
-  comment_count: number;
-  created_at: Date;
-  updated_at: Date;
+  isPublic: boolean;
+  viewCount: number;
+  likeCount: number;
+  commentCount: number;
+  createdAt: string;
+  updatedAt: string;
+  media?: any[];
+  isLiked?: boolean;
+  isSaved?: boolean;
+  author?: {
+    id: string;
+    fullName: string;
+    profilePhotoUrl: string | null;
+    designation: string | null;
+  };
 }
 
 export interface PostWithAuthor extends Post {
@@ -26,6 +44,7 @@ export interface CreatePostInput {
   postType?: 'POST' | 'QUESTION' | 'ARTICLE' | 'ANNOUNCEMENT';
   tags?: string[];
   isPublic?: boolean;
+  media?: PostMediaInput[];
 }
 
 export interface PostFilters {

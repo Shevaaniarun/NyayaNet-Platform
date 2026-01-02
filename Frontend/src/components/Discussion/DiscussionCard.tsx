@@ -1,4 +1,4 @@
-import { MessageSquare, Eye, Heart, Bookmark, Users, Scale, Calendar, Gavel, CheckCircle, TrendingUp } from 'lucide-react';
+import { MessageSquare, Eye, Heart, Bookmark, Users, Scale, Calendar, Gavel, CheckCircle, TrendingUp, ArrowBigUp } from 'lucide-react';
 
 export interface Discussion {
   id: string;
@@ -23,6 +23,7 @@ export interface Discussion {
   };
   isFollowing?: boolean;
   isSaved?: boolean;
+  isUpvoted?: boolean;
 }
 
 interface DiscussionCardProps {
@@ -30,9 +31,10 @@ interface DiscussionCardProps {
   onClick?: () => void;
   onFollow?: (e: React.MouseEvent) => void;
   onSave?: (e: React.MouseEvent) => void;
+  onUpvote?: (e: React.MouseEvent) => void;
 }
 
-export function DiscussionCard({ discussion, onClick, onFollow, onSave }: DiscussionCardProps) {
+export function DiscussionCard({ discussion, onClick, onFollow, onSave, onUpvote }: DiscussionCardProps) {
 
   const getTypeColor = (type: string) => {
     switch (type) {
@@ -105,8 +107,8 @@ export function DiscussionCard({ discussion, onClick, onFollow, onSave }: Discus
             <button
               onClick={(e) => { e.stopPropagation(); onFollow?.(e); }}
               className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${discussion.isFollowing
-                  ? 'bg-constitution-gold text-justice-black'
-                  : 'bg-constitution-gold/5 text-constitution-gold border border-constitution-gold/20 hover:bg-constitution-gold/10'
+                ? 'bg-constitution-gold text-justice-black'
+                : 'bg-constitution-gold/5 text-constitution-gold border border-constitution-gold/20 hover:bg-constitution-gold/10'
                 }`}
             >
               <TrendingUp className="w-3.5 h-3.5" />
@@ -115,8 +117,8 @@ export function DiscussionCard({ discussion, onClick, onFollow, onSave }: Discus
             <button
               onClick={(e) => { e.stopPropagation(); onSave?.(e); }}
               className={`p-1.5 rounded-lg border transition-all ${discussion.isSaved
-                  ? 'bg-constitution-gold text-justice-black border-constitution-gold'
-                  : 'bg-ink-gray/5 text-ink-gray/40 border-transparent hover:border-constitution-gold/30 hover:text-constitution-gold'
+                ? 'bg-constitution-gold text-justice-black border-constitution-gold'
+                : 'bg-ink-gray/5 text-ink-gray/40 border-transparent hover:border-constitution-gold/30 hover:text-constitution-gold'
                 }`}
             >
               <Bookmark className={`w-4 h-4 ${discussion.isSaved ? 'fill-current' : ''}`} />
@@ -180,11 +182,17 @@ export function DiscussionCard({ discussion, onClick, onFollow, onSave }: Discus
               <span className="text-xs font-bold">{discussion.replyCount}</span>
               <span className="text-[10px] uppercase font-medium">Replies</span>
             </div>
-            <div className="flex items-center space-x-1.5 text-ink-gray/60">
-              <Heart className="w-4 h-4" />
+            <button
+              onClick={(e) => { e.stopPropagation(); onUpvote?.(e); }}
+              className={`flex items-center space-x-1.5 transition-all px-2 py-1 rounded-md border ${discussion.isUpvoted
+                ? 'bg-constitution-gold/20 text-constitution-gold border-constitution-gold/40'
+                : 'text-ink-gray/60 border-transparent hover:border-constitution-gold/20 hover:text-constitution-gold'
+                }`}
+            >
+              <ArrowBigUp className={`w-4 h-4 ${discussion.isUpvoted ? 'fill-current' : ''}`} />
               <span className="text-xs font-bold">{discussion.upvoteCount}</span>
               <span className="text-[10px] uppercase font-medium">Upvotes</span>
-            </div>
+            </button>
             <div className="flex items-center space-x-1.5 text-ink-gray/60">
               <Eye className="w-4 h-4" />
               <span className="text-xs font-bold">{discussion.viewCount}</span>

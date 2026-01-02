@@ -48,7 +48,8 @@ export class DiscussionModel {
         u.role as author_role,
         u.profile_photo_url as author_photo,
         CASE WHEN $2::uuid IS NULL THEN false ELSE EXISTS(SELECT 1 FROM discussion_followers df WHERE df.discussion_id = d.id AND df.user_id = $2) END as is_following,
-        CASE WHEN $2::uuid IS NULL THEN false ELSE EXISTS(SELECT 1 FROM user_bookmarks ub WHERE ub.entity_type = 'DISCUSSION' AND ub.entity_id = d.id AND ub.user_id = $2) END as is_saved
+        CASE WHEN $2::uuid IS NULL THEN false ELSE EXISTS(SELECT 1 FROM user_bookmarks ub WHERE ub.entity_type = 'DISCUSSION' AND ub.entity_id = d.id AND ub.user_id = $2) END as is_saved,
+        CASE WHEN $2::uuid IS NULL THEN false ELSE EXISTS(SELECT 1 FROM discussion_upvotes du WHERE du.discussion_id = d.id AND du.user_id = $2) END as is_upvoted
       FROM discussions d
       LEFT JOIN users u ON d.user_id = u.id
       WHERE d.id = $1 AND d.is_public = true;
@@ -245,7 +246,8 @@ export class DiscussionModel {
         u.role as author_role,
         u.profile_photo_url as author_photo,
         CASE WHEN $${userIdx}::uuid IS NULL THEN false ELSE EXISTS(SELECT 1 FROM discussion_followers df WHERE df.discussion_id = d.id AND df.user_id = $${userIdx}) END as is_following,
-        CASE WHEN $${userIdx}::uuid IS NULL THEN false ELSE EXISTS(SELECT 1 FROM user_bookmarks ub WHERE ub.entity_type = 'DISCUSSION' AND ub.entity_id = d.id AND ub.user_id = $${userIdx}) END as is_saved
+        CASE WHEN $${userIdx}::uuid IS NULL THEN false ELSE EXISTS(SELECT 1 FROM user_bookmarks ub WHERE ub.entity_type = 'DISCUSSION' AND ub.entity_id = d.id AND ub.user_id = $${userIdx}) END as is_saved,
+        CASE WHEN $${userIdx}::uuid IS NULL THEN false ELSE EXISTS(SELECT 1 FROM discussion_upvotes du WHERE du.discussion_id = d.id AND du.user_id = $${userIdx}) END as is_upvoted
       FROM discussions d
       LEFT JOIN users u ON d.user_id = u.id
       ${whereClause}
@@ -537,7 +539,8 @@ export class DiscussionModel {
         d.last_activity_at,
         u.full_name as author_name,
         u.profile_photo_url as author_photo,
-        CASE WHEN $${userIdx}::uuid IS NULL THEN false ELSE EXISTS(SELECT 1 FROM discussion_followers df WHERE df.discussion_id = d.id AND df.user_id = $${userIdx}) END as is_following
+        CASE WHEN $${userIdx}::uuid IS NULL THEN false ELSE EXISTS(SELECT 1 FROM discussion_followers df WHERE df.discussion_id = d.id AND df.user_id = $${userIdx}) END as is_following,
+        CASE WHEN $${userIdx}::uuid IS NULL THEN false ELSE EXISTS(SELECT 1 FROM discussion_upvotes du WHERE du.discussion_id = d.id AND du.user_id = $${userIdx}) END as is_upvoted
       FROM discussions d
       LEFT JOIN users u ON d.user_id = u.id
       ${whereClause}
