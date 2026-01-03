@@ -1,0 +1,330 @@
+.ancient-scroll {
+  position: relative;
+  width: 100%;
+  margin: 2rem 0;
+  cursor: default;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: translateY(0);
+}
+
+.ancient-scroll:hover {
+  transform: translateY(-8px);
+}
+
+/* Scroll body - Updated for tape integration */
+.scroll-body {
+  position: relative;
+  background: #f5e6c8;
+  border-left: 1px solid #d2b48c;
+  border-right: 1px solid #d2b48c;
+  border-bottom: 2px solid #8b4513;
+  border-top: 2px solid #d2b48c; /* Added top border for tape integration */
+  padding: 40px 50px;
+  min-height: 400px;
+  box-shadow: 0 8px 32px rgba(101, 67, 33, 0.3);
+  transition: all 0.4s ease;
+  overflow: hidden;
+  clip-path: polygon(
+    0 20px, 20px 0,
+    calc(100% - 20px) 0, 100% 20px,
+    100% calc(100% - 20px), calc(100% - 20px) 100%,
+    20px 100%, 0 calc(100% - 20px)
+  );
+  margin-top: 10px; /* Space for tape */
+}
+
+.ancient-scroll:hover .scroll-body {
+  box-shadow: 0 15px 45px rgba(101, 67, 33, 0.45);
+}
+
+/* Paper texture */
+.paper-texture {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(139, 69, 19, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(139, 69, 19, 0.03) 1px, transparent 1px);
+  background-size: 30px 30px;
+  pointer-events: none;
+}
+
+/* Age stains */
+.age-stain {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(10px);
+  pointer-events: none;
+}
+
+.stain-1 {
+  top: 60px;
+  right: 80px;
+  width: 80px;
+  height: 20px;
+  background: rgba(139, 69, 19, 0.04);
+  transform: rotate(15deg);
+}
+
+.stain-2 {
+  bottom: 120px;
+  left: 100px;
+  width: 60px;
+  height: 60px;
+  background: rgba(101, 67, 33, 0.03);
+}
+
+/* Content */
+.scroll-content {
+  position: relative;
+  z-index: 10;
+}
+
+.manuscript-title {
+  font-family: 'Georgia', 'Times New Roman', serif;
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: #3c280d;
+  margin: 0 0 2rem 0;
+  padding-bottom: 1.5rem;
+  border-bottom: 2px solid rgba(139, 69, 19, 0.2);
+  line-height: 1.2;
+  letter-spacing: -0.5px;
+}
+
+.manuscript-content {
+  font-family: 'Palatino Linotype', 'Book Antiqua', serif;
+  font-size: 1.25rem;
+  color: #4a3728;
+  line-height: 1.8;
+  margin-bottom: 3rem;
+  text-align: justify;
+}
+
+.manuscript-content p {
+  margin: 0;
+}
+
+/* Divider */
+.manuscript-divider {
+  position: relative;
+  margin: 3rem 0;
+  height: 2px;
+}
+
+.divider-line {
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    transparent 10%,
+    rgba(139, 69, 19, 0.4) 50%,
+    transparent 90%
+  );
+}
+
+.divider-ornament {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(45deg);
+  width: 12px;
+  height: 12px;
+  background: rgba(139, 69, 19, 0.15);
+  border: 1px solid rgba(139, 69, 19, 0.3);
+}
+
+/* Footer */
+.scroll-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 2rem;
+  border-top: 1px solid rgba(139, 69, 19, 0.15);
+}
+
+.timestamp {
+  font-family: 'Georgia', serif;
+  font-size: 0.95rem;
+  color: #654321;
+  font-style: italic;
+  letter-spacing: 0.3px;
+}
+
+.scroll-actions {
+  display: flex;
+  gap: 1rem;
+  opacity: 0.7;
+  transition: opacity 0.6s ease;
+}
+
+.ancient-scroll:hover .scroll-actions {
+  opacity: 1;
+}
+
+.action-btn {
+  background: transparent;
+  border: 1px solid rgba(101, 67, 33, 0.3);
+  border-radius: 4px;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.5s ease;
+}
+
+.action-btn:hover {
+  background: rgba(101, 67, 33, 0.1);
+  border-color: rgba(101, 67, 33, 0.6);
+  transform: translateY(-2px);
+}
+
+.action-icon {
+  width: 20px;
+  height: 20px;
+  stroke: #654321;
+}
+
+/* Corner marks */
+.corner-mark {
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  border-color: rgba(139, 69, 19, 0.2);
+  pointer-events: none;
+}
+
+.top-left {
+  top: 15px;
+  left: 15px;
+  border-top: 2px solid;
+  border-left: 2px solid;
+}
+
+.top-right {
+  top: 15px;
+  right: 15px;
+  border-top: 2px solid;
+  border-right: 2px solid;
+}
+
+.bottom-left {
+  bottom: 15px;
+  left: 15px;
+  border-bottom: 2px solid;
+  border-left: 2px solid;
+}
+
+.bottom-right {
+  bottom: 15px;
+  right: 15px;
+  border-bottom: 2px solid;
+  border-right: 2px solid;
+}
+
+/* Scroll shadow */
+.scroll-shadow {
+  position: absolute;
+  bottom: -8px;
+  left: 56px;
+  right: 56px;
+  height: 16px;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(101, 67, 33, 0.22) 0%,
+    transparent 70%
+  );
+  filter: blur(6px);
+  z-index: -1;
+  transition: all 0.4s ease;
+}
+
+.ancient-scroll:hover .scroll-shadow {
+  opacity: 0.75;
+  transform: scale(1.04);
+  filter: blur(8px);
+}
+
+/* Golden tape integration - Removed scroll-top, scroll-cylinder, and scroll-end styles */
+.scroll-top,
+.scroll-cylinder,
+.scroll-end {
+  display: none;
+}
+
+/* Add to your existing NoteCard.css */
+
+/* Dynamic height classes */
+.min-h-\[300px\] {
+  min-height: 300px;
+}
+
+.min-h-\[350px\] {
+  min-height: 350px;
+}
+
+.min-h-\[400px\] {
+  min-height: 400px;
+}
+
+.min-h-\[450px\] {
+  min-height: 450px;
+}
+
+.min-h-\[500px\] {
+  min-height: 500px;
+}
+
+/* Make scroll-body height dynamic */
+.scroll-body {
+  position: relative;
+  background: #f5e6c8;
+  border-left: 1px solid #d2b48c;
+  border-right: 1px solid #d2b48c;
+  border-bottom: 2px solid #8b4513;
+  border-top: 2px solid #d2b48c;
+  padding: 40px 50px;
+  /* Remove fixed min-height: 400px; */
+  box-shadow: 0 8px 32px rgba(101, 67, 33, 0.3);
+  transition: all 0.4s ease;
+  overflow: hidden;
+  clip-path: polygon(
+    0 20px, 20px 0,
+    calc(100% - 20px) 0, 100% 20px,
+    100% calc(100% - 20px), calc(100% - 20px) 100%,
+    20px 100%, 0 calc(100% - 20px)
+  );
+  margin-top: 10px;
+}
+
+/* Make manuscript-content scrollable for very long content */
+.manuscript-content {
+  font-family: 'Palatino Linotype', 'Book Antiqua', serif;
+  font-size: 1.25rem;
+  color: #4a3728;
+  line-height: 1.8;
+  margin-bottom: 3rem;
+  text-align: justify;
+  max-height: 400px; /* Limit height */
+  overflow-y: auto; /* Add scroll for very long content */
+  padding-right: 10px; /* Space for scrollbar */
+}
+
+.manuscript-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.manuscript-content::-webkit-scrollbar-track {
+  background: rgba(139, 69, 19, 0.1);
+  border-radius: 3px;
+}
+
+.manuscript-content::-webkit-scrollbar-thumb {
+  background: rgba(139, 69, 19, 0.3);
+  border-radius: 3px;
+}
+
+.manuscript-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(139, 69, 19, 0.5);
+}

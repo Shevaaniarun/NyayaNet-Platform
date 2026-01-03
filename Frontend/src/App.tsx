@@ -13,8 +13,16 @@ import LoginPage from "./pages/LoginPage";
 import { ProfilePage } from './pages/ProfilePage';
 import { getFeed, Post as ApiPost } from './api/postsAPI';
 import { toast } from 'react-toastify';
+import NotesPage from './pages/NotesPage';
 
-type ViewType = 'feed' | 'cases' | 'ai' | 'dashboard' | 'discussions' | 'profile';
+type ViewType =
+    | 'feed'
+    | 'cases'
+    | 'ai'
+    | 'dashboard'
+    | 'discussions'
+    | 'profile'
+    | 'notes';
 
 // Helper to get current user from localStorage
 const getCurrentUser = () => {
@@ -80,18 +88,15 @@ export default function App() {
     const [selectedProfileUserId, setSelectedProfileUserId] = useState<string | null>(null);
 
     useEffect(() => {
-        // Check authentication immediately
         const token = localStorage.getItem("token");
         const isAuth = !!token;
         setIsAuthenticated(isAuth);
 
-        // If authenticated, set the dashboard view and load posts
         if (isAuth) {
             setCurrentView('dashboard');
             refreshPosts();
         }
 
-        // Show loader for 2 seconds (shorter time)
         const timer = setTimeout(() => {
             setIsLoading(false);
         }, 4500);
@@ -99,7 +104,6 @@ export default function App() {
         return () => clearTimeout(timer);
     }, []);
 
-    // Listen for storage events (for when RegisterPage redirects)
     useEffect(() => {
         const handleStorageChange = () => {
             const token = localStorage.getItem("token");
@@ -112,7 +116,6 @@ export default function App() {
 
         window.addEventListener('storage', handleStorageChange);
 
-        // Also check periodically for token changes within same tab
         const interval = setInterval(() => {
             const token = localStorage.getItem("token");
             if (token && !isAuthenticated) {
@@ -144,7 +147,6 @@ export default function App() {
     };
 
     const handleLoginSuccess = () => {
-        // Check for token in localStorage (LoginPage should have set it)
         const token = localStorage.getItem("token");
         if (token) {
             setIsAuthenticated(true);
@@ -153,14 +155,12 @@ export default function App() {
         }
     };
 
-    // Remove handleRegisterSuccess since RegisterPage doesn't use it
-
     const handleLogout = () => {
         localStorage.removeItem("token");
         localStorage.removeItem("user");
         setIsAuthenticated(false);
         setAuthView("login");
-        setPosts([]); // Clear posts on logout
+        setPosts([]);
     };
 
     const handleNavigation = (path: string) => {
@@ -171,7 +171,9 @@ export default function App() {
             '/ai': 'ai',
             '/discussions': 'discussions',
             '/profile': 'profile',
+            '/notes': 'notes', // ✅ ADDED
         };
+
         const newView = viewMap[path] || 'dashboard';
         setCurrentView(newView);
 
@@ -180,7 +182,6 @@ export default function App() {
             setSelectedProfileUserId(null);
         }
 
-        // Refresh posts when navigating to feed or dashboard
         if (newView === 'feed' || newView === 'dashboard') {
             refreshPosts();
         }
@@ -192,18 +193,13 @@ export default function App() {
         setCurrentView('profile');
     };
 
-    // 1. Show loader first
     if (isLoading) {
         return <JusticeLoader />;
     }
 
-    // 2. After loader, check authentication
     if (!isAuthenticated) {
         return authView === "register" ? (
-            <RegisterPage
-                onSwitchToLogin={() => setAuthView("login")}
-            // Note: RegisterPage uses window.location.href instead of callback
-            />
+            <RegisterPage onSwitchToLogin={() => setAuthView("login")} />
         ) : (
             <LoginPage
                 onSwitchToRegister={() => setAuthView("register")}
@@ -212,7 +208,6 @@ export default function App() {
         );
     }
 
-    // 3. Only show main app if authenticated
     return (
         <div className="flex min-h-screen bg-justice-black">
             <MobileNotice />
@@ -263,20 +258,35 @@ export default function App() {
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
                             <div className="aged-paper rounded-lg p-6 border border-constitution-gold/20">
                                 <div className="flex items-center justify-between">
-                                    <div><p className="text-ink-gray/60 mb-1 text-sm">Active Cases</p><p className="font-heading font-bold text-ink-gray text-2xl">5</p></div>
-                                    <div className="w-12 h-12 bg-constitution-gold/10 rounded-full flex items-center justify-center"><Gavel className="w-6 h-6 text-constitution-gold" /></div>
+                                    <div>
+                                        <p className="text-ink-gray/60 mb-1 text-sm">Active Cases</p>
+                                        <p className="font-heading font-bold text-ink-gray text-2xl">5</p>
+                                    </div>
+                                    <div className="w-12 h-12 bg-constitution-gold/10 rounded-full flex items-center justify-center">
+                                        <Gavel className="w-6 h-6 text-constitution-gold" />
+                                    </div>
                                 </div>
                             </div>
                             <div className="aged-paper rounded-lg p-6 border border-constitution-gold/20">
                                 <div className="flex items-center justify-between">
-                                    <div><p className="text-ink-gray/60 mb-1 text-sm">Connections</p><p className="font-heading font-bold text-ink-gray text-2xl">248</p></div>
-                                    <div className="w-12 h-12 bg-constitution-gold/10 rounded-full flex items-center justify-center"><TrendingUp className="w-6 h-6 text-constitution-gold" /></div>
+                                    <div>
+                                        <p className="text-ink-gray/60 mb-1 text-sm">Connections</p>
+                                        <p className="font-heading font-bold text-ink-gray text-2xl">248</p>
+                                    </div>
+                                    <div className="w-12 h-12 bg-constitution-gold/10 rounded-full flex items-center justify-center">
+                                        <TrendingUp className="w-6 h-6 text-constitution-gold" />
+                                    </div>
                                 </div>
                             </div>
                             <div className="aged-paper rounded-lg p-6 border border-constitution-gold/20">
                                 <div className="flex items-center justify-between">
-                                    <div><p className="text-ink-gray/60 mb-1 text-sm">AI Analyses</p><p className="font-heading font-bold text-ink-gray text-2xl">12</p></div>
-                                    <div className="w-12 h-12 bg-constitution-gold/10 rounded-full flex items-center justify-center"><Sparkles className="w-6 h-6 text-constitution-gold" /></div>
+                                    <div>
+                                        <p className="text-ink-gray/60 mb-1 text-sm">AI Analyses</p>
+                                        <p className="font-heading font-bold text-ink-gray text-2xl">12</p>
+                                    </div>
+                                    <div className="w-12 h-12 bg-constitution-gold/10 rounded-full flex items-center justify-center">
+                                        <Sparkles className="w-6 h-6 text-constitution-gold" />
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -350,6 +360,8 @@ export default function App() {
 
                 {currentView === 'ai' && <AIAssistant />}
                 {currentView === 'discussions' && <DiscussionsPage />}
+                {currentView === 'notes' && <NotesPage />} {/* ✅ ADDED */}
+
                 {currentView === 'profile' && (
                     <ProfilePage
                         // ProfilePage will show other's profile if selectedProfileUserId is set, otherwise current user's
