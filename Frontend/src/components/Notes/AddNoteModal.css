@@ -1,0 +1,432 @@
+/* AddNoteModal.css */
+
+.parchment-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(135deg, 
+    rgba(20, 12, 4, 0.95) 0%,
+    rgba(40, 25, 10, 0.93) 50%,
+    rgba(20, 12, 4, 0.95) 100%
+  );
+  display: flex;
+  align-items: flex-start;        /* FIX */
+  justify-content: center;
+  padding: 5vh 0;                 /* FIX */
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+  animation: overlay-fade-in 0.8s ease-out;
+  overflow-y: auto;               /* FIX */
+}
+
+.parchment-modal {
+  animation: parchment-appear 1s cubic-bezier(0.2, 0.8, 0.2, 1);
+  max-width: 900px;
+  width: 90%;
+  max-height: 90vh;               /* FIX */
+}
+
+/* Parchment sheet */
+.parchment-sheet {
+  position: relative;
+  background: linear-gradient(135deg, 
+    #f5e6c8 0%,
+    #e8d8b5 25%,
+    #dcc9a2 50%,
+    #e8d8b5 75%,
+    #f5e6c8 100%
+  );
+  padding: 60px 70px;
+  box-shadow: 
+    0 30px 80px rgba(20, 12, 4, 0.6),
+    inset 0 0 100px rgba(139, 69, 19, 0.1);
+  border-radius: 2px;
+  clip-path: polygon(
+    0 25px, 25px 0,
+    calc(100% - 25px) 0, 100% 25px,
+    100% calc(100% - 25px), calc(100% - 25px) 100%,
+    25px 100%, 0 calc(100% - 25px)
+  );
+  overflow-y: auto;               /* FIX */
+  overflow-x: hidden;             /* FIX */
+  max-height: 90vh;               /* FIX */
+}
+
+/* Paper texture layers */
+.paper-texture-layer {
+  position: absolute;
+  inset: 0;
+  background-image: 
+    repeating-linear-gradient(0deg, 
+      transparent, 
+      transparent 29px, 
+      rgba(139, 69, 19, 0.07) 29px, 
+      rgba(139, 69, 19, 0.07) 30px
+    ),
+    repeating-linear-gradient(90deg, 
+      transparent, 
+      transparent 39px, 
+      rgba(139, 69, 19, 0.04) 39px, 
+      rgba(139, 69, 19, 0.04) 40px
+    );
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.paper-stain-layer {
+  position: absolute;
+  inset: 0;
+  background: 
+    radial-gradient(circle at 20% 30%, rgba(139, 69, 19, 0.05) 0%, transparent 60%),
+    radial-gradient(circle at 80% 70%, rgba(101, 67, 33, 0.04) 0%, transparent 60%),
+    radial-gradient(circle at 40% 80%, rgba(85, 57, 28, 0.03) 0%, transparent 40%);
+  pointer-events: none;
+}
+
+.paper-edge-layer {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgba(101, 67, 33, 0.05) 5%,
+    transparent 15%,
+    transparent 85%,
+    rgba(101, 67, 33, 0.05) 95%,
+    transparent 100%
+  ),
+  linear-gradient(
+    to right,
+    transparent 0%,
+    rgba(101, 67, 33, 0.05) 3%,
+    transparent 10%,
+    transparent 90%,
+    rgba(101, 67, 33, 0.05) 97%,
+    transparent 100%
+  );
+  pointer-events: none;
+}
+
+/* Content */
+.parchment-content {
+  position: relative;
+  z-index: 10;
+}
+
+.parchment-header {
+  margin-bottom: 50px;
+  text-align: center;
+}
+
+.parchment-title {
+  font-family: 'Georgia', 'Times New Roman', serif;
+  font-size: 2.8rem;
+  color: #3c280d;
+  margin: 0 0 10px 0;
+  font-weight: bold;
+  letter-spacing: -0.5px;
+  text-shadow: 1px 1px 2px rgba(139, 69, 19, 0.1);
+}
+
+.parchment-subtitle {
+  font-family: 'Palatino Linotype', 'Book Antiqua', serif;
+  font-size: 1.1rem;
+  color: #654321;
+  font-style: italic;
+  opacity: 0.8;
+  letter-spacing: 0.5px;
+}
+
+/* Form */
+.parchment-form {
+  margin-bottom: 50px;
+}
+
+.input-section {
+  margin-bottom: 40px;
+}
+
+.input-label {
+  display: block;
+  font-family: 'Georgia', serif;
+  font-size: 1.2rem;
+  color: #4a3728;
+  margin-bottom: 12px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+.input-container {
+  position: relative;
+}
+
+.textarea-container {
+  position: relative;
+}
+
+.parchment-input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-family: 'Palatino Linotype', 'Book Antiqua', serif;
+  color: #3c280d;
+  font-size: 1.4rem;
+  padding: 12px 0;
+  letter-spacing: 0.2px;
+  transition: all 0.4s ease;
+}
+
+.title-input {
+  font-size: 1.8rem;
+  font-weight: 600;
+}
+
+.parchment-input::placeholder {
+  color: #8b7355;
+  opacity: 0.6;
+}
+
+.parchment-input:focus {
+  color: #2c1809;
+}
+
+.input-underline {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(to right, 
+    transparent 0%,
+    rgba(139, 69, 19, 0.2) 20%,
+    rgba(139, 69, 19, 0.4) 50%,
+    rgba(139, 69, 19, 0.2) 80%,
+    transparent 100%
+  );
+  transition: all 0.4s ease;
+}
+
+.parchment-input:focus + .input-underline {
+  background: linear-gradient(to right, 
+    transparent 0%,
+    rgba(139, 69, 19, 0.6) 20%,
+    rgba(139, 69, 19, 0.9) 50%,
+    rgba(139, 69, 19, 0.6) 80%,
+    transparent 100%
+  );
+  height: 2px;
+}
+
+.parchment-textarea {
+  width: 100%;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-family: 'Palatino Linotype', 'Book Antiqua', serif;
+  color: #4a3728;
+  font-size: 1.2rem;
+  line-height: 2;
+  padding: 20px 0;
+  resize: none;
+  letter-spacing: 0.1px;
+  transition: all 0.4s ease;
+}
+
+.parchment-textarea::placeholder {
+  color: #8b7355;
+  opacity: 0.6;
+}
+
+.parchment-textarea:focus {
+  color: #2c1809;
+}
+
+.writing-lines {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+}
+
+.writing-line {
+  height: 2em;
+  border-bottom: 1px solid rgba(139, 69, 19, 0.08);
+}
+
+/* Quill decoration */
+.quill-decoration {
+  position: absolute;
+  right: -40px;
+  bottom: 80px;
+  width: 60px;
+  height: 150px;
+  transform: rotate(15deg);
+  opacity: 0.4;
+}
+
+.quill-feather {
+  position: absolute;
+  width: 40px;
+  height: 120px;
+  background: linear-gradient(135deg, 
+    #f5f5f5 0%,
+    #dcdcdc 50%,
+    #f5f5f5 100%
+  );
+  border-radius: 20px;
+  transform: rotate(10deg);
+}
+
+.quill-nib {
+  position: absolute;
+  bottom: 10px;
+  left: 15px;
+  width: 10px;
+  height: 40px;
+  background: linear-gradient(to bottom, 
+    #333333 0%,
+    #666666 50%,
+    #333333 100%
+  );
+  clip-path: polygon(0% 0%, 100% 0%, 50% 100%);
+}
+
+/* Footer */
+.parchment-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 30px;
+  border-top: 2px solid rgba(139, 69, 19, 0.2);
+}
+
+.inkwell-decoration {
+  position: relative;
+  width: 60px;
+  height: 80px;
+  opacity: 0.5;
+}
+
+.inkwell {
+  width: 50px;
+  height: 60px;
+  background: linear-gradient(135deg, 
+    #222222 0%,
+    #444444 50%,
+    #222222 100%
+  );
+  border-radius: 10px 10px 20px 20px;
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
+}
+
+.ink-drop {
+  position: absolute;
+  bottom: -10px;
+  left: 25px;
+  width: 20px;
+  height: 20px;
+  background: #111111;
+  border-radius: 50%;
+  filter: blur(2px);
+}
+
+.parchment-actions {
+  display: flex;
+  gap: 25px;
+}
+
+.parchment-button {
+  padding: 14px 36px;
+  font-family: 'Georgia', serif;
+  font-size: 1.1rem;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: all 0.5s ease;
+  letter-spacing: 0.5px;
+  border-radius: 2px;
+}
+
+.cancel-button {
+  background: transparent;
+  color: #654321;
+  border: 2px solid rgba(101, 67, 33, 0.4);
+}
+
+.cancel-button:hover {
+  background: rgba(101, 67, 33, 0.1);
+  border-color: rgba(101, 67, 33, 0.8);
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(101, 67, 33, 0.2);
+}
+
+.save-button {
+  background: linear-gradient(135deg, 
+    #8b4513 0%,
+    #a0522d 50%,
+    #8b4513 100%
+  );
+  color: #f5e6c8;
+  box-shadow: 0 5px 20px rgba(139, 69, 19, 0.3);
+}
+
+.save-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(139, 69, 19, 0.5);
+}
+
+/* Corner seals */
+.corner-seal {
+  position: absolute;
+  width: 50px;
+  height: 50px;
+  border: 2px solid rgba(139, 69, 19, 0.2);
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, 
+    rgba(139, 69, 19, 0.1) 0%,
+    transparent 70%
+  );
+}
+
+.top-left-seal {
+  top: 20px;
+  left: 20px;
+}
+
+.top-right-seal {
+  top: 20px;
+  right: 20px;
+}
+
+.bottom-left-seal {
+  bottom: 20px;
+  left: 20px;
+}
+
+.bottom-right-seal {
+  bottom: 20px;
+  right: 20px;
+}
+
+/* Animations */
+@keyframes overlay-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes parchment-appear {
+  0% {
+    opacity: 0;
+    transform: translateY(30px) scale(0.95);
+  }
+  70% {
+    opacity: 0.8;
+    transform: translateY(-5px) scale(1.02);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
