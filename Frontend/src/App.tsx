@@ -76,6 +76,9 @@ export default function App() {
     const [authView, setAuthView] = useState<"register" | "login">("register");
     const [currentView, setCurrentView] = useState<ViewType>('dashboard');
 
+    // NEW: state for viewing another user's profile
+    const [selectedProfileUserId, setSelectedProfileUserId] = useState<string | null>(null);
+
     useEffect(() => {
         // Check authentication immediately
         const token = localStorage.getItem("token");
@@ -172,10 +175,21 @@ export default function App() {
         const newView = viewMap[path] || 'dashboard';
         setCurrentView(newView);
 
+        // Clear profile user selection on navigation
+        if (newView !== 'profile') {
+            setSelectedProfileUserId(null);
+        }
+
         // Refresh posts when navigating to feed or dashboard
         if (newView === 'feed' || newView === 'dashboard') {
             refreshPosts();
         }
+    };
+
+    // Author click handler for PostCard
+    const handlePostAuthorClick = (userId: string) => {
+        setSelectedProfileUserId(userId);
+        setCurrentView('profile');
     };
 
     // 1. Show loader first
@@ -226,7 +240,10 @@ export default function App() {
                                             <Sparkles className="w-5 h-5" /><span>Try Legal AI</span>
                                         </button>
                                         <button
-                                            onClick={() => setCurrentView('profile')}
+                                            onClick={() => {
+                                                setCurrentView('profile');
+                                                setSelectedProfileUserId(null); // Ensure own profile
+                                            }}
                                             className="px-8 py-4 border-2 border-constitution-gold text-constitution-gold rounded-lg font-bold hover:bg-constitution-gold/5 transition-colors flex items-center space-x-2"
                                         >
                                             <Sparkles className="w-5 h-5" /><span>View Profile</span>
@@ -278,6 +295,7 @@ export default function App() {
                                             post={post}
                                             currentUserId={getCurrentUser()?.id}
                                             onDelete={(id) => setPosts(prev => prev.filter(p => p.id !== id))}
+                                            onAuthorClick={handlePostAuthorClick}
                                         />
                                     ))
                                 ) : (
@@ -305,6 +323,7 @@ export default function App() {
                                         post={post}
                                         currentUserId={getCurrentUser()?.id}
                                         onDelete={(id) => setPosts(prev => prev.filter(p => p.id !== id))}
+                                        onAuthorClick={handlePostAuthorClick}
                                     />
                                 ))
                             ) : (
@@ -333,9 +352,19 @@ export default function App() {
                 {currentView === 'discussions' && <DiscussionsPage />}
                 {currentView === 'profile' && (
                     <ProfilePage
+                        // ProfilePage will show other's profile if selectedProfileUserId is set, otherwise current user's
+                        userId={selectedProfileUserId}
                         currentUserId={getCurrentUser()?.id || ''}
-                        onBack={() => setCurrentView('dashboard')}
+                        onBack={() => {
+                            setCurrentView('dashboard');
+                            setSelectedProfileUserId(null);
+                        }}
                         onNavigateToFeed={() => setCurrentView('feed')}
+                        // To allow ProfilePage to show another user, pass a callback to setSelectedProfileUserId:
+                        onViewUserProfile={userId => {
+                            setSelectedProfileUserId(userId);
+                            setCurrentView('profile');
+                        }}
                     />
                 )}
             </div>

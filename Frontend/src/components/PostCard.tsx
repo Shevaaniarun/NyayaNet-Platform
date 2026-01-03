@@ -49,9 +49,10 @@ interface PostCardProps {
   post: Post;
   currentUserId?: string;
   onDelete?: (postId: string) => void;
+  onAuthorClick?: (userId: string) => void; // Added prop
 }
 
-export function PostCard({ post, currentUserId, onDelete }: PostCardProps) {
+export function PostCard({ post, currentUserId, onDelete, onAuthorClick }: PostCardProps) {
   const [isLiked, setIsLiked] = useState(post.isLiked || false);
   const [likeCount, setLikeCount] = useState(post.likeCount);
   const [isBookmarked, setIsBookmarked] = useState(post.isSaved || false);
@@ -263,7 +264,11 @@ export function PostCard({ post, currentUserId, onDelete }: PostCardProps) {
         {/* Author Section */}
         <div className="flex items-center mb-6 pb-4 border-b border-constitution-gold/20">
           <div className="relative">
-            <div className="w-12 h-12 rounded-full border-2 border-constitution-gold overflow-hidden bg-parchment-cream">
+            <div
+              className="w-12 h-12 rounded-full border-2 border-constitution-gold overflow-hidden bg-parchment-cream"
+              onClick={onAuthorClick ? () => onAuthorClick(post.userId) : undefined}
+              style={onAuthorClick ? { cursor: 'pointer' } : undefined}
+            >
               <img
                 src={post.author.profilePhotoUrl || 'https://via.placeholder.com/150'}
                 alt={post.author.fullName}
@@ -280,7 +285,11 @@ export function PostCard({ post, currentUserId, onDelete }: PostCardProps) {
 
           <div className="ml-4 flex-1">
             <div className="flex items-center space-x-2">
-              <h3 className="font-heading font-semibold text-ink-gray">
+              <h3
+                className="font-heading font-semibold text-ink-gray"
+                onClick={onAuthorClick ? () => onAuthorClick(post.userId) : undefined}
+                style={onAuthorClick ? { cursor: 'pointer' } : undefined}
+              >
                 {post.author.fullName}
               </h3>
               <span className="text-constitution-gold">•</span>
