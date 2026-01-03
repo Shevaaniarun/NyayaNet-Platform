@@ -1,5 +1,7 @@
-import React, { useEffect, useState } from "react";
-import ladyJustice from "/lady-justice.png";
+import { useEffect, useState } from "react";
+
+// Image is in public folder, so we reference it by path
+const ladyJustice = "/lady-justice.png";
 
 export function JusticeLoader() {
   const [progress, setProgress] = useState(0);
@@ -7,7 +9,7 @@ export function JusticeLoader() {
   useEffect(() => {
     const interval = setInterval(() => {
       setProgress((p) => (p >= 100 ? 100 : p + 1));
-    }, 40);
+    }, 20);
     return () => clearInterval(interval);
   }, []);
 

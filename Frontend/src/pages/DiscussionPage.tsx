@@ -543,6 +543,7 @@ export function DiscussionsPage() {
               onClick={() => handleDiscussionClick(discussion)}
               onFollow={() => handleFollow(discussion.id)}
               onSave={() => handleSave(discussion.id)}
+              onUpvote={() => handleUpvote(discussion.id)}
             />
           ))}
         </div>

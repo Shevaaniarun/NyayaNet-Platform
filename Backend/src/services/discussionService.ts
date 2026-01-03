@@ -52,6 +52,7 @@ interface FormattedDiscussion {
   };
   isFollowing?: boolean;
   isSaved?: boolean;
+  isUpvoted?: boolean;
 }
 
 interface PaginatedDiscussions {
@@ -99,6 +100,7 @@ interface DiscussionDetails {
   } | null;
   isFollowing?: boolean;
   isSaved?: boolean;
+  isUpvoted?: boolean;
   replies: FormattedReply[];
 }
 
@@ -138,7 +140,8 @@ export class DiscussionService {
         profilePhotoUrl: discussion.author_photo
       },
       isFollowing: discussion.is_following,
-      isSaved: discussion.is_saved
+      isSaved: discussion.is_saved,
+      isUpvoted: discussion.is_upvoted
     }));
 
     return {
@@ -203,6 +206,7 @@ export class DiscussionService {
       bestAnswer: discussionResult.bestAnswer || null,
       isFollowing: discussionResult.is_following,
       isSaved: discussionResult.is_saved,
+      isUpvoted: discussionResult.is_upvoted,
       replies: formattedReplies
     };
   }
@@ -393,7 +397,8 @@ export class DiscussionService {
         fullName: discussion.author_name,
         profilePhotoUrl: discussion.author_photo
       },
-      isFollowing: discussion.is_following
+      isFollowing: discussion.is_following,
+      isUpvoted: discussion.is_upvoted
     }));
 
     return {
