@@ -68,6 +68,7 @@ export interface Post {
     media?: PostMedia[];
     isLiked?: boolean;
     isSaved?: boolean;
+    reactionType?: string | null;
     author?: {
         id: string;
         fullName: string;
@@ -192,10 +193,11 @@ export async function getPosts(filters: PostFilters = {}): Promise<{ posts: Post
     return result.data;
 }
 
-export async function likePost(postId: string): Promise<{ liked: boolean; count: number }> {
+export async function likePost(postId: string, reactionType: string = 'LIKE'): Promise<{ liked: boolean; count: number; reactionType: string | null }> {
     const response = await fetch(`${API_BASE_URL}/posts/${postId}/like`, {
         method: 'POST',
-        headers: createHeaders(true)
+        headers: createHeaders(true),
+        body: JSON.stringify({ reactionType })
     });
 
     if (!response.ok) throw new Error('Failed to toggle like');

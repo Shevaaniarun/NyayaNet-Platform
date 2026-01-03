@@ -15,7 +15,15 @@ import {
   FileText,
   X,
   ExternalLink,
-  Link
+  Link,
+  Eye,
+  Smile,
+  Zap,
+  Award,
+  ThumbsUp,
+  Lightbulb,
+  Info,
+  HelpCircle
 } from 'lucide-react';
 import { likePost, savePost, createComment, deletePost } from '../api/postsAPI';
 import { toast } from 'react-toastify';
@@ -26,10 +34,10 @@ export interface Post {
   title?: string;
   author: {
     fullName: string;
-    profilePhotoUrl: string;
-    role: string;
-    designation: string;
-    organization: string;
+    profilePhotoUrl: string | null;
+    role?: string;
+    designation?: string;
+    organization?: string;
   };
   postType: string;
   content: string;
@@ -39,11 +47,15 @@ export interface Post {
   tags?: string[];
   media?: Array<{
     id: string;
-    url: string;
-    type: string;
+    mediaUrl: string;
+    mediaType: string;
+    fileName?: string;
+    mimeType?: string;
   }>;
   isLiked?: boolean;
   isSaved?: boolean;
+  reactionType?: string | null;
+  viewCount?: number;
 }
 
 interface PostCardProps {
@@ -55,6 +67,8 @@ interface PostCardProps {
 export function PostCard({ post, currentUserId, onDelete }: PostCardProps) {
   const [isLiked, setIsLiked] = useState(post.isLiked || false);
   const [likeCount, setLikeCount] = useState(post.likeCount);
+  const [reactionType, setReactionType] = useState<string | null>(post.reactionType || null);
+  const [showReactionPicker, setShowReactionPicker] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(post.isSaved || false);
   const [showComments, setShowComments] = useState(false);
   const [commentText, setCommentText] = useState('');
@@ -72,14 +86,30 @@ export function PostCard({ post, currentUserId, onDelete }: PostCardProps) {
     ? user.fullName.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)
     : 'U';
 
-  const handleLike = async () => {
+  const handleReaction = async (type: string = 'LIKE') => {
     try {
-      const result = await likePost(post.id);
+      const result = await likePost(post.id, type);
       setIsLiked(result.liked);
       setLikeCount(result.count);
-      toast.success(result.liked ? 'Post liked' : 'Post unliked');
+      setReactionType(result.reactionType);
+      setShowReactionPicker(false);
+
+      if (result.liked) {
+        toast.success(`You reacted with ${type.toLowerCase().replace('_', ' ')}`);
+      } else {
+        toast.info('Reaction removed');
+      }
     } catch (error: any) {
-      toast.error(error.message || 'Failed to like post');
+      toast.error(error.message || 'Failed to process reaction');
+    }
+  };
+
+  const handleLikeClick = () => {
+    // If already liked, toggle it off. If not, open picker or just like.
+    if (isLiked) {
+      handleReaction(reactionType || 'LIKE');
+    } else {
+      handleReaction('LIKE');
     }
   };
 
@@ -186,18 +216,19 @@ export function PostCard({ post, currentUserId, onDelete }: PostCardProps) {
 
   // Helper to render media
   const renderMedia = (media: any) => {
-    const isImage = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(media.mimeType) ||
-      media.url.match(/\.(jpg|jpeg|png|gif|webp)$/i);
+    const isImage = media.mediaType === 'IMAGE' ||
+      ['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(media.mimeType) ||
+      media.mediaUrl.match(/\.(jpg|jpeg|png|gif|webp)$/i);
 
     if (isImage) {
       return (
         <div
           key={media.id}
           className="rounded-lg overflow-hidden border border-constitution-gold/20 bg-parchment-cream aspect-video cursor-pointer hover:border-constitution-gold transition-colors"
-          onClick={() => window.open(`${ASSETS_BASE_URL}${media.url}`, '_blank')}
+          onClick={() => window.open(`${ASSETS_BASE_URL}${media.mediaUrl}`, '_blank')}
         >
           <img
-            src={`${ASSETS_BASE_URL}${media.url}`}
+            src={`${ASSETS_BASE_URL}${media.mediaUrl}`}
             alt="Post media"
             className="w-full h-full object-cover"
           />
@@ -210,7 +241,7 @@ export function PostCard({ post, currentUserId, onDelete }: PostCardProps) {
       <div
         key={media.id}
         className="rounded-lg border border-constitution-gold/30 bg-constitution-gold/5 p-4 flex items-center justify-between group cursor-pointer hover:bg-constitution-gold/10 transition-colors"
-        onClick={() => window.open(`${ASSETS_BASE_URL}${media.url}`, '_blank')}
+        onClick={() => window.open(`${ASSETS_BASE_URL}${media.mediaUrl}`, '_blank')}
       >
         <div className="flex items-center space-x-3 overflow-hidden">
           <div className="w-10 h-10 rounded bg-constitution-gold/20 flex items-center justify-center flex-shrink-0">
@@ -218,7 +249,7 @@ export function PostCard({ post, currentUserId, onDelete }: PostCardProps) {
           </div>
           <div className="overflow-hidden">
             <p className="text-sm font-semibold text-ink-gray truncate">{media.fileName || 'Document'}</p>
-            <p className="text-xs text-ink-gray/60 uppercase">{media.mimeType?.split('/')[1] || 'File'}</p>
+            <p className="text-xs text-ink-gray/60 uppercase">{media.mimeType?.split('/')[1] || media.mediaType || 'File'}</p>
           </div>
         </div>
         <div className="w-8 h-8 rounded-full flex items-center justify-center bg-constitution-gold text-justice-black opacity-0 group-hover:opacity-100 transition-opacity">
@@ -348,13 +379,62 @@ export function PostCard({ post, currentUserId, onDelete }: PostCardProps) {
         {/* Interaction Bar */}
         <div className="flex items-center justify-between pt-4 border-t border-constitution-gold/20">
           <div className="flex space-x-6">
-            <button
-              onClick={handleLike}
-              className={`flex items-center space-x-2 transition-colors ${isLiked ? 'text-red-500' : 'text-ink-gray/70 hover:text-red-500'}`}
-            >
-              <Heart className={`w-5 h-5 ${isLiked ? 'fill-current' : ''}`} />
-              <span className="font-bold">{likeCount}</span>
-            </button>
+            <div className="relative group/reactions">
+              <button
+                onClick={handleLikeClick}
+                onMouseEnter={() => setShowReactionPicker(true)}
+                className={`flex items-center space-x-2 transition-colors ${isLiked ? 'text-constitution-gold' : 'text-ink-gray/70 hover:text-constitution-gold'}`}
+              >
+                {reactionType === 'INSIGHTFUL' ? (
+                  <Lightbulb className="w-5 h-5 fill-amber-500 text-amber-500" />
+                ) : reactionType === 'INFORMATIVE' ? (
+                  <Info className="w-5 h-5 fill-blue-500 text-blue-500" />
+                ) : reactionType === 'NEED_CLARIFICATION' ? (
+                  <HelpCircle className="w-5 h-5 fill-purple-500 text-purple-500" />
+                ) : (
+                  <ThumbsUp className={`w-5 h-5 ${isLiked ? 'fill-current' : ''}`} />
+                )}
+                <span className="font-bold">{likeCount}</span>
+              </button>
+
+              {/* Reaction Picker Popover */}
+              {showReactionPicker && (
+                <div
+                  className="absolute bottom-full left-0 mb-2 p-2 bg-white rounded-full shadow-xl border border-constitution-gold/20 flex items-center space-x-2 animate-in fade-in slide-in-from-bottom-2 z-50"
+                  onMouseLeave={() => setShowReactionPicker(false)}
+                >
+                  <button
+                    onClick={() => handleReaction('LIKE')}
+                    className="p-2 hover:bg-constitution-gold/10 rounded-full transition-colors group/reaction"
+                    title="Like"
+                  >
+                    <ThumbsUp className={`w-6 h-6 ${reactionType === 'LIKE' ? 'fill-constitution-gold text-constitution-gold' : 'text-ink-gray/40 group-hover/reaction:text-constitution-gold'}`} />
+                  </button>
+                  <button
+                    onClick={() => handleReaction('INSIGHTFUL')}
+                    className="p-2 hover:bg-amber-50 rounded-full transition-colors group/reaction"
+                    title="Insightful"
+                  >
+                    <Lightbulb className={`w-6 h-6 ${reactionType === 'INSIGHTFUL' ? 'fill-amber-500 text-amber-500' : 'text-ink-gray/40 group-hover/reaction:text-amber-500'}`} />
+                  </button>
+                  <button
+                    onClick={() => handleReaction('INFORMATIVE')}
+                    className="p-2 hover:bg-blue-50 rounded-full transition-colors group/reaction"
+                    title="Informative"
+                  >
+                    <Info className={`w-6 h-6 ${reactionType === 'INFORMATIVE' ? 'fill-blue-500 text-blue-500' : 'text-ink-gray/40 group-hover/reaction:text-blue-500'}`} />
+                  </button>
+                  <button
+                    onClick={() => handleReaction('NEED_CLARIFICATION')}
+                    className="p-2 hover:bg-purple-50 rounded-full transition-colors group/reaction"
+                    title="Need Clarification"
+                  >
+                    <HelpCircle className={`w-6 h-6 ${reactionType === 'NEED_CLARIFICATION' ? 'fill-purple-500 text-purple-500' : 'text-ink-gray/40 group-hover/reaction:text-purple-500'}`} />
+                  </button>
+                </div>
+              )}
+            </div>
+
             <button
               onClick={handleCommentToggle}
               className={`flex items-center space-x-2 transition-colors ${showComments ? 'text-constitution-gold' : 'text-ink-gray/70 hover:text-constitution-gold'}`}
@@ -362,6 +442,10 @@ export function PostCard({ post, currentUserId, onDelete }: PostCardProps) {
               <MessageSquare className="w-5 h-5" />
               <span className="font-bold">{post.commentCount + comments.length}</span>
             </button>
+            <div className="flex items-center space-x-2 text-ink-gray/40">
+              <Eye className="w-5 h-5" />
+              <span className="font-bold">{post.viewCount || 0}</span>
+            </div>
             <button
               onClick={handleShare}
               className="flex items-center space-x-2 text-ink-gray/70 hover:text-constitution-gold transition-colors"

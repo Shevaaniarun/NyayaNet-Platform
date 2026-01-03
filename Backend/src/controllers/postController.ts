@@ -4,14 +4,15 @@ import { AuthRequest } from '../middleware/auth';
 import { CreatePostInput } from '../types/postTypes';
 
 export class PostController {
-    static async uploadFiles(req: AuthRequest, res: Response) {
+    static async uploadFiles(req: Request, res: Response) {
         try {
-            const files = req.files;
+            const authReq = req as AuthRequest;
+            const files = authReq.files;
             if (!files || files.length === 0) {
                 return res.status(400).json({ success: false, message: 'No files uploaded' });
             }
 
-            const media = files.map(file => ({
+            const media = files.map((file: any) => ({
                 mediaType: file.mimetype.startsWith('image/') ? 'IMAGE' : 'DOCUMENT',
                 mediaUrl: `/uploads/${file.filename}`,
                 fileName: file.originalname,
@@ -25,9 +26,10 @@ export class PostController {
         }
     }
 
-    static async createPost(req: AuthRequest, res: Response) {
+    static async createPost(req: Request, res: Response) {
         try {
-            const userId = req.user?.id || req.user?.userId;
+            const authReq = req as AuthRequest;
+            const userId = authReq.user?.id || authReq.user?.userId;
             if (!userId) return res.status(401).json({ success: false, message: 'Authentication required' });
 
             let { content, title, postType, tags, isPublic, media } = req.body;
@@ -71,17 +73,22 @@ export class PostController {
                 return res.status(404).json({ success: false, message: 'Post not found' });
             }
 
+            // Increment view count
+            const ipAddress = req.ip || req.socket.remoteAddress;
+            await PostModel.incrementViewCount(postId, userId, ipAddress as string);
+
             return res.json({ success: true, data: { post } });
         } catch (error: any) {
             return res.status(500).json({ success: false, message: 'Error fetching post', error: error.message });
         }
     }
 
-    static async updatePost(req: AuthRequest, res: Response) {
+    static async updatePost(req: Request, res: Response) {
         try {
-            const userId = req.user?.id || req.user?.userId;
-            const { postId } = req.params;
-            const updates = req.body;
+            const authReq = req as AuthRequest;
+            const userId = authReq.user?.id || authReq.user?.userId;
+            const { postId } = authReq.params;
+            const updates = authReq.body;
 
             if (!userId) return res.status(401).json({ success: false, message: 'Authentication required' });
 
@@ -96,10 +103,11 @@ export class PostController {
         }
     }
 
-    static async deletePost(req: AuthRequest, res: Response) {
+    static async deletePost(req: Request, res: Response) {
         try {
-            const userId = req.user?.id || req.user?.userId;
-            const { postId } = req.params;
+            const authReq = req as AuthRequest;
+            const userId = authReq.user?.id || authReq.user?.userId;
+            const { postId } = authReq.params;
 
             if (!userId) return res.status(401).json({ success: false, message: 'Authentication required' });
 
@@ -155,17 +163,20 @@ export class PostController {
         }
     }
 
-    static async likePost(req: AuthRequest, res: Response) {
+    static async likePost(req: Request, res: Response) {
         try {
-            const userId = req.user?.id || req.user?.userId;
+            const authReq = req as AuthRequest;
+            const userId = authReq.user?.id || authReq.user?.userId;
             if (!userId) return res.status(401).json({ success: false, message: 'Unauthorized' });
 
-            const { postId } = req.params;
-            const result = await PostModel.toggleLike(postId, userId);
+            const { postId } = authReq.params;
+            const { reactionType = 'LIKE' } = authReq.body;
+
+            const result = await PostModel.toggleLike(postId, userId, reactionType);
 
             return res.json({
                 success: true,
-                message: result.liked ? 'Post liked' : 'Post unliked',
+                message: result.liked ? 'Post reacted' : 'Reaction removed',
                 data: result
             });
         } catch (error: any) {
@@ -173,12 +184,13 @@ export class PostController {
         }
     }
 
-    static async savePost(req: AuthRequest, res: Response) {
+    static async savePost(req: Request, res: Response) {
         try {
-            const userId = req.user?.id || req.user?.userId;
+            const authReq = req as AuthRequest;
+            const userId = authReq.user?.id || authReq.user?.userId;
             if (!userId) return res.status(401).json({ success: false, message: 'Unauthorized' });
 
-            const { postId } = req.params;
+            const { postId } = authReq.params;
             const result = await PostModel.toggleBookmark(postId, userId);
 
             return res.json({
@@ -191,13 +203,14 @@ export class PostController {
         }
     }
 
-    static async createComment(req: AuthRequest, res: Response) {
+    static async createComment(req: Request, res: Response) {
         try {
-            const userId = req.user?.id || req.user?.userId;
+            const authReq = req as AuthRequest;
+            const userId = authReq.user?.id || authReq.user?.userId;
             if (!userId) return res.status(401).json({ success: false, message: 'Unauthorized' });
 
-            const { postId } = req.params;
-            const { content } = req.body;
+            const { postId } = authReq.params;
+            const { content } = authReq.body;
 
             if (!content || !content.trim()) {
                 return res.status(400).json({ success: false, message: 'Comment content is required' });

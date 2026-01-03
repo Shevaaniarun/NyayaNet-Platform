@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from "express";
+import { Request, Response, NextFunction, RequestHandler } from "express";
 import jwt, { JwtPayload } from "jsonwebtoken";
 
 /**
@@ -30,20 +30,21 @@ interface AuthPayload extends JwtPayload {
  */
 export interface AuthRequest extends Request {
   user?: AuthPayload;
-  files?: MulterFile[];
-  file?: MulterFile;
+  files?: any;
+  file?: any;
 }
 
 /**
  * JWT Authentication Middleware
  */
-export const authenticate = (
-  req: AuthRequest,
+export const authenticate: RequestHandler = (
+  req: Request,
   res: Response,
   next: NextFunction
 ) => {
   try {
-    const authHeader = req.headers.authorization;
+    const authRequest = req as AuthRequest;
+    const authHeader = authRequest.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return res.status(401).json({
@@ -62,7 +63,7 @@ export const authenticate = (
     const decoded = jwt.verify(token, JWT_SECRET) as AuthPayload;
 
     // Map userId to id for controller compatibility
-    req.user = {
+    authRequest.user = {
       ...decoded,
       id: decoded.userId
     };
@@ -79,13 +80,14 @@ export const authenticate = (
  * Optional JWT Authentication Middleware
  * Attaches user to req if token is valid, otherwise continues
  */
-export const optionalAuthenticate = (
-  req: AuthRequest,
+export const optionalAuthenticate: RequestHandler = (
+  req: Request,
   res: Response,
   next: NextFunction
 ) => {
   try {
-    const authHeader = req.headers.authorization;
+    const authRequest = req as AuthRequest;
+    const authHeader = authRequest.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return next();
@@ -100,7 +102,7 @@ export const optionalAuthenticate = (
 
     const decoded = jwt.verify(token, JWT_SECRET) as AuthPayload;
 
-    req.user = {
+    authRequest.user = {
       ...decoded,
       id: decoded.userId
     };

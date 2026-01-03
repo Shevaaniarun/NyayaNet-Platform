@@ -57,6 +57,7 @@ export interface PostResponse {
   media?: PostMedia[];
   isLiked?: boolean;
   isSaved?: boolean;
+  reactionType?: string | null;
   author?: {
     id: string;
     fullName: string;
@@ -130,7 +131,8 @@ export class PostModel {
                     ) ORDER BY pm.display_order ASC
                 ) FILTER (WHERE pm.id IS NOT NULL),
                 '[]'::json
-            ) as media
+            ) as media,
+            (SELECT reaction_type FROM post_likes WHERE post_id = p.id AND user_id = $2) as reaction_type
              FROM posts p
              JOIN users u ON p.user_id = u.id
              LEFT JOIN post_media pm ON p.id = pm.post_id
@@ -207,6 +209,9 @@ export class PostModel {
     } = filters;
 
     const offset = (page - 1) * limit;
+
+    // Increment view count if postId is provided in params or if called from findById
+    // Note: Actually, views are handled in incrementViewCount method called by controller
 
     // Build filter conditions
     let baseConditions = ['p.is_public = true'];
@@ -293,7 +298,8 @@ export class PostModel {
                     ) ORDER BY pm.display_order ASC
                 ) FILTER (WHERE pm.id IS NOT NULL),
                 '[]'::json
-            ) as media
+            ) as media,
+            (SELECT reaction_type FROM post_likes WHERE post_id = p.id AND user_id = $${userIdx}) as reaction_type
              FROM posts p
              JOIN users u ON p.user_id = u.id
              LEFT JOIN post_media pm ON p.id = pm.post_id
@@ -313,28 +319,39 @@ export class PostModel {
 
   // Engagement Features
 
-  static async toggleLike(postId: string, userId: string): Promise<{ liked: boolean; count: number }> {
+  static async toggleLike(postId: string, userId: string, reactionType: string = 'LIKE'): Promise<{ liked: boolean; count: number; reactionType: string | null }> {
     const client = await pool.connect();
     try {
       await client.query('BEGIN');
 
       const check = await client.query(
-        'SELECT id FROM post_likes WHERE post_id = $1 AND user_id = $2',
+        'SELECT id, reaction_type FROM post_likes WHERE post_id = $1 AND user_id = $2',
         [postId, userId]
       );
 
       let liked = false;
-      // The trigger update_post_stats will handle the count
+      let finalReactionType: string | null = null;
+
       if (check.rows[0]) {
-        await client.query('DELETE FROM post_likes WHERE id = $1', [check.rows[0].id]);
-        await client.query('UPDATE posts SET like_count = GREATEST(0, like_count - 1) WHERE id = $1', [postId]);
+        if (check.rows[0].reaction_type === reactionType) {
+          // Remove reaction if clicking the same one
+          await client.query('DELETE FROM post_likes WHERE id = $1', [check.rows[0].id]);
+          await client.query('UPDATE posts SET like_count = GREATEST(0, like_count - 1) WHERE id = $1', [postId]);
+        } else {
+          // Change reaction type
+          await client.query('UPDATE post_likes SET reaction_type = $1 WHERE id = $2', [reactionType, check.rows[0].id]);
+          liked = true;
+          finalReactionType = reactionType;
+        }
       } else {
+        // Add new reaction
         await client.query(
-          'INSERT INTO post_likes (post_id, user_id) VALUES ($1, $2)',
-          [postId, userId]
+          'INSERT INTO post_likes (post_id, user_id, reaction_type) VALUES ($1, $2, $3)',
+          [postId, userId, reactionType]
         );
         await client.query('UPDATE posts SET like_count = like_count + 1 WHERE id = $1', [postId]);
         liked = true;
+        finalReactionType = reactionType;
       }
 
       const countResult = await client.query('SELECT like_count FROM posts WHERE id = $1', [postId]);
@@ -342,11 +359,53 @@ export class PostModel {
       await client.query('COMMIT');
       return {
         liked,
-        count: countResult.rows[0]?.like_count || 0
+        count: countResult.rows[0]?.like_count || 0,
+        reactionType: finalReactionType
       };
     } catch (error) {
       await client.query('ROLLBACK');
       throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  static async incrementViewCount(id: string, userId?: string, ipAddress?: string): Promise<void> {
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      let insertResult;
+      if (userId) {
+        insertResult = await client.query(
+          'INSERT INTO post_views (post_id, user_id) VALUES ($1, $2) ON CONFLICT (post_id, user_id) DO NOTHING RETURNING id',
+          [id, userId]
+        );
+      } else if (ipAddress) {
+        insertResult = await client.query(
+          'INSERT INTO post_views (post_id, ip_address) VALUES ($1, $2) ON CONFLICT (post_id, ip_address) WHERE user_id IS NULL DO NOTHING RETURNING id',
+          [id, ipAddress]
+        );
+      } else {
+        await client.query(
+          'UPDATE posts SET view_count = view_count + 1 WHERE id = $1',
+          [id]
+        );
+        await client.query('COMMIT');
+        return;
+      }
+
+      if (insertResult.rows.length > 0) {
+        await client.query(
+          'UPDATE posts SET view_count = view_count + 1 WHERE id = $1',
+          [id]
+        );
+      }
+
+      await client.query('COMMIT');
+    } catch (error) {
+      await client.query('ROLLBACK');
+      console.error('Error incrementing post view count:', error);
     } finally {
       client.release();
     }
@@ -433,7 +492,8 @@ export class PostModel {
       updatedAt: row.updated_at instanceof Date ? row.updated_at.toISOString() : new Date(row.updated_at).toISOString(),
       media: Array.isArray(row.media) ? row.media : [],
       isLiked: !!row.is_liked,
-      isSaved: !!row.is_saved
+      isSaved: !!row.is_saved,
+      reactionType: row.reaction_type || null
     };
 
     if (includeAuthor && row.full_name) {
