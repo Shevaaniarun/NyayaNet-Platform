@@ -101,6 +101,27 @@ export default function App() {
         return () => clearTimeout(timer);
     }, []);
 
+    // Handle browser back/forward buttons
+    useEffect(() => {
+        const handlePopState = (event: PopStateEvent) => {
+            if (event.state?.view) {
+                setCurrentView(event.state.view);
+                if (event.state.view === 'feed' || event.state.view === 'dashboard') {
+                    refreshPosts();
+                }
+            }
+        };
+
+        window.addEventListener('popstate', handlePopState);
+
+        // Set initial state
+        if (!window.history.state?.view) {
+            window.history.replaceState({ view: currentView }, '', `/${currentView === 'dashboard' ? '' : currentView}`);
+        }
+
+        return () => window.removeEventListener('popstate', handlePopState);
+    }, []);
+
     useEffect(() => {
         const handleStorageChange = () => {
             const token = localStorage.getItem("token");
@@ -160,7 +181,7 @@ export default function App() {
         setPosts([]);
     };
 
-    const handleNavigation = (path: string) => {
+    const handleNavigation = (path: string, pushToHistory = true) => {
         const viewMap: Record<string, ViewType> = {
             '/': 'dashboard',
             '/feed': 'feed',
@@ -168,15 +189,26 @@ export default function App() {
             '/ai': 'ai',
             '/discussions': 'discussions',
             '/profile': 'profile',
-            '/notes': 'notes', // ✅ ADDED
+            '/notes': 'notes',
         };
 
         const newView = viewMap[path] || 'dashboard';
         setCurrentView(newView);
 
+        // Push to browser history for back button support
+        if (pushToHistory) {
+            window.history.pushState({ view: newView }, '', path);
+        }
+
         if (newView === 'feed' || newView === 'dashboard') {
             refreshPosts();
         }
+    };
+
+    // Helper to navigate with history
+    const navigateTo = (view: ViewType) => {
+        const path = view === 'dashboard' ? '/' : `/${view}`;
+        handleNavigation(path, true);
     };
 
     if (isLoading) {
@@ -215,13 +247,13 @@ export default function App() {
                                     </p>
                                     <div className="flex space-x-4">
                                         <button
-                                            onClick={() => setCurrentView('ai')}
+                                            onClick={() => navigateTo('ai')}
                                             className="px-8 py-4 bg-constitution-gold text-justice-black rounded-lg font-bold hover:bg-constitution-gold/90 transition-colors flex items-center space-x-2"
                                         >
                                             <Sparkles className="w-5 h-5" /><span>Try Legal AI</span>
                                         </button>
                                         <button
-                                            onClick={() => setCurrentView('profile')}
+                                            onClick={() => navigateTo('profile')}
                                             className="px-8 py-4 border-2 border-constitution-gold text-constitution-gold rounded-lg font-bold hover:bg-constitution-gold/5 transition-colors flex items-center space-x-2"
                                         >
                                             <Sparkles className="w-5 h-5" /><span>View Profile</span>
@@ -346,8 +378,11 @@ export default function App() {
                 {currentView === 'profile' && (
                     <ProfilePage
                         currentUserId={getCurrentUser()?.id || ''}
-                        onBack={() => setCurrentView('dashboard')}
-                        onNavigateToFeed={() => setCurrentView('feed')}
+                        onBack={() => navigateTo('dashboard')}
+                        onNavigateToFeed={() => navigateTo('feed')}
+                        onNavigateToDiscussion={(discussionId) => {
+                            navigateTo('discussions');
+                        }}
                     />
                 )}
             </div>

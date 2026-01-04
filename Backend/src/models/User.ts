@@ -262,14 +262,14 @@ export class UserModel {
     const result = await pool.query(
       `SELECT id, title, description, category, reply_count, upvote_count, is_resolved, created_at
        FROM discussions 
-       WHERE created_by = $1 AND is_public = true
+       WHERE user_id = $1 AND is_public = true
        ORDER BY created_at DESC
        LIMIT $2 OFFSET $3`,
       [userId, limit, offset]
     );
 
     const countResult = await pool.query(
-      'SELECT COUNT(*) FROM discussions WHERE created_by = $1 AND is_public = true',
+      'SELECT COUNT(*) FROM discussions WHERE user_id = $1 AND is_public = true',
       [userId]
     );
 
@@ -294,10 +294,199 @@ export class UserModel {
   }
 
   static async getUserBookmarks(userId: string, folder?: string, type?: string, page = 1, limit = 20) {
-    // Return empty bookmarks for now (bookmarks table may not exist)
+    const offset = (page - 1) * limit;
+
+    let query = `
+      SELECT 
+        ub.id, ub.entity_type, ub.entity_id, ub.folder, ub.notes, ub.created_at,
+        CASE 
+          WHEN ub.entity_type = 'POST' THEN (SELECT title FROM posts WHERE id = ub.entity_id)
+          WHEN ub.entity_type = 'DISCUSSION' THEN (SELECT title FROM discussions WHERE id = ub.entity_id)
+        END as title,
+        CASE
+          WHEN ub.entity_type = 'POST' THEN (SELECT u.full_name FROM posts p JOIN users u ON p.user_id = u.id WHERE p.id = ub.entity_id)
+          WHEN ub.entity_type = 'DISCUSSION' THEN (SELECT u.full_name FROM discussions d JOIN users u ON d.user_id = u.id WHERE d.id = ub.entity_id)
+        END as author_name
+      FROM user_bookmarks ub
+      WHERE ub.user_id = $1
+    `;
+    const params: any[] = [userId];
+    let paramIndex = 2;
+
+    if (folder) {
+      query += ` AND ub.folder = $${paramIndex}`;
+      params.push(folder);
+      paramIndex++;
+    }
+    if (type) {
+      query += ` AND ub.entity_type = $${paramIndex}`;
+      params.push(type);
+      paramIndex++;
+    }
+
+    query += ` ORDER BY ub.created_at DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
+    params.push(limit, offset);
+
+    const result = await pool.query(query, params);
+
+    // Count query
+    let countQuery = 'SELECT COUNT(*) FROM user_bookmarks WHERE user_id = $1';
+    const countParams: any[] = [userId];
+    if (folder) {
+      countQuery += ' AND folder = $2';
+      countParams.push(folder);
+    }
+    if (type) {
+      countQuery += ` AND entity_type = $${countParams.length + 1}`;
+      countParams.push(type);
+    }
+    const countResult = await pool.query(countQuery, countParams);
+
     return {
-      bookmarks: [],
-      pagination: { total: 0, page, limit, pages: 0 }
+      bookmarks: result.rows.map(row => ({
+        id: row.id,
+        entityType: row.entity_type,
+        entityId: row.entity_id,
+        folder: row.folder,
+        title: row.title || 'Untitled',
+        authorName: row.author_name,
+        notes: row.notes,
+        createdAt: row.created_at?.toISOString()
+      })),
+      pagination: {
+        total: parseInt(countResult.rows[0].count),
+        page,
+        limit,
+        pages: Math.ceil(parseInt(countResult.rows[0].count) / limit)
+      }
+    };
+  }
+
+  static async getLikedPosts(userId: string, page = 1, limit = 20) {
+    const offset = (page - 1) * limit;
+
+    const result = await pool.query(
+      `SELECT p.id, p.title, p.content, p.like_count, p.comment_count, p.created_at,
+              u.full_name as author_name, u.profile_photo_url as author_photo
+       FROM post_likes pl
+       JOIN posts p ON pl.post_id = p.id
+       JOIN users u ON p.user_id = u.id
+       WHERE pl.user_id = $1
+       ORDER BY pl.created_at DESC
+       LIMIT $2 OFFSET $3`,
+      [userId, limit, offset]
+    );
+
+    const countResult = await pool.query(
+      'SELECT COUNT(*) FROM post_likes WHERE user_id = $1',
+      [userId]
+    );
+
+    return {
+      posts: result.rows.map(row => ({
+        id: row.id,
+        title: row.title,
+        content: row.content,
+        likeCount: row.like_count || 0,
+        commentCount: row.comment_count || 0,
+        authorName: row.author_name,
+        authorPhoto: row.author_photo,
+        createdAt: row.created_at?.toISOString()
+      })),
+      pagination: {
+        total: parseInt(countResult.rows[0].count),
+        page,
+        limit,
+        pages: Math.ceil(parseInt(countResult.rows[0].count) / limit)
+      }
+    };
+  }
+
+  static async getLikedDiscussions(userId: string, page = 1, limit = 20) {
+    const offset = (page - 1) * limit;
+
+    const result = await pool.query(
+      `SELECT d.id, d.title, d.description, d.discussion_type, d.category,
+              d.reply_count, d.upvote_count, d.is_resolved, d.created_at,
+              u.full_name as author_name, u.profile_photo_url as author_photo
+       FROM discussion_upvotes du
+       JOIN discussions d ON du.discussion_id = d.id
+       JOIN users u ON d.user_id = u.id
+       WHERE du.user_id = $1 AND du.discussion_id IS NOT NULL
+       ORDER BY du.created_at DESC
+       LIMIT $2 OFFSET $3`,
+      [userId, limit, offset]
+    );
+
+    const countResult = await pool.query(
+      'SELECT COUNT(*) FROM discussion_upvotes WHERE user_id = $1 AND discussion_id IS NOT NULL',
+      [userId]
+    );
+
+    return {
+      discussions: result.rows.map(row => ({
+        id: row.id,
+        title: row.title,
+        description: row.description,
+        discussionType: row.discussion_type,
+        category: row.category,
+        replyCount: row.reply_count || 0,
+        upvoteCount: row.upvote_count || 0,
+        isResolved: row.is_resolved || false,
+        authorName: row.author_name,
+        authorPhoto: row.author_photo,
+        createdAt: row.created_at?.toISOString()
+      })),
+      pagination: {
+        total: parseInt(countResult.rows[0].count),
+        page,
+        limit,
+        pages: Math.ceil(parseInt(countResult.rows[0].count) / limit)
+      }
+    };
+  }
+
+  static async getFollowingDiscussions(userId: string, page = 1, limit = 20) {
+    const offset = (page - 1) * limit;
+
+    const result = await pool.query(
+      `SELECT d.id, d.title, d.description, d.discussion_type, d.category,
+              d.reply_count, d.upvote_count, d.is_resolved, d.last_activity_at,
+              u.full_name as author_name, u.profile_photo_url as author_photo
+       FROM discussion_followers df
+       JOIN discussions d ON df.discussion_id = d.id
+       JOIN users u ON d.user_id = u.id
+       WHERE df.user_id = $1
+       ORDER BY d.last_activity_at DESC
+       LIMIT $2 OFFSET $3`,
+      [userId, limit, offset]
+    );
+
+    const countResult = await pool.query(
+      'SELECT COUNT(*) FROM discussion_followers WHERE user_id = $1',
+      [userId]
+    );
+
+    return {
+      discussions: result.rows.map(row => ({
+        id: row.id,
+        title: row.title,
+        description: row.description,
+        discussionType: row.discussion_type,
+        category: row.category,
+        replyCount: row.reply_count || 0,
+        upvoteCount: row.upvote_count || 0,
+        isResolved: row.is_resolved || false,
+        authorName: row.author_name,
+        authorPhoto: row.author_photo,
+        lastActivityAt: row.last_activity_at?.toISOString()
+      })),
+      pagination: {
+        total: parseInt(countResult.rows[0].count),
+        page,
+        limit,
+        pages: Math.ceil(parseInt(countResult.rows[0].count) / limit)
+      }
     };
   }
 

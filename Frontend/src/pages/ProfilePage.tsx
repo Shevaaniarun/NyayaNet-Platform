@@ -12,9 +12,10 @@ interface ProfilePageProps {
     currentUserId?: string;
     onBack?: () => void;
     onNavigateToFeed?: () => void;
+    onNavigateToDiscussion?: (discussionId: string) => void;
 }
 
-export function ProfilePage({ userId, currentUserId, onBack, onNavigateToFeed }: ProfilePageProps) {
+export function ProfilePage({ userId, currentUserId, onBack, onNavigateToFeed, onNavigateToDiscussion }: ProfilePageProps) {
     const [isLoading, setIsLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [profile, setProfile] = useState<any>(null);
@@ -22,6 +23,8 @@ export function ProfilePage({ userId, currentUserId, onBack, onNavigateToFeed }:
     const [posts, setPosts] = useState<any[]>([]);
     const [discussions, setDiscussions] = useState<any[]>([]);
     const [bookmarks, setBookmarks] = useState<any[]>([]);
+    const [likedPosts, setLikedPosts] = useState<any[]>([]);
+    const [likedDiscussions, setLikedDiscussions] = useState<any[]>([]);
     const [showEditModal, setShowEditModal] = useState(false);
     const [showAddCertModal, setShowAddCertModal] = useState(false);
     const [editForm, setEditForm] = useState<any>({});
@@ -105,6 +108,20 @@ export function ProfilePage({ userId, currentUserId, onBack, onNavigateToFeed }:
                 setBookmarks(bookmarksData?.bookmarks || []);
             } catch (e) {
                 setBookmarks([]);
+            }
+
+            try {
+                const likedPostsData = await profileApi.getLikedPosts();
+                setLikedPosts(likedPostsData?.posts || []);
+            } catch (e) {
+                setLikedPosts([]);
+            }
+
+            try {
+                const likedDiscussionsData = await profileApi.getLikedDiscussions();
+                setLikedDiscussions(likedDiscussionsData?.discussions || []);
+            } catch (e) {
+                setLikedDiscussions([]);
             }
         }
 
@@ -277,8 +294,8 @@ export function ProfilePage({ userId, currentUserId, onBack, onNavigateToFeed }:
                     <ProfileStats
                         followerCount={profile?.followerCount || 0}
                         followingCount={profile?.followingCount || 0}
-                        postCount={profile?.postCount || 0}
-                        discussionCount={profile?.discussionCount || 0}
+                        postCount={posts.length}
+                        discussionCount={discussions.length}
                     />
                 </div>
 
@@ -318,7 +335,22 @@ export function ProfilePage({ userId, currentUserId, onBack, onNavigateToFeed }:
                 </div>
 
                 <div className="mt-6">
-                    <ProfileTabs posts={posts} discussions={discussions} bookmarks={bookmarks} isOwnProfile={isOwnProfile} onCreatePost={onNavigateToFeed} />
+                    <ProfileTabs
+                        posts={posts}
+                        discussions={discussions}
+                        bookmarks={bookmarks}
+                        likedPosts={likedPosts}
+                        likedDiscussions={likedDiscussions}
+                        isOwnProfile={isOwnProfile}
+                        onCreatePost={onNavigateToFeed}
+                        onPostClick={(postId) => {
+                            // Navigate to feed - could scroll to post
+                            if (onNavigateToFeed) onNavigateToFeed();
+                        }}
+                        onDiscussionClick={(discussionId) => {
+                            if (onNavigateToDiscussion) onNavigateToDiscussion(discussionId);
+                        }}
+                    />
                 </div>
             </div>
 

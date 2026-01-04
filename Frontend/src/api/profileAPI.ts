@@ -127,3 +127,28 @@ export async function uploadCertificateFile(file: File): Promise<{ certificateUr
     const data = await response.json();
     return data.data;
 }
+
+export async function getLikedPosts(page = 1, limit = 20) {
+    const params = new URLSearchParams({ page: page.toString(), limit: limit.toString() });
+    const response = await fetch(`${API_BASE_URL}/profile/liked-posts?${params}`, { headers: createHeaders(true) });
+    if (!response.ok) throw new Error('Failed to fetch liked posts');
+    const data = await response.json();
+    return data.data;
+}
+
+export async function getLikedDiscussions(page = 1, limit = 20) {
+    const params = new URLSearchParams({ page: page.toString(), limit: limit.toString() });
+    const response = await fetch(`${API_BASE_URL}/profile/liked-discussions?${params}`, { headers: createHeaders(true) });
+    if (!response.ok) throw new Error('Failed to fetch liked discussions');
+    const data = await response.json();
+    return data.data;
+}
+
+export async function getFollowingDiscussions(page = 1, limit = 20) {
+    const params = new URLSearchParams({ page: page.toString(), limit: limit.toString() });
+    const response = await fetch(`${API_BASE_URL}/profile/following-discussions?${params}`, { headers: createHeaders(true) });
+    if (!response.ok) throw new Error('Failed to fetch following discussions');
+    const data = await response.json();
+    return data.data;
+}
+

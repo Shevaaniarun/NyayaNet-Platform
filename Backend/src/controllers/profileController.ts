@@ -140,4 +140,40 @@ export class ProfileController {
             return res.status(500).json({ success: false, message: 'Error searching', error: error.message });
         }
     }
+
+    static async getLikedPosts(req: AuthRequest, res: Response) {
+        try {
+            const userId = req.user?.id;
+            if (!userId) return res.status(401).json({ success: false, message: 'Authentication required' });
+            const { page = '1', limit = '20' } = req.query;
+            const result = await UserModel.getLikedPosts(userId, parseInt(page as string), parseInt(limit as string));
+            return res.json({ success: true, data: result });
+        } catch (error: any) {
+            return res.status(500).json({ success: false, message: 'Error fetching liked posts', error: error.message });
+        }
+    }
+
+    static async getLikedDiscussions(req: AuthRequest, res: Response) {
+        try {
+            const userId = req.user?.id;
+            if (!userId) return res.status(401).json({ success: false, message: 'Authentication required' });
+            const { page = '1', limit = '20' } = req.query;
+            const result = await UserModel.getLikedDiscussions(userId, parseInt(page as string), parseInt(limit as string));
+            return res.json({ success: true, data: result });
+        } catch (error: any) {
+            return res.status(500).json({ success: false, message: 'Error fetching liked discussions', error: error.message });
+        }
+    }
+
+    static async getFollowingDiscussions(req: AuthRequest, res: Response) {
+        try {
+            const userId = req.user?.id;
+            if (!userId) return res.status(401).json({ success: false, message: 'Authentication required' });
+            const { page = '1', limit = '20' } = req.query;
+            const result = await UserModel.getFollowingDiscussions(userId, parseInt(page as string), parseInt(limit as string));
+            return res.json({ success: true, data: result });
+        } catch (error: any) {
+            return res.status(500).json({ success: false, message: 'Error fetching following discussions', error: error.message });
+        }
+    }
 }
