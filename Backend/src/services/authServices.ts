@@ -15,6 +15,8 @@ interface RegisterInput {
   password: string;
   fullName: string;
   role: string;
+  barCouncilNumber?: string;
+  experienceYears?: number;
 }
 
 interface LoginInput {
@@ -43,6 +45,8 @@ export const registerUser = async ({
   password,
   fullName,
   role,
+  barCouncilNumber,
+  experienceYears,
 }: RegisterInput) => {
   // 1. Check if user already exists
   const existingUser = await findUserByEmail(email);
@@ -59,6 +63,8 @@ export const registerUser = async ({
     passwordHash,
     fullName,
     role,
+    barCouncilNumber,
+    experienceYears,
   });
 
   // 4. Generate JWT

@@ -1,11 +1,12 @@
 import express from 'express';
 import cors from 'cors';
+import path from 'path';
 import dotenv from 'dotenv';
 import discussionRoutes from './routes/discussionRoutes';
 import profileRoutes from './routes/profileRoutes';
 import postRoutes from './routes/postRoutes';
 import authRoutes from './routes/authRoutes';
-import path from 'path';
+import uploadRoutes from './routes/uploadRoutes';
 
 dotenv.config();
 
@@ -25,8 +26,9 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Static files
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// Serve uploaded files statically
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+
 
 app.get('/api/health', (req, res) => {
     res.json({ status: 'healthy', timestamp: new Date().toISOString(), service: 'NyayaNet Backend' });
@@ -35,6 +37,7 @@ app.get('/api/health', (req, res) => {
 app.use('/api/discussions', discussionRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/posts', postRoutes);
+app.use('/api/upload', uploadRoutes);
 app.use("/api", authRoutes);
 
 app.use((req, res) => res.status(404).json({ success: false, message: 'Route not found' }));

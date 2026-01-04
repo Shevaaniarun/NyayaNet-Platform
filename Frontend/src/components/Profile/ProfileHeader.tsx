@@ -4,7 +4,7 @@ import { Pencil, Share2, MapPin, Briefcase, Building2, Globe, Linkedin, UserPlus
 interface ProfileHeaderProps {
     profile: {
         id: string; fullName: string; email: string; role: string; designation?: string; organization?: string;
-        areaOfInterest: string[]; experienceYears: number; bio?: string; profilePhotoUrl?: string; coverPhotoUrl?: string;
+        areaOfInterest: string[]; barCouncilNumber?: string; experienceYears: number; bio?: string; profilePhotoUrl?: string; coverPhotoUrl?: string;
         location?: string; websiteUrl?: string; linkedinUrl?: string; followerCount: number; followingCount: number;
         postCount: number; discussionCount: number; isFollowing?: boolean;
     };
@@ -156,6 +156,9 @@ export function ProfileHeader({ profile, isOwnProfile, onEditProfile, onFollow, 
                                 {profile.organization && <div className="flex items-center gap-1"><Building2 className="w-4 h-4" /><span>{profile.organization}</span></div>}
                                 {profile.location && <div className="flex items-center gap-1"><MapPin className="w-4 h-4" /><span>{profile.location}</span></div>}
                                 {profile.experienceYears > 0 && <div className="flex items-center gap-1"><Briefcase className="w-4 h-4" /><span>{profile.experienceYears} years</span></div>}
+                                {profile.barCouncilNumber && ['LAWYER', 'JUDGE', 'ADVOCATE'].includes(profile.role) && (
+                                    <div className="flex items-center gap-1"><span className="text-constitution-gold">Bar Council:</span><span>{profile.barCouncilNumber}</span></div>
+                                )}
                             </div>
                         </div>
 
