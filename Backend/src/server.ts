@@ -7,6 +7,7 @@ import profileRoutes from './routes/profileRoutes';
 import postRoutes from './routes/postRoutes';
 import authRoutes from './routes/authRoutes';
 import uploadRoutes from './routes/uploadRoutes';
+import noteRoutes from "./routes/noteRoutes";
 
 dotenv.config();
 

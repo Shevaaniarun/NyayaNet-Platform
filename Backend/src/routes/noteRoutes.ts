@@ -1,5 +1,4 @@
 // src/routes/noteRoutes.ts
-console.log("✅ notesRoutes loaded");
 
 import { Router } from "express";
 import {
