@@ -44,12 +44,15 @@ export interface Comment {
     postId: string;
     userId: string;
     content: string;
+    parentCommentId: string | null;
+    isEdited: boolean;
     createdAt: string;
     author: {
         id: string;
         fullName: string;
         profilePhotoUrl: string | null;
     };
+    replies?: Comment[];
 }
 
 export interface Post {
@@ -216,16 +219,37 @@ export async function savePost(postId: string): Promise<{ saved: boolean }> {
     return result.data;
 }
 
-export async function createComment(postId: string, content: string): Promise<Comment> {
+export async function createComment(postId: string, content: string, parentCommentId: string | null = null): Promise<Comment> {
     const response = await fetch(`${API_BASE_URL}/posts/${postId}/comments`, {
         method: 'POST',
         headers: createHeaders(true),
-        body: JSON.stringify({ content })
+        body: JSON.stringify({ content, parentCommentId })
     });
 
     if (!response.ok) throw new Error('Failed to create comment');
     const result = await response.json();
     return result.data.comment;
+}
+
+export async function updateComment(commentId: string, content: string): Promise<Comment> {
+    const response = await fetch(`${API_BASE_URL}/posts/comments/${commentId}`, {
+        method: 'PUT',
+        headers: createHeaders(true),
+        body: JSON.stringify({ content })
+    });
+
+    if (!response.ok) throw new Error('Failed to update comment');
+    const result = await response.json();
+    return result.data.comment;
+}
+
+export async function deleteComment(commentId: string): Promise<void> {
+    const response = await fetch(`${API_BASE_URL}/posts/comments/${commentId}`, {
+        method: 'DELETE',
+        headers: createHeaders(true)
+    });
+
+    if (!response.ok) throw new Error('Failed to delete comment');
 }
 
 export async function getComments(postId: string, page = 1, limit = 50): Promise<Comment[]> {

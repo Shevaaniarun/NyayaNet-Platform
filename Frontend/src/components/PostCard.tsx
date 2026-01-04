@@ -23,10 +23,13 @@ import {
   ThumbsUp,
   Lightbulb,
   Info,
-  HelpCircle
+  HelpCircle,
+  Edit2
 } from 'lucide-react';
-import { likePost, savePost, createComment, deletePost } from '../api/postsAPI';
+import { likePost, savePost, createComment, deletePost, updatePost, uploadFiles } from '../api/postsAPI';
 import { toast } from 'react-toastify';
+import { CommentCard } from './Post/CommentCard';
+import { useRef } from 'react';
 
 export interface Post {
   id: string;
@@ -76,6 +79,16 @@ export function PostCard({ post, currentUserId, onDelete }: PostCardProps) {
   const [isLoadingComments, setIsLoadingComments] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isEditingPost, setIsEditingPost] = useState(false);
+  const [editTitle, setEditTitle] = useState(post.title || '');
+  const [editContent, setEditContent] = useState(post.content);
+  const [editPostType, setEditPostType] = useState<any>(post.postType);
+  const [editMedia, setEditMedia] = useState<any[]>(post.media || []);
+  const [newFiles, setNewFiles] = useState<File[]>([]);
+  const [isSavingPost, setIsSavingPost] = useState(false);
+
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  const docInputRef = useRef<HTMLInputElement>(null);
 
   const isOwner = currentUserId === post.userId;
 
@@ -162,6 +175,85 @@ export function PostCard({ post, currentUserId, onDelete }: PostCardProps) {
     }
   };
 
+  const handleEditPost = () => {
+    setIsEditingPost(true);
+    setEditTitle(post.title || '');
+    setEditContent(post.content);
+    setEditMedia(post.media || []);
+    setNewFiles([]);
+    setShowMenu(false);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'image' | 'document') => {
+    const files = e.target.files;
+    if (!files) return;
+
+    const fileList = Array.from(files);
+    setNewFiles([...newFiles, ...fileList]);
+
+    // Create temporary media objects for preview
+    const tempMedia = fileList.map(file => ({
+      id: `temp-${Date.now()}-${Math.random()}`,
+      mediaUrl: type === 'image' ? URL.createObjectURL(file) : '',
+      mediaType: type === 'image' ? 'IMAGE' : 'DOCUMENT',
+      fileName: file.name,
+      file,
+      isNew: true
+    }));
+
+    setEditMedia([...editMedia, ...tempMedia]);
+    e.target.value = '';
+  };
+
+  const removeMedia = (mediaId: string) => {
+    const mediaToRemove = editMedia.find(m => m.id === mediaId);
+    if (mediaToRemove?.isNew && mediaToRemove.mediaUrl) {
+      URL.revokeObjectURL(mediaToRemove.mediaUrl);
+    }
+    setEditMedia(editMedia.filter(m => m.id !== mediaId));
+    // Also remove from newFiles if it's there
+    if (mediaToRemove?.isNew) {
+      setNewFiles(newFiles.filter(f => f !== mediaToRemove.file));
+    }
+  };
+
+  const handleSavePost = async () => {
+    if (!editContent.trim()) return;
+
+    try {
+      setIsSavingPost(true);
+
+      let uploadedMedia: any[] = editMedia.filter(m => !m.isNew).map(m => ({
+        mediaType: m.mediaType,
+        mediaUrl: m.mediaUrl,
+        fileName: m.fileName,
+        mimeType: m.mimeType
+      }));
+
+      if (newFiles.length > 0) {
+        toast.info('Uploading new files...');
+        const newUploaded = await uploadFiles(newFiles);
+        uploadedMedia = [...uploadedMedia, ...newUploaded];
+      }
+
+      await updatePost(post.id, {
+        title: editTitle.trim() || undefined,
+        content: editContent.trim(),
+        postType: editPostType,
+        media: uploadedMedia as any[]
+      });
+
+      toast.success('Post updated successfully');
+      setIsEditingPost(false);
+      // Refresh the page or update local state if needed
+      window.location.reload();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to update post');
+    } finally {
+      setIsSavingPost(false);
+    }
+  };
+
   const submitComment = async () => {
     if (!commentText.trim()) return;
 
@@ -207,6 +299,9 @@ export function PostCard({ post, currentUserId, onDelete }: PostCardProps) {
         break;
       case 'hide':
         toast.info('This post will be hidden from your feed.');
+        break;
+      case 'edit':
+        handleEditPost();
         break;
       case 'delete':
         handleDelete();
@@ -339,40 +434,109 @@ export function PostCard({ post, currentUserId, onDelete }: PostCardProps) {
             </span>
           </div>
 
-          {/* Title (if present) */}
-          {post.title && (
-            <h2 className="text-2xl font-heading font-bold text-ink-gray mb-4">
-              {post.title}
-            </h2>
-          )}
+          {isEditingPost ? (
+            <div className="space-y-4">
+              <input
+                type="text"
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                placeholder="Title (optional)"
+                className="w-full parchment-bg border border-constitution-gold/30 rounded-lg p-3 text-ink-gray font-heading font-semibold focus:outline-none focus:border-constitution-gold"
+              />
+              <textarea
+                value={editContent}
+                onChange={(e) => setEditContent(e.target.value)}
+                placeholder="Content..."
+                rows={4}
+                className="w-full parchment-bg border border-constitution-gold/30 rounded-lg p-4 text-ink-gray font-body focus:outline-none focus:border-constitution-gold resize-none"
+              />
 
-          {/* Content */}
-          <div className="constitution-texture p-6 rounded">
-            <p className="text-ink-gray leading-relaxed font-body whitespace-pre-wrap">
-              {post.content}
-            </p>
-          </div>
+              {/* Media Management */}
+              <div className="flex flex-wrap gap-2">
+                {editMedia.map((m) => (
+                  <div key={m.id} className="relative group">
+                    {m.mediaType === 'IMAGE' ? (
+                      <div className="w-20 h-20 rounded-lg overflow-hidden border border-constitution-gold/30">
+                        <img src={m.isNew ? m.mediaUrl : `${ASSETS_BASE_URL}${m.mediaUrl}`} alt="Preview" className="w-full h-full object-cover" />
+                      </div>
+                    ) : (
+                      <div className="px-3 py-2 bg-constitution-gold/10 border border-constitution-gold/30 rounded-lg flex items-center gap-2">
+                        <FileText className="w-4 h-4 text-constitution-gold" />
+                        <span className="text-xs text-ink-gray max-w-[80px] truncate">{m.fileName}</span>
+                      </div>
+                    )}
+                    <button
+                      onClick={() => removeMedia(m.id)}
+                      className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
 
-          {/* Media Attachments */}
-          {post.media && post.media.length > 0 && (
-            <div className="mt-4 flex flex-col gap-3">
-              {post.media.map((media) => renderMedia(media))}
-            </div>
-          )}
+              <div className="flex items-center gap-2">
+                <input type="file" ref={imageInputRef} className="hidden" accept="image/*" multiple onChange={(e) => handleFileChange(e, 'image')} />
+                <input type="file" ref={docInputRef} className="hidden" accept=".pdf,.doc,.docx" multiple onChange={(e) => handleFileChange(e, 'document')} />
+                <button onClick={() => imageInputRef.current?.click()} className="px-3 py-1.5 bg-constitution-gold/10 border border-constitution-gold/30 rounded text-constitution-gold text-xs font-bold uppercase">Add Image</button>
+                <button onClick={() => docInputRef.current?.click()} className="px-3 py-1.5 bg-constitution-gold/10 border border-constitution-gold/30 rounded text-constitution-gold text-xs font-bold uppercase">Add Doc</button>
+              </div>
 
-          {/* Tags */}
-          {post.tags && post.tags.length > 0 && (
-            <div className="mt-4 flex flex-wrap gap-2">
-              {post.tags.map((tag) => (
-                <span
-                  key={tag}
-                  className="px-3 py-1 bg-constitution-gold/5 border border-constitution-gold/20 rounded-full text-constitution-gold font-medium hover:bg-constitution-gold/10 transition-colors cursor-pointer"
-                  style={{ fontSize: '0.8rem' }}
+              <div className="flex justify-end gap-3 mt-4">
+                <button
+                  onClick={() => setIsEditingPost(false)}
+                  className="px-4 py-2 text-sm font-bold uppercase text-ink-gray/50 hover:text-ink-gray transition-colors"
                 >
-                  #{tag}
-                </span>
-              ))}
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSavePost}
+                  disabled={isSavingPost || !editContent.trim()}
+                  className="px-6 py-2 bg-constitution-gold text-justice-black rounded-lg font-bold hover:bg-constitution-gold/90 transition-colors shadow-lg flex items-center gap-2"
+                >
+                  {isSavingPost ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                  <span>Save Changes</span>
+                </button>
+              </div>
             </div>
+          ) : (
+            <>
+              {/* Title (if present) */}
+              {post.title && (
+                <h2 className="text-2xl font-heading font-bold text-ink-gray mb-4">
+                  {post.title}
+                </h2>
+              )}
+
+              {/* Content */}
+              <div className="constitution-texture p-6 rounded">
+                <p className="text-ink-gray leading-relaxed font-body whitespace-pre-wrap">
+                  {post.content}
+                </p>
+              </div>
+
+              {/* Media Attachments */}
+              {post.media && post.media.length > 0 && (
+                <div className="mt-4 flex flex-col gap-3">
+                  {post.media.map((media) => renderMedia(media))}
+                </div>
+              )}
+
+              {/* Tags */}
+              {post.tags && post.tags.length > 0 && (
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {post.tags.map((tag) => (
+                    <span
+                      key={tag}
+                      className="px-3 py-1 bg-constitution-gold/5 border border-constitution-gold/20 rounded-full text-constitution-gold font-medium hover:bg-constitution-gold/10 transition-colors cursor-pointer"
+                      style={{ fontSize: '0.8rem' }}
+                    >
+                      #{tag}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </>
           )}
         </div>
 
@@ -488,13 +652,22 @@ export function PostCard({ post, currentUserId, onDelete }: PostCardProps) {
                     <span>Copy link to post</span>
                   </button>
                   {isOwner && (
-                    <button
-                      onClick={() => handleMenuAction('delete')}
-                      className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 flex items-center space-x-3 transition-colors"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                      <span>Delete post</span>
-                    </button>
+                    <>
+                      <button
+                        onClick={() => handleMenuAction('edit')}
+                        className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-constitution-gold/5 flex items-center space-x-3 transition-colors"
+                      >
+                        <Edit2 className="w-4 h-4 text-constitution-gold" />
+                        <span>Edit post</span>
+                      </button>
+                      <button
+                        onClick={() => handleMenuAction('delete')}
+                        className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 flex items-center space-x-3 transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        <span>Delete post</span>
+                      </button>
+                    </>
                   )}
                   <button
                     onClick={() => handleMenuAction('report')}
@@ -525,54 +698,48 @@ export function PostCard({ post, currentUserId, onDelete }: PostCardProps) {
               </div>
             ) : (
               <>
-                {/* Existing Comments */}
-                <div className="space-y-3 mb-4 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
-                  {comments.map((comment) => (
-                    <div key={comment.id} className="flex gap-3">
-                      <div className="w-8 h-8 bg-constitution-gold/20 rounded-full flex items-center justify-center flex-shrink-0">
-                        <span className="text-xs font-bold text-constitution-gold">
-                          {comment.author?.fullName?.charAt(0) || 'U'}
-                        </span>
-                      </div>
-                      <div className="flex-1 bg-constitution-gold/5 rounded-lg p-3">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="font-medium text-sm text-ink-gray">
-                            {comment.author?.fullName || 'Anonymous'}
-                          </span>
-                          <span className="text-xs text-ink-gray/50">
-                            {new Date(comment.createdAt).toLocaleDateString()}
-                          </span>
-                        </div>
-                        <p className="text-sm text-ink-gray/80">{comment.content}</p>
-                      </div>
-                    </div>
+                {/* Existing Comments (Recursive) */}
+                <div className="space-y-4 mb-6">
+                  {comments.map((comment: any) => (
+                    <CommentCard
+                      key={comment.id}
+                      comment={comment}
+                      postId={post.id}
+                      currentUserId={currentUserId}
+                      onCommentUpdated={fetchComments}
+                      onCommentDeleted={fetchComments}
+                    />
                   ))}
                   {comments.length === 0 && (
-                    <p className="text-center text-ink-gray/40 text-sm py-2">No comments yet. Be the first to share your thoughts!</p>
+                    <p className="text-center text-ink-gray/40 text-sm py-4 italic">
+                      No legal insights shared yet. Be the first to analyze this post.
+                    </p>
                   )}
                 </div>
 
                 {/* Comment Input */}
-                <div className="flex gap-3 mt-4">
-                  <div className="w-8 h-8 bg-constitution-gold rounded-full flex items-center justify-center flex-shrink-0">
-                    <span className="text-xs font-bold text-justice-black">{userInitials}</span>
+                <div className="flex gap-4 items-start bg-constitution-gold/5 p-4 rounded-xl border border-constitution-gold/10">
+                  <div className="w-10 h-10 bg-constitution-gold rounded-full flex items-center justify-center flex-shrink-0 shadow-md">
+                    <span className="text-sm font-bold text-justice-black">{userInitials}</span>
                   </div>
-                  <div className="flex-1 flex gap-2">
-                    <input
-                      type="text"
+                  <div className="flex-1 flex flex-col gap-3">
+                    <textarea
                       value={commentText}
                       onChange={(e) => setCommentText(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && submitComment()}
                       placeholder="Share your legal perspective..."
-                      className="flex-1 px-4 py-2 bg-white border border-constitution-gold/30 rounded-lg text-sm text-ink-gray focus:outline-none focus:border-constitution-gold transition-colors"
+                      className="w-full px-4 py-3 bg-white border border-constitution-gold/20 rounded-xl text-sm text-ink-gray focus:outline-none focus:border-constitution-gold transition-all shadow-inner resize-none"
+                      rows={2}
                     />
-                    <button
-                      onClick={submitComment}
-                      disabled={!commentText.trim()}
-                      className="px-4 py-2 bg-constitution-gold text-justice-black rounded-lg font-bold disabled:opacity-50 hover:bg-constitution-gold/90 transition-colors"
-                    >
-                      <Send className="w-4 h-4" />
-                    </button>
+                    <div className="flex justify-end">
+                      <button
+                        onClick={submitComment}
+                        disabled={!commentText.trim()}
+                        className="px-6 py-2 bg-constitution-gold text-justice-black rounded-lg font-bold disabled:opacity-50 hover:bg-constitution-gold/90 transition-all flex items-center gap-2 shadow-lg"
+                      >
+                        <Send className="w-4 h-4" />
+                        <span>Insight</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
               </>

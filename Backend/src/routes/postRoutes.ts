@@ -19,5 +19,7 @@ router.delete('/:postId', authenticate, PostController.deletePost);
 router.post('/:postId/like', authenticate, PostController.likePost);
 router.post('/:postId/save', authenticate, PostController.savePost);
 router.post('/:postId/comments', authenticate, PostController.createComment);
+router.put('/comments/:commentId', authenticate, PostController.updateComment);
+router.delete('/comments/:commentId', authenticate, PostController.deleteComment);
 
 export default router;

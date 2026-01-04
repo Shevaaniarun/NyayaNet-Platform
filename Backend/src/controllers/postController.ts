@@ -210,13 +210,13 @@ export class PostController {
             if (!userId) return res.status(401).json({ success: false, message: 'Unauthorized' });
 
             const { postId } = authReq.params;
-            const { content } = authReq.body;
+            const { content, parentCommentId } = authReq.body;
 
             if (!content || !content.trim()) {
                 return res.status(400).json({ success: false, message: 'Comment content is required' });
             }
 
-            const comment = await PostModel.addComment(postId, userId, content.trim());
+            const comment = await PostModel.addComment(postId, userId, content.trim(), parentCommentId);
 
             return res.status(201).json({
                 success: true,
@@ -228,12 +228,56 @@ export class PostController {
         }
     }
 
+    static async updateComment(req: Request, res: Response) {
+        try {
+            const authReq = req as AuthRequest;
+            const userId = authReq.user?.id || authReq.user?.userId;
+            if (!userId) return res.status(401).json({ success: false, message: 'Unauthorized' });
+
+            const { commentId } = authReq.params;
+            const { content } = authReq.body;
+
+            if (!content || !content.trim()) {
+                return res.status(400).json({ success: false, message: 'Comment content is required' });
+            }
+
+            const comment = await PostModel.updateComment(commentId, userId, content.trim());
+            if (!comment) {
+                return res.status(404).json({ success: false, message: 'Comment not found or unauthorized' });
+            }
+
+            return res.json({ success: true, message: 'Comment updated', data: { comment } });
+        } catch (error: any) {
+            return res.status(500).json({ success: false, message: 'Error updating comment', error: error.message });
+        }
+    }
+
+    static async deleteComment(req: Request, res: Response) {
+        try {
+            const authReq = req as AuthRequest;
+            const userId = authReq.user?.id || authReq.user?.userId;
+            if (!userId) return res.status(401).json({ success: false, message: 'Unauthorized' });
+
+            const { commentId } = authReq.params;
+
+            const success = await PostModel.deleteComment(commentId, userId);
+            if (!success) {
+                return res.status(404).json({ success: false, message: 'Comment not found or unauthorized' });
+            }
+
+            return res.json({ success: true, message: 'Comment deleted' });
+        } catch (error: any) {
+            return res.status(500).json({ success: false, message: 'Error deleting comment', error: error.message });
+        }
+    }
+
     static async getComments(req: Request, res: Response) {
         try {
             const { postId } = req.params;
             const { page = '1', limit = '50' } = req.query;
 
-            const comments = await PostModel.getComments(postId, parseInt(page as string), parseInt(limit as string));
+            const userId = (req as AuthRequest).user?.id || (req as AuthRequest).user?.userId;
+            const comments = await PostModel.getComments(postId, userId, parseInt(page as string), parseInt(limit as string));
 
             return res.json({
                 success: true,
