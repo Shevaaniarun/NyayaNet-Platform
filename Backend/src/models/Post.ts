@@ -1,23 +1,6 @@
 import pool from '../config/database';
+import { Post, PostWithAuthor, CreatePostInput, PostFilters, PostMediaInput } from '../types/postTypes';
 import { UserBookmarkModel } from './UserBookmark';
-
-export interface PostMediaInput {
-  mediaType: 'IMAGE' | 'PDF' | 'DOCUMENT';
-  mediaUrl: string;
-  thumbnailUrl?: string;
-  fileName?: string;
-  fileSize?: number;
-  mimeType?: string;
-}
-
-export interface CreatePostInput {
-  content: string;
-  title?: string;
-  postType?: 'POST' | 'QUESTION' | 'ARTICLE' | 'ANNOUNCEMENT';
-  tags?: string[];
-  isPublic?: boolean;
-  media?: PostMediaInput[];
-}
 
 export interface PostMedia {
   id: string;
@@ -45,29 +28,8 @@ export interface CommentResponse {
   replies?: CommentResponse[];
 }
 
-export interface PostResponse {
-  id: string;
-  userId: string;
-  title: string | null;
-  content: string;
-  postType: string;
-  tags: string[];
-  isPublic: boolean;
-  viewCount: number;
-  likeCount: number;
-  commentCount: number;
-  createdAt: string;
-  updatedAt: string;
+export interface PostResponse extends Post {
   media?: PostMedia[];
-  isLiked?: boolean;
-  isSaved?: boolean;
-  reactionType?: string | null;
-  author?: {
-    id: string;
-    fullName: string;
-    profilePhotoUrl: string | null;
-    designation: string | null;
-  };
 }
 
 export class PostModel {
@@ -81,7 +43,7 @@ export class PostModel {
       const result = await client.query(
         `INSERT INTO posts (user_id, title, content, post_type, tags, is_public, created_at, updated_at)
                  VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-                 RETURNING id, user_id, title, content, post_type, tags, is_public, view_count, like_count, comment_count, created_at, updated_at`,
+                 RETURNING id, user_id, title, content, post_type, tags, is_public, like_count, comment_count, created_at, updated_at`,
         [userId, title || null, content, postType, tags, isPublic]
       );
 
@@ -148,7 +110,7 @@ export class PostModel {
     if (!result.rows[0]) return null;
 
     const row = result.rows[0];
-    return this.mapRowToResponse(row, true);
+    return this.mapRowToResponse(result.rows[0]);
   }
 
   static async update(id: string, userId: string, updates: Partial<CreatePostInput>): Promise<PostResponse | null> {
@@ -234,20 +196,19 @@ export class PostModel {
   }
 
   // Get posts with filters (similar to discussions)
-  static async findAll(filters: any, userId?: string): Promise<{ posts: PostResponse[], pagination: any }> {
+  static async findAll(filters: PostFilters = {}, userId?: string): Promise<{ posts: PostResponse[], pagination: any }> {
     const {
-      page = 1,
-      limit = 20,
-      tags,
+      page: rawPage = 1,
+      limit: rawLimit = 20,
       postType,
+      tags,
       sort = 'newest',
       q
     } = filters;
 
+    const page = parseInt(rawPage.toString()) || 1;
+    const limit = parseInt(rawLimit.toString()) || 20;
     const offset = (page - 1) * limit;
-
-    // Increment view count if postId is provided in params or if called from findById
-    // Note: Actually, views are handled in incrementViewCount method called by controller
 
     // Build filter conditions
     let baseConditions = ['p.is_public = true'];
@@ -300,14 +261,28 @@ export class PostModel {
     // Build sort clause
     let sortClause = 'p.created_at DESC';
     switch (sort) {
-      case 'popular':
-        sortClause = 'p.view_count DESC';
+      case 'newest':
+        sortClause = 'p.created_at DESC';
+        break;
+      case 'active':
+        sortClause = 'p.comment_count DESC';
         break;
       case 'liked':
         sortClause = 'p.like_count DESC';
         break;
-      case 'discussed':
-        sortClause = 'p.comment_count DESC';
+      case 'relevance':
+        if (q) {
+          sortClause = `
+            CASE 
+              WHEN p.title ILIKE $1 THEN 1
+              WHEN p.content ILIKE $1 THEN 2
+              ELSE 3
+            END,
+            p.comment_count DESC
+          `;
+        } else {
+          sortClause = 'p.created_at DESC';
+        }
         break;
     }
 
@@ -347,8 +322,9 @@ export class PostModel {
 
     const result = await pool.query(query, finalParams);
 
+    const posts = result.rows.map(row => this.mapRowToResponse(row));
     return {
-      posts: result.rows.map((row: any) => this.mapRowToResponse(row, true)),
+      posts: posts,
       pagination: { total, page, limit, pages: Math.ceil(total / limit) }
     };
   }
@@ -406,46 +382,6 @@ export class PostModel {
     }
   }
 
-  static async incrementViewCount(id: string, userId?: string, ipAddress?: string): Promise<void> {
-    const client = await pool.connect();
-    try {
-      await client.query('BEGIN');
-
-      let insertResult;
-      if (userId) {
-        insertResult = await client.query(
-          'INSERT INTO post_views (post_id, user_id) VALUES ($1, $2) ON CONFLICT (post_id, user_id) DO NOTHING RETURNING id',
-          [id, userId]
-        );
-      } else if (ipAddress) {
-        insertResult = await client.query(
-          'INSERT INTO post_views (post_id, ip_address) VALUES ($1, $2) ON CONFLICT (post_id, ip_address) WHERE user_id IS NULL DO NOTHING RETURNING id',
-          [id, ipAddress]
-        );
-      } else {
-        await client.query(
-          'UPDATE posts SET view_count = view_count + 1 WHERE id = $1',
-          [id]
-        );
-        await client.query('COMMIT');
-        return;
-      }
-
-      if (insertResult.rows.length > 0) {
-        await client.query(
-          'UPDATE posts SET view_count = view_count + 1 WHERE id = $1',
-          [id]
-        );
-      }
-
-      await client.query('COMMIT');
-    } catch (error) {
-      await client.query('ROLLBACK');
-      console.error('Error incrementing post view count:', error);
-    } finally {
-      client.release();
-    }
-  }
 
   static async toggleBookmark(postId: string, userId: string): Promise<{ saved: boolean; saveCount: number }> {
     const result = await UserBookmarkModel.toggleBookmark(userId, 'POST', postId);
@@ -618,7 +554,7 @@ export class PostModel {
     return (result.rowCount ?? 0) > 0;
   }
 
-  private static mapRowToResponse(row: any, includeAuthor = false): PostResponse {
+  private static mapRowToResponse(row: any): PostResponse {
     const response: PostResponse = {
       id: row.id,
       userId: row.user_id,
@@ -627,25 +563,21 @@ export class PostModel {
       postType: row.post_type,
       tags: row.tags || [],
       isPublic: row.is_public,
-      viewCount: row.view_count || 0,
-      likeCount: row.like_count || 0,
-      commentCount: row.comment_count || 0,
-      createdAt: row.created_at instanceof Date ? row.created_at.toISOString() : new Date(row.created_at).toISOString(),
-      updatedAt: row.updated_at instanceof Date ? row.updated_at.toISOString() : new Date(row.updated_at).toISOString(),
-      media: Array.isArray(row.media) ? row.media : [],
-      isLiked: !!row.is_liked,
-      isSaved: !!row.is_saved,
-      reactionType: row.reaction_type || null
-    };
-
-    if (includeAuthor && row.full_name) {
-      response.author = {
+      likeCount: parseInt(row.like_count) || 0,
+      commentCount: parseInt(row.comment_count) || 0,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+      media: row.media,
+      isLiked: row.is_liked,
+      isSaved: row.is_saved,
+      reactionType: row.reaction_type,
+      author: row.full_name ? {
         id: row.user_id,
         fullName: row.full_name,
         profilePhotoUrl: row.profile_photo_url,
         designation: row.designation
-      };
-    }
+      } : undefined
+    };
 
     return response;
   }

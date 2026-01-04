@@ -58,7 +58,6 @@ export interface Post {
   isLiked?: boolean;
   isSaved?: boolean;
   reactionType?: string | null;
-  viewCount?: number;
 }
 
 interface PostCardProps {
@@ -75,7 +74,7 @@ export function PostCard({ post, currentUserId, onDelete }: PostCardProps) {
   const [isBookmarked, setIsBookmarked] = useState(post.isSaved || false);
   const [showComments, setShowComments] = useState(false);
   const [commentText, setCommentText] = useState('');
-  const [comments, setComments] = useState<Array<{ id: string; content: string; author: { fullName: string }; createdAt: string; userId: string }>>([]);
+  const [comments, setComments] = useState<any[]>([]);
   const [isLoadingComments, setIsLoadingComments] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -326,6 +325,9 @@ export function PostCard({ post, currentUserId, onDelete }: PostCardProps) {
             src={`${ASSETS_BASE_URL}${media.mediaUrl}`}
             alt="Post media"
             className="w-full h-full object-cover"
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = 'https://via.placeholder.com/800x450?text=Media+Not+Found';
+            }}
           />
         </div>
       );
@@ -606,10 +608,6 @@ export function PostCard({ post, currentUserId, onDelete }: PostCardProps) {
               <MessageSquare className="w-5 h-5" />
               <span className="font-bold">{post.commentCount + comments.length}</span>
             </button>
-            <div className="flex items-center space-x-2 text-ink-gray/40">
-              <Eye className="w-5 h-5" />
-              <span className="font-bold">{post.viewCount || 0}</span>
-            </div>
             <button
               onClick={handleShare}
               className="flex items-center space-x-2 text-ink-gray/70 hover:text-constitution-gold transition-colors"

@@ -73,10 +73,6 @@ export class PostController {
                 return res.status(404).json({ success: false, message: 'Post not found' });
             }
 
-            // Increment view count
-            const ipAddress = req.ip || req.socket.remoteAddress;
-            await PostModel.incrementViewCount(postId, userId, ipAddress as string);
-
             return res.json({ success: true, data: { post } });
         } catch (error: any) {
             return res.status(500).json({ success: false, message: 'Error fetching post', error: error.message });
