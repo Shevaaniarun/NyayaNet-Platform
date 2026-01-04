@@ -6,8 +6,9 @@ import { AIAssistant } from './components/AIAssistant';
 import { JusticeLoader } from './components/JusticeLoader';
 import { CreatePost } from './components/CreatePost';
 import { MobileNotice } from './components/MobileNotice';
-import { Sparkles, TrendingUp, Gavel } from 'lucide-react';
+import { Sparkles, TrendingUp, Gavel, Construction } from 'lucide-react';
 import { DiscussionsPage } from './pages/DiscussionPage';
+import { PostsPage } from './pages/PostsPage';
 import RegisterPage from "./pages/RegisterPage";
 import LoginPage from "./pages/LoginPage";
 import { ProfilePage } from './pages/ProfilePage';
@@ -16,13 +17,16 @@ import { toast } from 'react-toastify';
 import NotesPage from './pages/NotesPage';
 
 type ViewType =
+    | 'dashboard'
     | 'feed'
     | 'cases'
+    | 'notes'
     | 'ai'
-    | 'dashboard'
     | 'discussions'
     | 'profile'
-    | 'notes';
+    | 'network'
+    | 'chat'
+    | 'library';
 
 // Helper to get current user from localStorage
 const getCurrentUser = () => {
@@ -56,8 +60,9 @@ const adaptPost = (apiPost: ApiPost): PostComponentType => ({
     isSaved: apiPost.isSaved,
     media: apiPost.media?.map(m => ({
         id: m.id,
-        url: m.mediaUrl,
-        type: m.mediaType
+        mediaUrl: m.mediaUrl,
+        mediaType: m.mediaType,
+        fileName: m.fileName || undefined
     }))
 });
 
@@ -168,7 +173,10 @@ export default function App() {
             '/ai': 'ai',
             '/discussions': 'discussions',
             '/profile': 'profile',
-            '/notes': 'notes', // ✅ ADDED
+            '/notes': 'notes',
+            '/network': 'network',
+            '/chat': 'chat',
+            '/library': 'library',
         };
 
         const newView = viewMap[path] || 'dashboard';
@@ -301,29 +309,7 @@ export default function App() {
                 )}
 
                 {currentView === 'feed' && (
-                    <div className="flex-1 p-6 overflow-y-auto">
-                        <div className="max-w-3xl mx-auto space-y-6">
-                            <CreatePost onPostCreated={refreshPosts} />
-                            {isLoadingPosts ? (
-                                <div className="flex justify-center p-8">
-                                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-justice-blue"></div>
-                                </div>
-                            ) : posts.length > 0 ? (
-                                posts.map((post) => (
-                                    <PostCard
-                                        key={post.id}
-                                        post={post}
-                                        currentUserId={getCurrentUser()?.id}
-                                        onDelete={(id) => setPosts(prev => prev.filter(p => p.id !== id))}
-                                    />
-                                ))
-                            ) : (
-                                <div className="text-center py-12 text-gray-400">
-                                    <p>No posts found. Be the first to post something!</p>
-                                </div>
-                            )}
-                        </div>
-                    </div>
+                    <PostsPage />
                 )}
 
                 {currentView === 'cases' && (
@@ -341,7 +327,19 @@ export default function App() {
 
                 {currentView === 'ai' && <AIAssistant />}
                 {currentView === 'discussions' && <DiscussionsPage />}
-                {currentView === 'notes' && <NotesPage />} {/* ✅ ADDED */}
+                {currentView === 'notes' && <NotesPage />}
+                {(currentView === 'network' || currentView === 'chat' || currentView === 'library') && (
+                    <div className="min-h-screen flex items-center justify-center p-8 bg-justice-black">
+                        <div className="text-center aged-paper p-12 border border-constitution-gold/20 rounded-xl max-w-lg">
+                            <Construction className="w-16 h-16 text-constitution-gold mx-auto mb-6" />
+                            <h2 className="text-2xl font-bold text-judge-ivory mb-4">Chamber Under Construction</h2>
+                            <p className="text-ink-gray/70">
+                                Our legal architects are diligently working to bring you the full <strong>{currentView.charAt(0).toUpperCase() + currentView.slice(1)}</strong> experience.
+                                Please check back soon as we finalize these proceedings.
+                            </p>
+                        </div>
+                    </div>
+                )}
 
                 {currentView === 'profile' && (
                     <ProfilePage
