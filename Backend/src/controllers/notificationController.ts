@@ -70,3 +70,31 @@ export const markNotificationAsRead = async (req:  AuthRequest, res: Response) =
     });
   }
 };
+
+
+export const markAllAsRead = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: 'User not authenticated'
+      });
+    }
+
+    const updatedCount = await NotificationModel. markAllAsRead(userId);
+
+    return res.status(200).json({
+      success: true,
+      message: 'All notifications marked as read'
+    });
+  } catch (error: any) {
+    console.error('Mark all as read error:', error);
+    return res.status(500).json({
+      success: false,
+      message:  'Failed to mark all notifications as read',
+      error: error. message
+    });
+  }
+};

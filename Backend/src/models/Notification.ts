@@ -164,4 +164,17 @@ export class NotificationModel {
     const result = await pool.query(query, [notificationId, userId]);
     return result.rows. length > 0;
   }
+
+
+  static async markAllAsRead(userId:  string): Promise<number> {
+    const query = `
+      UPDATE notifications
+      SET is_read = true, read_at = CURRENT_TIMESTAMP
+      WHERE user_id = $1 AND is_read = false
+      RETURNING id
+    `;
+
+    const result = await pool.query(query, [userId]);
+    return result. rowCount || 0;
+  }
 }
