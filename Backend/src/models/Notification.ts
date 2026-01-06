@@ -104,12 +104,14 @@ export class NotificationModel {
     let paramIndex = 2;
 
     if (type) {
+      console.log("✅ Adding type filter:", type);
       conditions.push(`notification_type = $${paramIndex}`);
       params.push(type);
       paramIndex++;
     }
 
     if (unread === true) {
+      console.log("✅ Adding unread filter");
       conditions.push("is_read = false");
     }
 
@@ -118,6 +120,7 @@ export class NotificationModel {
     FROM notifications
     WHERE ${conditions.join(" AND ")}
   `;
+    console.log("📊 Count query:", countQuery);
     const countResult = await pool.query(countQuery, params);
     const total = parseInt(countResult.rows[0].total);
 
@@ -129,16 +132,17 @@ export class NotificationModel {
     const unreadResult = await pool.query(unreadQuery, [userId]);
     const unreadCount = parseInt(unreadResult.rows[0].count);
 
-    params.push(limit, offset);
+    const queryParams = [...params, limit, offset];
+
     const notificationsQuery = `
     SELECT 
-      n.id,
+      n. id,
       n.notification_type as type,
-      n.title,
+      n. title,
       n.message,
       n.source_type,
       n.source_id,
-      n.data:: jsonb as data,
+      n.data::jsonb as data,
       n.is_read,
       n.created_at
     FROM notifications n
@@ -147,7 +151,10 @@ export class NotificationModel {
     LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
   `;
 
-    const notificationsResult = await pool.query(notificationsQuery, params);
+    const notificationsResult = await pool.query(
+      notificationsQuery,
+      queryParams
+    );
 
     const notifications = await Promise.all(
       notificationsResult.rows.map(async (notification) => {
