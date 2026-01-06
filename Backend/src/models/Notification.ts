@@ -104,14 +104,12 @@ export class NotificationModel {
     let paramIndex = 2;
 
     if (type) {
-      console.log("✅ Adding type filter:", type);
       conditions.push(`notification_type = $${paramIndex}`);
       params.push(type);
       paramIndex++;
     }
 
     if (unread === true) {
-      console.log("✅ Adding unread filter");
       conditions.push("is_read = false");
     }
 
@@ -120,7 +118,6 @@ export class NotificationModel {
     FROM notifications
     WHERE ${conditions.join(" AND ")}
   `;
-    console.log("📊 Count query:", countQuery);
     const countResult = await pool.query(countQuery, params);
     const total = parseInt(countResult.rows[0].total);
 
