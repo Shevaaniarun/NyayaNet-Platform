@@ -2,6 +2,21 @@ import { Request, Response, NextFunction } from "express";
 import jwt, { JwtPayload } from "jsonwebtoken";
 
 /**
+ * Multer File type definition
+ */
+interface MulterFile {
+  fieldname: string;
+  originalname: string;
+  encoding: string;
+  mimetype: string;
+  size: number;
+  destination: string;
+  filename: string;
+  path: string;
+  buffer: Buffer;
+}
+
+/**
  * Shape of data we store inside JWT
  */
 export interface AuthPayload extends JwtPayload {
@@ -11,10 +26,12 @@ export interface AuthPayload extends JwtPayload {
 }
 
 /**
- * Extend Express Request to include user
+ * Extend Express Request to include user and file uploads
  */
 export interface AuthRequest extends Request {
   user?: AuthPayload;
+  files?: MulterFile[];
+  file?: MulterFile;
 }
 
 /**

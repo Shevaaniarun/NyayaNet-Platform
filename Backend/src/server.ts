@@ -8,6 +8,7 @@ import postRoutes from './routes/postRoutes';
 import authRoutes from './routes/authRoutes';
 import uploadRoutes from './routes/uploadRoutes';
 import noteRoutes from "./routes/noteRoutes";
+import networkRoutes from './routes/networkRoutes';
 
 dotenv.config();
 
@@ -41,6 +42,9 @@ app.use('/api/posts', postRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use("/api", authRoutes);
 app.use("/api/notes", noteRoutes);
+app.use('/api/profile', profileRoutes);
+app.use('/api/network', networkRoutes);
+
 app.use((req, res) => res.status(404).json({ success: false, message: 'Route not found' }));
 
 app.use((error: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
