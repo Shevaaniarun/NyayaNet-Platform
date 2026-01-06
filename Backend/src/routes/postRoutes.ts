@@ -8,6 +8,7 @@ const router = Router();
 // Routes
 router.post('/upload', authenticate, upload.array('files', 5), PostController.uploadFiles);
 router.get('/feed', PostController.getFeed);
+router.get('/all', PostController.getPosts); // New route for filtered posts
 router.get('/:postId', PostController.getPost);
 router.get('/:postId/comments', PostController.getComments);
 

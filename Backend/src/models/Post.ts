@@ -1,4 +1,5 @@
 import pool from '../config/database';
+import { UserBookmarkModel } from './UserBookmark';
 
 export interface PostMediaInput {
   mediaType: 'IMAGE' | 'PDF' | 'DOCUMENT';
@@ -191,15 +192,95 @@ export class PostModel {
   }
 
   static async getFeed(page = 1, limit = 20, userId?: string): Promise<{ posts: PostResponse[], pagination: any }> {
+    return this.findAll({ page, limit }, userId);
+  }
+
+  // Get posts with filters (similar to discussions)
+  static async findAll(filters: any, userId?: string): Promise<{ posts: PostResponse[], pagination: any }> {
+    const {
+      page = 1,
+      limit = 20,
+      tags,
+      postType,
+      sort = 'newest',
+      q
+    } = filters;
+
     const offset = (page - 1) * limit;
 
-    const countResult = await pool.query('SELECT COUNT(*) FROM posts WHERE is_public = true');
-    const total = parseInt(countResult.rows[0].count);
+    // Build filter conditions
+    let baseConditions = ['p.is_public = true'];
+    const commonParams: any[] = [];
+    let pIdx = 1;
 
-    const result = await pool.query(
-      `SELECT p.*, u.full_name, u.profile_photo_url, u.designation,
-             (SELECT COUNT(*) > 0 FROM post_likes pl WHERE pl.post_id = p.id AND pl.user_id = $3) as is_liked,
-             (SELECT COUNT(*) > 0 FROM user_bookmarks ub WHERE ub.entity_id = p.id AND ub.entity_type = 'POST' AND ub.user_id = $3) as is_saved,
+    // Search query
+    if (q) {
+      baseConditions.push(`(
+        p.title ILIKE $${pIdx} OR 
+        p.content ILIKE $${pIdx} OR 
+        EXISTS(
+          SELECT 1 FROM users u 
+          WHERE u.id = p.user_id AND u.full_name ILIKE $${pIdx}
+        ) OR
+        EXISTS(
+          SELECT 1 FROM unnest(p.tags) AS t 
+          WHERE t ILIKE $${pIdx} OR ('#' || t) ILIKE $${pIdx}
+        )
+      )`);
+      commonParams.push(`%${q}%`);
+      pIdx++;
+    }
+
+    // Filter by post type
+    if (postType) {
+      baseConditions.push(`p.post_type = $${pIdx}`);
+      commonParams.push(postType);
+      pIdx++;
+    }
+
+    // Filter by tags
+    if (tags && (Array.isArray(tags) ? tags.length > 0 : !!tags)) {
+      const tagsArray = Array.isArray(tags) ? tags : [tags];
+      baseConditions.push(`EXISTS (
+        SELECT 1 FROM unnest(p.tags) AS t 
+        WHERE UPPER(t) = ANY($${pIdx}::text[])
+      )`);
+      commonParams.push(tagsArray.map(t => t.toUpperCase()));
+      pIdx++;
+    }
+
+    const whereClause = baseConditions.length > 0 ? `WHERE ${baseConditions.join(' AND ')}` : '';
+
+    // Get total count
+    const countQuery = `SELECT COUNT(*) as total FROM posts p ${whereClause}`;
+    const countResult = await pool.query(countQuery, commonParams);
+    const total = parseInt(countResult.rows[0].total);
+
+    // Build sort clause
+    let sortClause = 'p.created_at DESC';
+    switch (sort) {
+      case 'popular':
+        sortClause = 'p.view_count DESC';
+        break;
+      case 'liked':
+        sortClause = 'p.like_count DESC';
+        break;
+      case 'discussed':
+        sortClause = 'p.comment_count DESC';
+        break;
+    }
+
+    // Get paginated results
+    const finalParams = [...commonParams];
+    const limitIdx = finalParams.length + 1;
+    const offsetIdx = finalParams.length + 2;
+    const userIdx = finalParams.length + 3;
+    finalParams.push(limit, offset, userId || null);
+
+    const query = `
+      SELECT p.*, u.full_name, u.profile_photo_url, u.designation,
+             (SELECT COUNT(*) > 0 FROM post_likes pl WHERE pl.post_id = p.id AND pl.user_id = $${userIdx}) as is_liked,
+             (SELECT COUNT(*) > 0 FROM user_bookmarks ub WHERE ub.entity_id = p.id AND ub.entity_type = 'POST' AND ub.user_id = $${userIdx}) as is_saved,
              COALESCE(
                 json_agg(
                     json_build_object(
@@ -216,12 +297,13 @@ export class PostModel {
              FROM posts p
              JOIN users u ON p.user_id = u.id
              LEFT JOIN post_media pm ON p.id = pm.post_id
-             WHERE p.is_public = true
+             ${whereClause}
              GROUP BY p.id, u.id
-             ORDER BY p.created_at DESC
-             LIMIT $1 OFFSET $2`,
-      [limit, offset, userId || null]
-    );
+             ORDER BY ${sortClause}
+             LIMIT $${limitIdx} OFFSET $${offsetIdx}
+    `;
+
+    const result = await pool.query(query, finalParams);
 
     return {
       posts: result.rows.map((row: any) => this.mapRowToResponse(row, true)),
@@ -270,22 +352,12 @@ export class PostModel {
     }
   }
 
-  static async toggleBookmark(postId: string, userId: string): Promise<boolean> {
-    const check = await pool.query(
-      "SELECT id FROM user_bookmarks WHERE entity_id = $1 AND entity_type = 'POST' AND user_id = $2",
-      [postId, userId]
-    );
-
-    if (check.rows[0]) {
-      await pool.query('DELETE FROM user_bookmarks WHERE id = $1', [check.rows[0].id]);
-      return false;
-    } else {
-      await pool.query(
-        "INSERT INTO user_bookmarks (user_id, entity_id, entity_type) VALUES ($1, $2, 'POST')",
-        [userId, postId]
-      );
-      return true;
-    }
+  static async toggleBookmark(postId: string, userId: string): Promise<{ saved: boolean; saveCount: number }> {
+    const result = await UserBookmarkModel.toggleBookmark(userId, 'POST', postId);
+    return {
+      saved: result.bookmarked,
+      saveCount: result.saveCount
+    };
   }
 
   static async addComment(postId: string, userId: string, content: string): Promise<CommentResponse> {

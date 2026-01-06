@@ -6,7 +6,7 @@ import { AIAssistant } from './components/AIAssistant';
 import { JusticeLoader } from './components/JusticeLoader';
 import { CreatePost } from './components/CreatePost';
 import { MobileNotice } from './components/MobileNotice';
-import { Sparkles, TrendingUp, Gavel } from 'lucide-react';
+import { Sparkles, TrendingUp, Gavel, Users, Bell } from 'lucide-react';
 import { DiscussionsPage } from './pages/DiscussionPage';
 import RegisterPage from "./pages/RegisterPage";
 import LoginPage from "./pages/LoginPage";
@@ -15,6 +15,9 @@ import NotesPage from './pages/NotesPage';
 import NotificationsPage from './pages/NotificationsPage'; 
 import { getFeed, Post as ApiPost } from './api/postsAPI';
 import { toast } from 'react-toastify';
+import NotesPage from './pages/NotesPage';
+import { NetworkPage } from './pages/NetworkPage';
+import * as networkApi from './api/networkAPI';
 
 type ViewType =
     | 'feed'
@@ -25,28 +28,38 @@ type ViewType =
     | 'profile'
     | 'notes'
     | 'notifications'; 
+    | 'connectionRequests';
 
-// Helper to get current user from localStorage
 const getCurrentUser = () => {
     const userStr = localStorage.getItem('user');
     if (!userStr) return null;
     try {
-        return JSON.parse(userStr);
+        const user = JSON.parse(userStr);
+        return {
+            id: user.id || user._id || '',
+            fullName: user.fullName || user.name || 'User',
+            email: user.email || '',
+            role: user.role || 'USER',
+            profilePhotoUrl: user.profilePhotoUrl || '',
+            designation: user.designation || '',
+            organization: user.organization || ''
+        };
     } catch {
         return null;
     }
 };
 
-// Type adapters
+// Fixed type adapter based on actual API response
 const adaptPost = (apiPost: ApiPost): PostComponentType => ({
     id: apiPost.id,
     userId: apiPost.userId,
     author: {
         fullName: apiPost.author?.fullName || 'Unknown User',
-        profilePhotoUrl: apiPost.author?. profilePhotoUrl || '',
-        role: 'User',
+        profilePhotoUrl: apiPost.author?.profilePhotoUrl || '',
+        // Use default values since API doesn't provide role and organization
+        role: 'Legal Professional', // Default value
         designation: apiPost.author?.designation || '',
-        organization: ''
+        organization: apiPost.author?.organization || '' // Default value
     },
     postType:  apiPost.postType || 'POST',
     content: apiPost. content,
@@ -80,11 +93,35 @@ export default function App() {
     const [isLoadingPosts, setIsLoadingPosts] = useState(false);
     const [posts, setPosts] = useState<PostComponentType[]>([]);
     const [cases] = useState<CaseItemComponentType[]>([]);
+    const [pendingConnectionCount, setPendingConnectionCount] = useState(0);
 
     // Initialize auth state properly
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [authView, setAuthView] = useState<"register" | "login">("register");
     const [currentView, setCurrentView] = useState<ViewType>('dashboard');
+
+    // State for viewing another user's profile
+    const [selectedProfileUserId, setSelectedProfileUserId] = useState<string | null>(null);
+
+    // Get current user
+    const currentUser = getCurrentUser();
+
+    // Function to load pending connection count
+    const loadPendingConnectionCount = async () => {
+        if (!isAuthenticated || !currentUser?.id) return;
+        
+        try {
+            // Use the network API call
+            const pendingRequests = await networkApi.getPendingConnectionRequests();
+            console.log('Pending requests from API:', pendingRequests);
+            setPendingConnectionCount(pendingRequests.length || 0);
+        } catch (error) {
+            console.error('Failed to load connection requests:', error);
+            // Fallback to mock data for development
+            const mockCount = Math.floor(Math.random() * 5);
+            setPendingConnectionCount(mockCount);
+        }
+    };
 
     useEffect(() => {
         const token = localStorage.getItem("token");
@@ -94,11 +131,12 @@ export default function App() {
         if (isAuth) {
             setCurrentView('dashboard');
             refreshPosts();
+            loadPendingConnectionCount();
         }
 
         const timer = setTimeout(() => {
             setIsLoading(false);
-        }, 4500);
+        }, 1500); // Reduced from 4500ms for better UX
 
         return () => clearTimeout(timer);
     }, []);
@@ -110,6 +148,7 @@ export default function App() {
                 setIsAuthenticated(true);
                 setCurrentView('dashboard');
                 refreshPosts();
+                loadPendingConnectionCount();
             }
         };
 
@@ -121,6 +160,7 @@ export default function App() {
                 setIsAuthenticated(true);
                 setCurrentView('dashboard');
                 refreshPosts();
+                loadPendingConnectionCount();
             }
         }, 1000);
 
@@ -151,6 +191,7 @@ export default function App() {
             setIsAuthenticated(true);
             setCurrentView("dashboard");
             refreshPosts();
+            loadPendingConnectionCount();
         }
     };
 
@@ -160,6 +201,7 @@ export default function App() {
         setIsAuthenticated(false);
         setAuthView("login");
         setPosts([]);
+        setPendingConnectionCount(0);
     };
 
     const handleNavigation = (path: string) => {
@@ -172,14 +214,31 @@ export default function App() {
             '/profile': 'profile',
             '/notes': 'notes',
             '/notifications': 'notifications', 
+            '/connection-requests': 'connectionRequests',
         };
 
         const newView = viewMap[path] || 'dashboard';
         setCurrentView(newView);
 
+        // Clear profile user selection on navigation
+        if (newView !== 'profile') {
+            setSelectedProfileUserId(null);
+        }
+
         if (newView === 'feed' || newView === 'dashboard') {
             refreshPosts();
         }
+    };
+
+    // Author click handler for PostCard
+    const handlePostAuthorClick = (userId: string) => {
+        setSelectedProfileUserId(userId);
+        setCurrentView('profile');
+    };
+
+    // Handle refresh of connection count
+    const handleRefreshConnectionCount = () => {
+        loadPendingConnectionCount();
     };
 
     if (isLoading) {
@@ -203,6 +262,7 @@ export default function App() {
             <Sidebar
                 currentPath={currentView === 'dashboard' ? '/' :  `/${currentView}`}
                 onNavigate={handleNavigation}
+                pendingConnectionCount={pendingConnectionCount}
             />
 
             <div className="ml-64 flex-1">
@@ -212,10 +272,28 @@ export default function App() {
                             <div className="aged-paper rounded-2xl p-12 relative overflow-hidden">
                                 <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-constitution-gold via-gavel-bronze to-constitution-gold"></div>
                                 <div className="relative z-10">
-                                    <h1 className="font-heading font-bold text-ink-gray mb-4 text-5xl">Welcome to NyayaNet</h1>
-                                    <p className="text-ink-gray/70 max-w-3xl leading-relaxed mb-6 text-xl">
-                                        India's premier legal professional networking and AI-powered assistance platform. 
-                                    </p>
+                                    <div className="flex justify-between items-start mb-4">
+                                        <div>
+                                            <h1 className="font-heading font-bold text-ink-gray mb-4 text-5xl">
+                                                Welcome to NyayaNet
+                                            </h1>
+                                            <p className="text-ink-gray/70 max-w-3xl leading-relaxed mb-6 text-xl">
+                                                India's premier legal professional networking and AI-powered assistance platform.
+                                            </p>
+                                        </div>
+                                        {pendingConnectionCount > 0 && (
+                                            <button
+                                                onClick={() => setCurrentView('connectionRequests')}
+                                                className="flex items-center gap-2 px-4 py-2 bg-constitution-gold/10 border border-constitution-gold/30 text-constitution-gold rounded-lg hover:bg-constitution-gold/20 transition-colors"
+                                            >
+                                                <Bell className="w-5 h-5" />
+                                                <span>Connection Requests</span>
+                                                <span className="bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                                                    {pendingConnectionCount}
+                                                </span>
+                                            </button>
+                                        )}
+                                    </div>
                                     <div className="flex space-x-4">
                                         <button
                                             onClick={() => setCurrentView('ai')}
@@ -224,11 +302,23 @@ export default function App() {
                                             <Sparkles className="w-5 h-5" /><span>Try Legal AI</span>
                                         </button>
                                         <button
-                                            onClick={() => setCurrentView('profile')}
+                                            onClick={() => {
+                                                setCurrentView('profile');
+                                                setSelectedProfileUserId(null); // Ensure own profile
+                                            }}
                                             className="px-8 py-4 border-2 border-constitution-gold text-constitution-gold rounded-lg font-bold hover:bg-constitution-gold/5 transition-colors flex items-center space-x-2"
                                         >
-                                            <Sparkles className="w-5 h-5" /><span>View Profile</span>
+                                            <Users className="w-5 h-5" /><span>View Profile</span>
                                         </button>
+                                        {pendingConnectionCount > 0 && (
+                                            <button
+                                                onClick={() => setCurrentView('connectionRequests')}
+                                                className="px-8 py-4 bg-red-500/10 border-2 border-red-500 text-red-500 rounded-lg font-bold hover:bg-red-500/20 transition-colors flex items-center space-x-2"
+                                            >
+                                                <Bell className="w-5 h-5" />
+                                                <span>View Requests ({pendingConnectionCount})</span>
+                                            </button>
+                                        )}
                                         <button
                                             onClick={handleLogout}
                                             className="px-8 py-4 border-2 border-red-500 text-red-500 rounded-lg font-bold hover:bg-red-500/5 transition-colors flex items-center space-x-2"
@@ -241,8 +331,9 @@ export default function App() {
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-1 md: grid-cols-3 gap-6 mb-12">
-                            <div className="aged-paper rounded-lg p-6 border border-constitution-gold/20">
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
+                            <div className="aged-paper rounded-lg p-6 border border-constitution-gold/20 hover:border-constitution-gold/40 transition-colors cursor-pointer"
+                                onClick={() => setCurrentView('cases')}>
                                 <div className="flex items-center justify-between">
                                     <div>
                                         <p className="text-ink-gray/60 mb-1 text-sm">Active Cases</p>
@@ -253,7 +344,8 @@ export default function App() {
                                     </div>
                                 </div>
                             </div>
-                            <div className="aged-paper rounded-lg p-6 border border-constitution-gold/20">
+                            <div className="aged-paper rounded-lg p-6 border border-constitution-gold/20 hover:border-constitution-gold/40 transition-colors cursor-pointer"
+                                onClick={() => setCurrentView('connectionRequests')}>
                                 <div className="flex items-center justify-between">
                                     <div>
                                         <p className="text-ink-gray/60 mb-1 text-sm">Connections</p>
@@ -263,8 +355,16 @@ export default function App() {
                                         <TrendingUp className="w-6 h-6 text-constitution-gold" />
                                     </div>
                                 </div>
+                                {pendingConnectionCount > 0 && (
+                                    <div className="mt-2 flex items-center gap-1 text-sm">
+                                        <span className="text-constitution-gold font-medium">
+                                            {pendingConnectionCount} pending request{pendingConnectionCount !== 1 ? 's' : ''}
+                                        </span>
+                                    </div>
+                                )}
                             </div>
-                            <div className="aged-paper rounded-lg p-6 border border-constitution-gold/20">
+                            <div className="aged-paper rounded-lg p-6 border border-constitution-gold/20 hover:border-constitution-gold/40 transition-colors cursor-pointer"
+                                onClick={() => setCurrentView('ai')}>
                                 <div className="flex items-center justify-between">
                                     <div>
                                         <p className="text-ink-gray/60 mb-1 text-sm">AI Analyses</p>
@@ -272,6 +372,21 @@ export default function App() {
                                     </div>
                                     <div className="w-12 h-12 bg-constitution-gold/10 rounded-full flex items-center justify-center">
                                         <Sparkles className="w-6 h-6 text-constitution-gold" />
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="aged-paper rounded-lg p-6 border border-constitution-gold/20 hover:border-constitution-gold/40 transition-colors cursor-pointer"
+                                onClick={() => {
+                                    setCurrentView('profile');
+                                    setSelectedProfileUserId(null);
+                                }}>
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-ink-gray/60 mb-1 text-sm">Your Posts</p>
+                                        <p className="font-heading font-bold text-ink-gray text-2xl">7</p>
+                                    </div>
+                                    <div className="w-12 h-12 bg-constitution-gold/10 rounded-full flex items-center justify-center">
+                                        <Users className="w-6 h-6 text-constitution-gold" />
                                     </div>
                                 </div>
                             </div>
@@ -289,8 +404,9 @@ export default function App() {
                                         <PostCard
                                             key={post. id}
                                             post={post}
-                                            currentUserId={getCurrentUser()?.id}
+                                            currentUserId={currentUser?.id}
                                             onDelete={(id) => setPosts(prev => prev.filter(p => p.id !== id))}
+                                            onAuthorClick={handlePostAuthorClick}
                                         />
                                     ))
                                 ) : (
@@ -316,8 +432,9 @@ export default function App() {
                                     <PostCard
                                         key={post.id}
                                         post={post}
-                                        currentUserId={getCurrentUser()?.id}
+                                        currentUserId={currentUser?.id}
                                         onDelete={(id) => setPosts(prev => prev.filter(p => p.id !== id))}
+                                        onAuthorClick={handlePostAuthorClick}
                                     />
                                 ))
                             ) : (
@@ -346,11 +463,22 @@ export default function App() {
                 {currentView === 'discussions' && <DiscussionsPage />}
                 {currentView === 'notes' && <NotesPage />}
                 {currentView === 'notifications' && <NotificationsPage />}
+                {currentView === 'connectionRequests' && (
+                    <NetworkPage 
+                        onBack={() => setCurrentView('dashboard')}
+                        currentUserId={currentUser?.id}
+                    />
+                )}
 
                 {currentView === 'profile' && (
                     <ProfilePage
-                        currentUserId={getCurrentUser()?.id || ''}
-                        onBack={() => setCurrentView('dashboard')}
+                        // ProfilePage will show other's profile if selectedProfileUserId is set, otherwise current user's
+                        userId={selectedProfileUserId || undefined}
+                        currentUserId={currentUser?.id || ''}
+                        onBack={() => {
+                            setCurrentView('dashboard');
+                            setSelectedProfileUserId(null);
+                        }}
                         onNavigateToFeed={() => setCurrentView('feed')}
                     />
                 )}

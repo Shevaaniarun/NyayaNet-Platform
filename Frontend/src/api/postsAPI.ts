@@ -73,6 +73,7 @@ export interface Post {
         fullName: string;
         profilePhotoUrl: string | null;
         designation: string | null;
+        organization: string | null;
     };
 }
 
@@ -158,6 +159,36 @@ export async function getFeed(page = 1, limit = 20): Promise<{ posts: Post[], pa
     });
 
     if (!response.ok) throw new Error('Failed to fetch feed');
+    const result = await response.json();
+    return result.data;
+}
+
+export interface PostFilters {
+    page?: number;
+    limit?: number;
+    tags?: string[];
+    postType?: 'POST' | 'QUESTION' | 'ARTICLE' | 'ANNOUNCEMENT';
+    sort?: 'newest' | 'popular' | 'liked' | 'discussed';
+    q?: string;
+}
+
+export async function getPosts(filters: PostFilters = {}): Promise<{ posts: Post[], pagination: any }> {
+    const params = new URLSearchParams();
+
+    if (filters.page) params.append('page', filters.page.toString());
+    if (filters.limit) params.append('limit', filters.limit.toString());
+    if (filters.postType) params.append('postType', filters.postType);
+    if (filters.sort) params.append('sort', filters.sort);
+    if (filters.q) params.append('q', filters.q);
+    if (filters.tags && filters.tags.length > 0) {
+        filters.tags.forEach(tag => params.append('tags', tag));
+    }
+
+    const response = await fetch(`${API_BASE_URL}/posts/all?${params}`, {
+        headers: createHeaders(true)
+    });
+
+    if (!response.ok) throw new Error('Failed to fetch posts');
     const result = await response.json();
     return result.data;
 }

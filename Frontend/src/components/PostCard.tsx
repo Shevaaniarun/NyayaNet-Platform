@@ -9,11 +9,9 @@ import {
   Send,
   Flag,
   EyeOff,
-  Link2,
   Trash2,
   Loader2,
   FileText,
-  X,
   ExternalLink,
   Link
 } from 'lucide-react';
@@ -49,9 +47,10 @@ interface PostCardProps {
   post: Post;
   currentUserId?: string;
   onDelete?: (postId: string) => void;
+  onAuthorClick?: (userId: string) => void; // Added this prop
 }
 
-export function PostCard({ post, currentUserId, onDelete }: PostCardProps) {
+export function PostCard({ post, currentUserId, onDelete, onAuthorClick }: PostCardProps) {
   const [isLiked, setIsLiked] = useState(post.isLiked || false);
   const [likeCount, setLikeCount] = useState(post.likeCount);
   const [isBookmarked, setIsBookmarked] = useState(post.isSaved || false);
@@ -183,6 +182,12 @@ export function PostCard({ post, currentUserId, onDelete }: PostCardProps) {
     }
   };
 
+  const handleAuthorClick = () => {
+    if (onAuthorClick && post.userId) {
+      onAuthorClick(post.userId);
+    }
+  };
+
   // Helper to render media
   const renderMedia = (media: any) => {
     const isImage = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(media.mimeType) ||
@@ -261,7 +266,10 @@ export function PostCard({ post, currentUserId, onDelete }: PostCardProps) {
         <div className="absolute top-3 right-3 w-6 h-6 border-t border-r border-constitution-gold opacity-30"></div>
 
         {/* Author Section */}
-        <div className="flex items-center mb-6 pb-4 border-b border-constitution-gold/20">
+        <div 
+          className={`flex items-center mb-6 pb-4 border-b border-constitution-gold/20 ${onAuthorClick ? 'cursor-pointer hover:bg-constitution-gold/5 rounded-lg p-2 transition-colors' : ''}`}
+          onClick={handleAuthorClick}
+        >
           <div className="relative">
             <div className="w-12 h-12 rounded-full border-2 border-constitution-gold overflow-hidden bg-parchment-cream">
               <img

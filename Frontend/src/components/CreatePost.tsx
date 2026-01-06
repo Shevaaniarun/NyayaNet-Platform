@@ -20,6 +20,7 @@ interface CreatePostProps {
 
 export function CreatePost({ onPostCreated }: CreatePostProps) {
   const [postContent, setPostContent] = useState('');
+  const [postTitle, setPostTitle] = useState('');
   const [hashtags, setHashtags] = useState('');
   const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
   const [postType, setPostType] = useState<'POST' | 'QUESTION' | 'ARTICLE' | 'ANNOUNCEMENT'>('POST');
@@ -103,6 +104,7 @@ export function CreatePost({ onPostCreated }: CreatePostProps) {
         .map(tag => tag.startsWith('#') ? tag.slice(1) : tag);
 
       await createPost({
+        title: postTitle.trim() || undefined,
         content: postContent.trim(),
         postType,
         tags: hashtagsArray,
@@ -112,6 +114,7 @@ export function CreatePost({ onPostCreated }: CreatePostProps) {
 
       // Success - reset form
       setPostContent('');
+      setPostTitle('');
       setHashtags('');
       setPostType('POST');
       attachedFiles.forEach(f => {
@@ -176,6 +179,15 @@ export function CreatePost({ onPostCreated }: CreatePostProps) {
 
         {/* Input Area */}
         <div className="flex-1">
+          {/* Title Input (Optional) */}
+          <input
+            type="text"
+            placeholder="Title (optional)"
+            className="w-full parchment-bg border border-constitution-gold/30 rounded-lg p-3 mb-3 text-ink-gray font-heading font-semibold focus:outline-none focus:border-constitution-gold"
+            value={postTitle}
+            onChange={(e) => setPostTitle(e.target.value)}
+          />
+
           <textarea
             placeholder="Share legal insights, case updates, or professional thoughts..."
             className="w-full parchment-bg border border-constitution-gold/30 rounded-lg p-4 text-ink-gray font-body focus:outline-none focus:border-constitution-gold resize-none"

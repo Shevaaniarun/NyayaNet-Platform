@@ -6,7 +6,7 @@ import { CreatePostInput } from '../types/postTypes';
 export class PostController {
     static async uploadFiles(req: AuthRequest, res: Response) {
         try {
-            const files = req.files as Express.Multer.File[];
+            const files = req.files;
             if (!files || files.length === 0) {
                 return res.status(400).json({ success: false, message: 'No files uploaded' });
             }
@@ -64,7 +64,7 @@ export class PostController {
     static async getPost(req: Request, res: Response) {
         try {
             const { postId } = req.params;
-            const userId = (req as AuthRequest).user?.id;
+            const userId = (req as AuthRequest).user?.id || (req as AuthRequest).user?.userId;
             const post = await PostModel.findById(postId, userId);
 
             if (!post) {
@@ -121,7 +121,7 @@ export class PostController {
     static async getFeed(req: Request, res: Response) {
         try {
             const { page = '1', limit = '20' } = req.query;
-            const userId = (req as AuthRequest).user?.id;
+            const userId = (req as AuthRequest).user?.id || (req as AuthRequest).user?.userId;
             const result = await PostModel.getFeed(
                 parseInt(page as string),
                 parseInt(limit as string),
@@ -133,6 +133,23 @@ export class PostController {
             return res.status(500).json({
                 success: false,
                 message: 'Error fetching feed',
+                error: error.message
+            });
+        }
+    }
+
+    static async getPosts(req: Request, res: Response) {
+        try {
+            const userId = (req as AuthRequest).user?.id;
+            const filters = req.query as any;
+
+            const result = await PostModel.findAll(filters, userId);
+
+            return res.json({ success: true, data: result });
+        } catch (error: any) {
+            return res.status(500).json({
+                success: false,
+                message: 'Error fetching posts',
                 error: error.message
             });
         }
@@ -162,12 +179,12 @@ export class PostController {
             if (!userId) return res.status(401).json({ success: false, message: 'Unauthorized' });
 
             const { postId } = req.params;
-            const saved = await PostModel.toggleBookmark(postId, userId);
+            const result = await PostModel.toggleBookmark(postId, userId);
 
             return res.json({
                 success: true,
-                message: saved ? 'Post saved' : 'Post unsaved',
-                data: { saved }
+                message: result.saved ? 'Post saved' : 'Post unsaved',
+                data: result
             });
         } catch (error: any) {
             return res.status(500).json({ success: false, message: 'Error processing save', error: error.message });
