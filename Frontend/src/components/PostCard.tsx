@@ -9,38 +9,25 @@ import {
   Send,
   Flag,
   EyeOff,
-  Link2,
   Trash2,
   Loader2,
   FileText,
-  X,
   ExternalLink,
   Link,
-  Eye,
-  Smile,
-  Zap,
-  Award,
-  ThumbsUp,
-  Lightbulb,
-  Info,
-  HelpCircle,
-  Edit2
+  Image as ImageIcon
 } from 'lucide-react';
-import { likePost, savePost, createComment, deletePost, updatePost, uploadFiles } from '../api/postsAPI';
+import { likePost, savePost, createComment, deletePost } from '../api/postsAPI';
 import { toast } from 'react-toastify';
-import { CommentCard } from './Post/CommentCard';
-import { useRef } from 'react';
 
 export interface Post {
   id: string;
   userId: string;
-  title?: string;
   author: {
     fullName: string;
-    profilePhotoUrl: string | null;
-    role?: string;
-    designation?: string;
-    organization?: string;
+    profilePhotoUrl: string;
+    role: string;
+    designation: string;
+    organization: string;
   };
   postType: string;
   content: string;
@@ -50,28 +37,27 @@ export interface Post {
   tags?: string[];
   media?: Array<{
     id: string;
-    mediaUrl: string;
-    mediaType: string;
-    fileName?: string;
+    url: string;
+    type: string;
     mimeType?: string;
+    mediaUrl?: string;
+    mediaType?: string;
+    fileName?: string;
   }>;
   isLiked?: boolean;
   isSaved?: boolean;
-  reactionType?: string | null;
-  viewCount?: number;
 }
 
 interface PostCardProps {
   post: Post;
   currentUserId?: string;
   onDelete?: (postId: string) => void;
+  onAuthorClick?: (userId: string) => void;
 }
 
-export function PostCard({ post, currentUserId, onDelete }: PostCardProps) {
+export function PostCard({ post, currentUserId, onDelete, onAuthorClick }: PostCardProps) {
   const [isLiked, setIsLiked] = useState(post.isLiked || false);
   const [likeCount, setLikeCount] = useState(post.likeCount);
-  const [reactionType, setReactionType] = useState<string | null>(post.reactionType || null);
-  const [showReactionPicker, setShowReactionPicker] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(post.isSaved || false);
   const [showComments, setShowComments] = useState(false);
   const [commentText, setCommentText] = useState('');
@@ -79,16 +65,6 @@ export function PostCard({ post, currentUserId, onDelete }: PostCardProps) {
   const [isLoadingComments, setIsLoadingComments] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [isEditingPost, setIsEditingPost] = useState(false);
-  const [editTitle, setEditTitle] = useState(post.title || '');
-  const [editContent, setEditContent] = useState(post.content);
-  const [editPostType, setEditPostType] = useState<any>(post.postType);
-  const [editMedia, setEditMedia] = useState<any[]>(post.media || []);
-  const [newFiles, setNewFiles] = useState<File[]>([]);
-  const [isSavingPost, setIsSavingPost] = useState(false);
-
-  const imageInputRef = useRef<HTMLInputElement>(null);
-  const docInputRef = useRef<HTMLInputElement>(null);
 
   const isOwner = currentUserId === post.userId;
 
@@ -99,30 +75,17 @@ export function PostCard({ post, currentUserId, onDelete }: PostCardProps) {
     ? user.fullName.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)
     : 'U';
 
-  const handleReaction = async (type: string = 'LIKE') => {
+  const API_BASE_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3000/api';
+  const ASSETS_BASE_URL = API_BASE_URL.replace('/api', '');
+
+  const handleLike = async () => {
     try {
-      const result = await likePost(post.id, type);
+      const result = await likePost(post.id);
       setIsLiked(result.liked);
       setLikeCount(result.count);
-      setReactionType(result.reactionType);
-      setShowReactionPicker(false);
-
-      if (result.liked) {
-        toast.success(`You reacted with ${type.toLowerCase().replace('_', ' ')}`);
-      } else {
-        toast.info('Reaction removed');
-      }
+      toast.success(result.liked ? 'Post liked' : 'Post unliked');
     } catch (error: any) {
-      toast.error(error.message || 'Failed to process reaction');
-    }
-  };
-
-  const handleLikeClick = () => {
-    // If already liked, toggle it off. If not, open picker or just like.
-    if (isLiked) {
-      handleReaction(reactionType || 'LIKE');
-    } else {
-      handleReaction('LIKE');
+      toast.error(error.message || 'Failed to like post');
     }
   };
 
@@ -175,85 +138,6 @@ export function PostCard({ post, currentUserId, onDelete }: PostCardProps) {
     }
   };
 
-  const handleEditPost = () => {
-    setIsEditingPost(true);
-    setEditTitle(post.title || '');
-    setEditContent(post.content);
-    setEditMedia(post.media || []);
-    setNewFiles([]);
-    setShowMenu(false);
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'image' | 'document') => {
-    const files = e.target.files;
-    if (!files) return;
-
-    const fileList = Array.from(files);
-    setNewFiles([...newFiles, ...fileList]);
-
-    // Create temporary media objects for preview
-    const tempMedia = fileList.map(file => ({
-      id: `temp-${Date.now()}-${Math.random()}`,
-      mediaUrl: type === 'image' ? URL.createObjectURL(file) : '',
-      mediaType: type === 'image' ? 'IMAGE' : 'DOCUMENT',
-      fileName: file.name,
-      file,
-      isNew: true
-    }));
-
-    setEditMedia([...editMedia, ...tempMedia]);
-    e.target.value = '';
-  };
-
-  const removeMedia = (mediaId: string) => {
-    const mediaToRemove = editMedia.find(m => m.id === mediaId);
-    if (mediaToRemove?.isNew && mediaToRemove.mediaUrl) {
-      URL.revokeObjectURL(mediaToRemove.mediaUrl);
-    }
-    setEditMedia(editMedia.filter(m => m.id !== mediaId));
-    // Also remove from newFiles if it's there
-    if (mediaToRemove?.isNew) {
-      setNewFiles(newFiles.filter(f => f !== mediaToRemove.file));
-    }
-  };
-
-  const handleSavePost = async () => {
-    if (!editContent.trim()) return;
-
-    try {
-      setIsSavingPost(true);
-
-      let uploadedMedia: any[] = editMedia.filter(m => !m.isNew).map(m => ({
-        mediaType: m.mediaType,
-        mediaUrl: m.mediaUrl,
-        fileName: m.fileName,
-        mimeType: m.mimeType
-      }));
-
-      if (newFiles.length > 0) {
-        toast.info('Uploading new files...');
-        const newUploaded = await uploadFiles(newFiles);
-        uploadedMedia = [...uploadedMedia, ...newUploaded];
-      }
-
-      await updatePost(post.id, {
-        title: editTitle.trim() || undefined,
-        content: editContent.trim(),
-        postType: editPostType,
-        media: uploadedMedia as any[]
-      });
-
-      toast.success('Post updated successfully');
-      setIsEditingPost(false);
-      // Refresh the page or update local state if needed
-      window.location.reload();
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to update post');
-    } finally {
-      setIsSavingPost(false);
-    }
-  };
-
   const submitComment = async () => {
     if (!commentText.trim()) return;
 
@@ -300,32 +184,64 @@ export function PostCard({ post, currentUserId, onDelete }: PostCardProps) {
       case 'hide':
         toast.info('This post will be hidden from your feed.');
         break;
-      case 'edit':
-        handleEditPost();
-        break;
       case 'delete':
         handleDelete();
         break;
     }
   };
 
+  const handleAuthorClick = () => {
+    if (onAuthorClick && post.userId) {
+      onAuthorClick(post.userId);
+    }
+  };
+
   // Helper to render media
   const renderMedia = (media: any) => {
-    const isImage = media.mediaType === 'IMAGE' ||
-      ['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(media.mimeType) ||
-      media.mediaUrl.match(/\.(jpg|jpeg|png|gif|webp)$/i);
+    // Safely get the URL with multiple fallbacks
+    const mediaUrl = media?.url || media?.mediaUrl || '';
+    // Safely get the mimeType with multiple fallbacks
+    const mimeType = media?.mimeType || media?.mediaType || media?.type || '';
+    const fileName = media?.fileName || '';
+    
+    // Check if it's an image using both mimeType and file extension
+    const isImage = mimeType.includes('image/') || 
+      (mediaUrl && mediaUrl.match(/\.(jpg|jpeg|png|gif|webp|svg|bmp|jfif)$/i));
+    
+    // Build the full URL - check if it's already a full URL or needs the base
+    let fullMediaUrl = mediaUrl;
+    if (mediaUrl && !mediaUrl.startsWith('http') && !mediaUrl.startsWith('data:')) {
+      fullMediaUrl = `${ASSETS_BASE_URL}${mediaUrl}`;
+    }
 
     if (isImage) {
       return (
         <div
           key={media.id}
-          className="rounded-lg overflow-hidden border border-constitution-gold/20 bg-parchment-cream aspect-video cursor-pointer hover:border-constitution-gold transition-colors"
-          onClick={() => window.open(`${ASSETS_BASE_URL}${media.mediaUrl}`, '_blank')}
+          className="rounded-lg overflow-hidden border border-constitution-gold/20 bg-parchment-cream aspect-video cursor-pointer hover:border-constitution-gold transition-colors relative"
+          onClick={() => window.open(fullMediaUrl, '_blank')}
         >
           <img
-            src={`${ASSETS_BASE_URL}${media.mediaUrl}`}
+            src={fullMediaUrl}
             alt="Post media"
             className="w-full h-full object-cover"
+            onError={(e) => {
+              // Show a placeholder when image fails to load
+              (e.target as HTMLImageElement).style.display = 'none';
+              const parent = (e.target as HTMLImageElement).parentElement;
+              if (parent) {
+                parent.innerHTML = `
+                  <div class="w-full h-full flex flex-col items-center justify-center bg-gray-100">
+                    <div class="w-16 h-16 bg-constitution-gold/20 rounded-full flex items-center justify-center mb-3">
+                      <svg class="w-8 h-8 text-constitution-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                      </svg>
+                    </div>
+                    <p class="text-gray-500 text-sm">Image not available</p>
+                  </div>
+                `;
+              }
+            }}
           />
         </div>
       );
@@ -336,15 +252,19 @@ export function PostCard({ post, currentUserId, onDelete }: PostCardProps) {
       <div
         key={media.id}
         className="rounded-lg border border-constitution-gold/30 bg-constitution-gold/5 p-4 flex items-center justify-between group cursor-pointer hover:bg-constitution-gold/10 transition-colors"
-        onClick={() => window.open(`${ASSETS_BASE_URL}${media.mediaUrl}`, '_blank')}
+        onClick={() => window.open(fullMediaUrl, '_blank')}
       >
         <div className="flex items-center space-x-3 overflow-hidden">
           <div className="w-10 h-10 rounded bg-constitution-gold/20 flex items-center justify-center flex-shrink-0">
             <FileText className="w-6 h-6 text-constitution-gold" />
           </div>
           <div className="overflow-hidden">
-            <p className="text-sm font-semibold text-ink-gray truncate">{media.fileName || 'Document'}</p>
-            <p className="text-xs text-ink-gray/60 uppercase">{media.mimeType?.split('/')[1] || media.mediaType || 'File'}</p>
+            <p className="text-sm font-semibold text-ink-gray truncate">
+              {fileName || 'Document'}
+            </p>
+            <p className="text-xs text-ink-gray/60 uppercase">
+              {mimeType?.split('/')[1] || media?.type || 'File'}
+            </p>
           </div>
         </div>
         <div className="w-8 h-8 rounded-full flex items-center justify-center bg-constitution-gold text-justice-black opacity-0 group-hover:opacity-100 transition-opacity">
@@ -373,9 +293,6 @@ export function PostCard({ post, currentUserId, onDelete }: PostCardProps) {
     }
   };
 
-  const API_BASE_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3000/api';
-  const ASSETS_BASE_URL = API_BASE_URL.replace('/api', '');
-
   return (
     <div className="relative mb-8">
       {/* Aged Paper Container */}
@@ -388,13 +305,19 @@ export function PostCard({ post, currentUserId, onDelete }: PostCardProps) {
         <div className="absolute top-3 right-3 w-6 h-6 border-t border-r border-constitution-gold opacity-30"></div>
 
         {/* Author Section */}
-        <div className="flex items-center mb-6 pb-4 border-b border-constitution-gold/20">
+        <div 
+          className={`flex items-center mb-6 pb-4 border-b border-constitution-gold/20 ${onAuthorClick ? 'cursor-pointer hover:bg-constitution-gold/5 rounded-lg p-2 transition-colors' : ''}`}
+          onClick={handleAuthorClick}
+        >
           <div className="relative">
             <div className="w-12 h-12 rounded-full border-2 border-constitution-gold overflow-hidden bg-parchment-cream">
               <img
-                src={post.author.profilePhotoUrl || 'https://via.placeholder.com/150'}
+                src={post.author.profilePhotoUrl || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(post.author.fullName) + '&background=1a472a&color=fff'}
                 alt={post.author.fullName}
                 className="w-full h-full object-cover"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(post.author.fullName)}&background=1a472a&color=fff`;
+                }}
               />
             </div>
             {/* Role Badge */}
@@ -434,171 +357,46 @@ export function PostCard({ post, currentUserId, onDelete }: PostCardProps) {
             </span>
           </div>
 
-          {isEditingPost ? (
-            <div className="space-y-4">
-              <input
-                type="text"
-                value={editTitle}
-                onChange={(e) => setEditTitle(e.target.value)}
-                placeholder="Title (optional)"
-                className="w-full parchment-bg border border-constitution-gold/30 rounded-lg p-3 text-ink-gray font-heading font-semibold focus:outline-none focus:border-constitution-gold"
-              />
-              <textarea
-                value={editContent}
-                onChange={(e) => setEditContent(e.target.value)}
-                placeholder="Content..."
-                rows={4}
-                className="w-full parchment-bg border border-constitution-gold/30 rounded-lg p-4 text-ink-gray font-body focus:outline-none focus:border-constitution-gold resize-none"
-              />
+          {/* Content */}
+          <div className="constitution-texture p-6 rounded">
+            <p className="text-ink-gray leading-relaxed font-body whitespace-pre-wrap">
+              {post.content}
+            </p>
+          </div>
 
-              {/* Media Management */}
-              <div className="flex flex-wrap gap-2">
-                {editMedia.map((m) => (
-                  <div key={m.id} className="relative group">
-                    {m.mediaType === 'IMAGE' ? (
-                      <div className="w-20 h-20 rounded-lg overflow-hidden border border-constitution-gold/30">
-                        <img src={m.isNew ? m.mediaUrl : `${ASSETS_BASE_URL}${m.mediaUrl}`} alt="Preview" className="w-full h-full object-cover" />
-                      </div>
-                    ) : (
-                      <div className="px-3 py-2 bg-constitution-gold/10 border border-constitution-gold/30 rounded-lg flex items-center gap-2">
-                        <FileText className="w-4 h-4 text-constitution-gold" />
-                        <span className="text-xs text-ink-gray max-w-[80px] truncate">{m.fileName}</span>
-                      </div>
-                    )}
-                    <button
-                      onClick={() => removeMedia(m.id)}
-                      className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-
-              <div className="flex items-center gap-2">
-                <input type="file" ref={imageInputRef} className="hidden" accept="image/*" multiple onChange={(e) => handleFileChange(e, 'image')} />
-                <input type="file" ref={docInputRef} className="hidden" accept=".pdf,.doc,.docx" multiple onChange={(e) => handleFileChange(e, 'document')} />
-                <button onClick={() => imageInputRef.current?.click()} className="px-3 py-1.5 bg-constitution-gold/10 border border-constitution-gold/30 rounded text-constitution-gold text-xs font-bold uppercase">Add Image</button>
-                <button onClick={() => docInputRef.current?.click()} className="px-3 py-1.5 bg-constitution-gold/10 border border-constitution-gold/30 rounded text-constitution-gold text-xs font-bold uppercase">Add Doc</button>
-              </div>
-
-              <div className="flex justify-end gap-3 mt-4">
-                <button
-                  onClick={() => setIsEditingPost(false)}
-                  className="px-4 py-2 text-sm font-bold uppercase text-ink-gray/50 hover:text-ink-gray transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleSavePost}
-                  disabled={isSavingPost || !editContent.trim()}
-                  className="px-6 py-2 bg-constitution-gold text-justice-black rounded-lg font-bold hover:bg-constitution-gold/90 transition-colors shadow-lg flex items-center gap-2"
-                >
-                  {isSavingPost ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                  <span>Save Changes</span>
-                </button>
-              </div>
+          {/* Media Attachments */}
+          {post.media && post.media.length > 0 && (
+            <div className="mt-4 flex flex-col gap-3">
+              {post.media.map((media) => renderMedia(media))}
             </div>
-          ) : (
-            <>
-              {/* Title (if present) */}
-              {post.title && (
-                <h2 className="text-2xl font-heading font-bold text-ink-gray mb-4">
-                  {post.title}
-                </h2>
-              )}
+          )}
 
-              {/* Content */}
-              <div className="constitution-texture p-6 rounded">
-                <p className="text-ink-gray leading-relaxed font-body whitespace-pre-wrap">
-                  {post.content}
-                </p>
-              </div>
-
-              {/* Media Attachments */}
-              {post.media && post.media.length > 0 && (
-                <div className="mt-4 flex flex-col gap-3">
-                  {post.media.map((media) => renderMedia(media))}
-                </div>
-              )}
-
-              {/* Tags */}
-              {post.tags && post.tags.length > 0 && (
-                <div className="mt-4 flex flex-wrap gap-2">
-                  {post.tags.map((tag) => (
-                    <span
-                      key={tag}
-                      className="px-3 py-1 bg-constitution-gold/5 border border-constitution-gold/20 rounded-full text-constitution-gold font-medium hover:bg-constitution-gold/10 transition-colors cursor-pointer"
-                      style={{ fontSize: '0.8rem' }}
-                    >
-                      #{tag}
-                    </span>
-                  ))}
-                </div>
-              )}
-            </>
+          {/* Tags */}
+          {post.tags && post.tags.length > 0 && (
+            <div className="mt-4 flex flex-wrap gap-2">
+              {post.tags.map((tag) => (
+                <span
+                  key={tag}
+                  className="px-3 py-1 bg-constitution-gold/5 border border-constitution-gold/20 rounded-full text-constitution-gold font-medium hover:bg-constitution-gold/10 transition-colors cursor-pointer"
+                  style={{ fontSize: '0.8rem' }}
+                >
+                  #{tag}
+                </span>
+              ))}
+            </div>
           )}
         </div>
 
         {/* Interaction Bar */}
         <div className="flex items-center justify-between pt-4 border-t border-constitution-gold/20">
           <div className="flex space-x-6">
-            <div className="relative group/reactions">
-              <button
-                onClick={handleLikeClick}
-                onMouseEnter={() => setShowReactionPicker(true)}
-                className={`flex items-center space-x-2 transition-colors ${isLiked ? 'text-constitution-gold' : 'text-ink-gray/70 hover:text-constitution-gold'}`}
-              >
-                {reactionType === 'INSIGHTFUL' ? (
-                  <Lightbulb className="w-5 h-5 fill-amber-500 text-amber-500" />
-                ) : reactionType === 'INFORMATIVE' ? (
-                  <Info className="w-5 h-5 fill-blue-500 text-blue-500" />
-                ) : reactionType === 'NEED_CLARIFICATION' ? (
-                  <HelpCircle className="w-5 h-5 fill-purple-500 text-purple-500" />
-                ) : (
-                  <ThumbsUp className={`w-5 h-5 ${isLiked ? 'fill-current' : ''}`} />
-                )}
-                <span className="font-bold">{likeCount}</span>
-              </button>
-
-              {/* Reaction Picker Popover */}
-              {showReactionPicker && (
-                <div
-                  className="absolute bottom-full left-0 mb-2 p-2 bg-white rounded-full shadow-xl border border-constitution-gold/20 flex items-center space-x-2 animate-in fade-in slide-in-from-bottom-2 z-50"
-                  onMouseLeave={() => setShowReactionPicker(false)}
-                >
-                  <button
-                    onClick={() => handleReaction('LIKE')}
-                    className="p-2 hover:bg-constitution-gold/10 rounded-full transition-colors group/reaction"
-                    title="Like"
-                  >
-                    <ThumbsUp className={`w-6 h-6 ${reactionType === 'LIKE' ? 'fill-constitution-gold text-constitution-gold' : 'text-ink-gray/40 group-hover/reaction:text-constitution-gold'}`} />
-                  </button>
-                  <button
-                    onClick={() => handleReaction('INSIGHTFUL')}
-                    className="p-2 hover:bg-amber-50 rounded-full transition-colors group/reaction"
-                    title="Insightful"
-                  >
-                    <Lightbulb className={`w-6 h-6 ${reactionType === 'INSIGHTFUL' ? 'fill-amber-500 text-amber-500' : 'text-ink-gray/40 group-hover/reaction:text-amber-500'}`} />
-                  </button>
-                  <button
-                    onClick={() => handleReaction('INFORMATIVE')}
-                    className="p-2 hover:bg-blue-50 rounded-full transition-colors group/reaction"
-                    title="Informative"
-                  >
-                    <Info className={`w-6 h-6 ${reactionType === 'INFORMATIVE' ? 'fill-blue-500 text-blue-500' : 'text-ink-gray/40 group-hover/reaction:text-blue-500'}`} />
-                  </button>
-                  <button
-                    onClick={() => handleReaction('NEED_CLARIFICATION')}
-                    className="p-2 hover:bg-purple-50 rounded-full transition-colors group/reaction"
-                    title="Need Clarification"
-                  >
-                    <HelpCircle className={`w-6 h-6 ${reactionType === 'NEED_CLARIFICATION' ? 'fill-purple-500 text-purple-500' : 'text-ink-gray/40 group-hover/reaction:text-purple-500'}`} />
-                  </button>
-                </div>
-              )}
-            </div>
-
+            <button
+              onClick={handleLike}
+              className={`flex items-center space-x-2 transition-colors ${isLiked ? 'text-red-500' : 'text-ink-gray/70 hover:text-red-500'}`}
+            >
+              <Heart className={`w-5 h-5 ${isLiked ? 'fill-current' : ''}`} />
+              <span className="font-bold">{likeCount}</span>
+            </button>
             <button
               onClick={handleCommentToggle}
               className={`flex items-center space-x-2 transition-colors ${showComments ? 'text-constitution-gold' : 'text-ink-gray/70 hover:text-constitution-gold'}`}
@@ -606,10 +404,6 @@ export function PostCard({ post, currentUserId, onDelete }: PostCardProps) {
               <MessageSquare className="w-5 h-5" />
               <span className="font-bold">{post.commentCount + comments.length}</span>
             </button>
-            <div className="flex items-center space-x-2 text-ink-gray/40">
-              <Eye className="w-5 h-5" />
-              <span className="font-bold">{post.viewCount || 0}</span>
-            </div>
             <button
               onClick={handleShare}
               className="flex items-center space-x-2 text-ink-gray/70 hover:text-constitution-gold transition-colors"
@@ -652,22 +446,13 @@ export function PostCard({ post, currentUserId, onDelete }: PostCardProps) {
                     <span>Copy link to post</span>
                   </button>
                   {isOwner && (
-                    <>
-                      <button
-                        onClick={() => handleMenuAction('edit')}
-                        className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-constitution-gold/5 flex items-center space-x-3 transition-colors"
-                      >
-                        <Edit2 className="w-4 h-4 text-constitution-gold" />
-                        <span>Edit post</span>
-                      </button>
-                      <button
-                        onClick={() => handleMenuAction('delete')}
-                        className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 flex items-center space-x-3 transition-colors"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                        <span>Delete post</span>
-                      </button>
-                    </>
+                    <button
+                      onClick={() => handleMenuAction('delete')}
+                      className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 flex items-center space-x-3 transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      <span>Delete post</span>
+                    </button>
                   )}
                   <button
                     onClick={() => handleMenuAction('report')}
@@ -698,48 +483,54 @@ export function PostCard({ post, currentUserId, onDelete }: PostCardProps) {
               </div>
             ) : (
               <>
-                {/* Existing Comments (Recursive) */}
-                <div className="space-y-4 mb-6">
-                  {comments.map((comment: any) => (
-                    <CommentCard
-                      key={comment.id}
-                      comment={comment}
-                      postId={post.id}
-                      currentUserId={currentUserId}
-                      onCommentUpdated={fetchComments}
-                      onCommentDeleted={fetchComments}
-                    />
+                {/* Existing Comments */}
+                <div className="space-y-3 mb-4 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
+                  {comments.map((comment) => (
+                    <div key={comment.id} className="flex gap-3">
+                      <div className="w-8 h-8 bg-constitution-gold/20 rounded-full flex items-center justify-center flex-shrink-0">
+                        <span className="text-xs font-bold text-constitution-gold">
+                          {comment.author?.fullName?.charAt(0) || 'U'}
+                        </span>
+                      </div>
+                      <div className="flex-1 bg-constitution-gold/5 rounded-lg p-3">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="font-medium text-sm text-ink-gray">
+                            {comment.author?.fullName || 'Anonymous'}
+                          </span>
+                          <span className="text-xs text-ink-gray/50">
+                            {new Date(comment.createdAt).toLocaleDateString()}
+                          </span>
+                        </div>
+                        <p className="text-sm text-ink-gray/80">{comment.content}</p>
+                      </div>
+                    </div>
                   ))}
                   {comments.length === 0 && (
-                    <p className="text-center text-ink-gray/40 text-sm py-4 italic">
-                      No legal insights shared yet. Be the first to analyze this post.
-                    </p>
+                    <p className="text-center text-ink-gray/40 text-sm py-2">No comments yet. Be the first to share your thoughts!</p>
                   )}
                 </div>
 
                 {/* Comment Input */}
-                <div className="flex gap-4 items-start bg-constitution-gold/5 p-4 rounded-xl border border-constitution-gold/10">
-                  <div className="w-10 h-10 bg-constitution-gold rounded-full flex items-center justify-center flex-shrink-0 shadow-md">
-                    <span className="text-sm font-bold text-justice-black">{userInitials}</span>
+                <div className="flex gap-3 mt-4">
+                  <div className="w-8 h-8 bg-constitution-gold rounded-full flex items-center justify-center flex-shrink-0">
+                    <span className="text-xs font-bold text-justice-black">{userInitials}</span>
                   </div>
-                  <div className="flex-1 flex flex-col gap-3">
-                    <textarea
+                  <div className="flex-1 flex gap-2">
+                    <input
+                      type="text"
                       value={commentText}
                       onChange={(e) => setCommentText(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && submitComment()}
                       placeholder="Share your legal perspective..."
-                      className="w-full px-4 py-3 bg-white border border-constitution-gold/20 rounded-xl text-sm text-ink-gray focus:outline-none focus:border-constitution-gold transition-all shadow-inner resize-none"
-                      rows={2}
+                      className="flex-1 px-4 py-2 bg-white border border-constitution-gold/30 rounded-lg text-sm text-ink-gray focus:outline-none focus:border-constitution-gold transition-colors"
                     />
-                    <div className="flex justify-end">
-                      <button
-                        onClick={submitComment}
-                        disabled={!commentText.trim()}
-                        className="px-6 py-2 bg-constitution-gold text-justice-black rounded-lg font-bold disabled:opacity-50 hover:bg-constitution-gold/90 transition-all flex items-center gap-2 shadow-lg"
-                      >
-                        <Send className="w-4 h-4" />
-                        <span>Insight</span>
-                      </button>
-                    </div>
+                    <button
+                      onClick={submitComment}
+                      disabled={!commentText.trim()}
+                      className="px-4 py-2 bg-constitution-gold text-justice-black rounded-lg font-bold disabled:opacity-50 hover:bg-constitution-gold/90 transition-colors"
+                    >
+                      <Send className="w-4 h-4" />
+                    </button>
                   </div>
                 </div>
               </>
