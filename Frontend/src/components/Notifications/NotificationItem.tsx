@@ -67,12 +67,10 @@ export function NotificationItem({ notification, onClick }: NotificationItemProp
                 ! notification.isRead ? 'bg-constitution-gold/5' : ''
             }`}
         >
-            {/* Icon */}
             <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${getIconBgColor(notification.type)}`}>
                 {getIcon(notification.type)}
             </div>
 
-            {/* Content */}
             <div className="flex-1 min-w-0">
                 <div className="flex items-start justify-between gap-2 mb-1">
                     <h4 className="font-semibold text-ink-gray text-sm">{notification.title}</h4>

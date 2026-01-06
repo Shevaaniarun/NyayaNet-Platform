@@ -11,9 +11,10 @@ import { DiscussionsPage } from './pages/DiscussionPage';
 import RegisterPage from "./pages/RegisterPage";
 import LoginPage from "./pages/LoginPage";
 import { ProfilePage } from './pages/ProfilePage';
+import NotesPage from './pages/NotesPage';
+import NotificationsPage from './pages/NotificationsPage'; 
 import { getFeed, Post as ApiPost } from './api/postsAPI';
 import { toast } from 'react-toastify';
-import NotesPage from './pages/NotesPage';
 
 type ViewType =
     | 'feed'
@@ -22,7 +23,8 @@ type ViewType =
     | 'dashboard'
     | 'discussions'
     | 'profile'
-    | 'notes';
+    | 'notes'
+    | 'notifications'; 
 
 // Helper to get current user from localStorage
 const getCurrentUser = () => {
@@ -41,28 +43,28 @@ const adaptPost = (apiPost: ApiPost): PostComponentType => ({
     userId: apiPost.userId,
     author: {
         fullName: apiPost.author?.fullName || 'Unknown User',
-        profilePhotoUrl: apiPost.author?.profilePhotoUrl || '',
+        profilePhotoUrl: apiPost.author?. profilePhotoUrl || '',
         role: 'User',
         designation: apiPost.author?.designation || '',
         organization: ''
     },
-    postType: apiPost.postType || 'POST',
-    content: apiPost.content,
-    createdAt: new Date(apiPost.createdAt).toLocaleDateString(),
-    likeCount: apiPost.likeCount || 0,
+    postType:  apiPost.postType || 'POST',
+    content: apiPost. content,
+    createdAt:  new Date(apiPost.createdAt).toLocaleDateString(),
+    likeCount: apiPost. likeCount || 0,
     commentCount: apiPost.commentCount || 0,
     tags: apiPost.tags || [],
     isLiked: apiPost.isLiked,
     isSaved: apiPost.isSaved,
-    media: apiPost.media?.map(m => ({
+    media: apiPost.media?. map(m => ({
         id: m.id,
         url: m.mediaUrl,
-        type: m.mediaType
+        type: m. mediaType
     }))
 });
 
 const mapCaseStatus = (status: string): CaseItemComponentType['caseStatus'] => {
-    const statusMap: Record<string, CaseItemComponentType['caseStatus']> = {
+    const statusMap:  Record<string, CaseItemComponentType['caseStatus']> = {
         'active': 'active',
         'closed': 'closed',
         'hearing_scheduled': 'hearing_scheduled',
@@ -134,10 +136,10 @@ export default function App() {
         try {
             setIsLoadingPosts(true);
             const postsData = await getFeed(1, 10);
-            setPosts(postsData.posts.map(adaptPost));
+            setPosts(postsData. posts. map(adaptPost));
         } catch (error) {
             console.error('Failed to refresh posts:', error);
-            toast.error('Failed to refresh posts');
+            toast. error('Failed to refresh posts');
         } finally {
             setIsLoadingPosts(false);
         }
@@ -168,7 +170,8 @@ export default function App() {
             '/ai': 'ai',
             '/discussions': 'discussions',
             '/profile': 'profile',
-            '/notes': 'notes', // ✅ ADDED
+            '/notes': 'notes',
+            '/notifications': 'notifications', 
         };
 
         const newView = viewMap[path] || 'dashboard';
@@ -198,7 +201,7 @@ export default function App() {
         <div className="flex min-h-screen bg-justice-black">
             <MobileNotice />
             <Sidebar
-                currentPath={currentView === 'dashboard' ? '/' : `/${currentView}`}
+                currentPath={currentView === 'dashboard' ? '/' :  `/${currentView}`}
                 onNavigate={handleNavigation}
             />
 
@@ -211,7 +214,7 @@ export default function App() {
                                 <div className="relative z-10">
                                     <h1 className="font-heading font-bold text-ink-gray mb-4 text-5xl">Welcome to NyayaNet</h1>
                                     <p className="text-ink-gray/70 max-w-3xl leading-relaxed mb-6 text-xl">
-                                        India's premier legal professional networking and AI-powered assistance platform.
+                                        India's premier legal professional networking and AI-powered assistance platform. 
                                     </p>
                                     <div className="flex space-x-4">
                                         <button
@@ -238,7 +241,7 @@ export default function App() {
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+                        <div className="grid grid-cols-1 md: grid-cols-3 gap-6 mb-12">
                             <div className="aged-paper rounded-lg p-6 border border-constitution-gold/20">
                                 <div className="flex items-center justify-between">
                                     <div>
@@ -284,7 +287,7 @@ export default function App() {
                                 ) : posts.length > 0 ? (
                                     posts.map((post) => (
                                         <PostCard
-                                            key={post.id}
+                                            key={post. id}
                                             post={post}
                                             currentUserId={getCurrentUser()?.id}
                                             onDelete={(id) => setPosts(prev => prev.filter(p => p.id !== id))}
@@ -341,7 +344,8 @@ export default function App() {
 
                 {currentView === 'ai' && <AIAssistant />}
                 {currentView === 'discussions' && <DiscussionsPage />}
-                {currentView === 'notes' && <NotesPage />} {/* ✅ ADDED */}
+                {currentView === 'notes' && <NotesPage />}
+                {currentView === 'notifications' && <NotificationsPage />}
 
                 {currentView === 'profile' && (
                     <ProfilePage
