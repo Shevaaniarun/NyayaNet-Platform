@@ -152,4 +152,16 @@ export class NotificationModel {
       },
     };
   }
+
+  static async markAsRead(notificationId: string, userId: string): Promise<boolean> {
+    const query = `
+      UPDATE notifications
+      SET is_read = true, read_at = CURRENT_TIMESTAMP
+      WHERE id = $1 AND user_id = $2
+      RETURNING id
+    `;
+
+    const result = await pool.query(query, [notificationId, userId]);
+    return result.rows. length > 0;
+  }
 }
