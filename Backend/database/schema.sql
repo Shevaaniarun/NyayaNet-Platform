@@ -259,7 +259,6 @@ CREATE TABLE posts (
     allow_comments BOOLEAN DEFAULT TRUE,
     
     -- Statistics
-    view_count INTEGER DEFAULT 0,
     like_count INTEGER DEFAULT 0,
     comment_count INTEGER DEFAULT 0,
     share_count INTEGER DEFAULT 0,
@@ -386,7 +385,7 @@ CREATE TABLE post_likes (
     post_id UUID NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     
-    reaction_type VARCHAR(20) DEFAULT 'LIKE' CHECK (reaction_type IN ('LIKE', 'LOVE', 'INSIGHTFUL')),
+    reaction_type VARCHAR(20) DEFAULT 'LIKE' CHECK (reaction_type IN ('LIKE', 'INSIGHTFUL', 'INFORMATIVE', 'NEED_CLARIFICATION')),
     
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     
@@ -441,6 +440,7 @@ CREATE TABLE post_comments (
     parent_comment_id UUID REFERENCES post_comments(id) ON DELETE CASCADE,
     
     content TEXT NOT NULL,
+    comment_count INTEGER DEFAULT 0,
     is_edited BOOLEAN DEFAULT FALSE,
     
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

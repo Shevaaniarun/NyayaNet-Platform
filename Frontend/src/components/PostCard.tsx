@@ -46,6 +46,7 @@ export interface Post {
   }>;
   isLiked?: boolean;
   isSaved?: boolean;
+  reactionType?: string | null;
 }
 
 interface PostCardProps {
@@ -61,7 +62,7 @@ export function PostCard({ post, currentUserId, onDelete, onAuthorClick }: PostC
   const [isBookmarked, setIsBookmarked] = useState(post.isSaved || false);
   const [showComments, setShowComments] = useState(false);
   const [commentText, setCommentText] = useState('');
-  const [comments, setComments] = useState<Array<{ id: string; content: string; author: { fullName: string }; createdAt: string; userId: string }>>([]);
+  const [comments, setComments] = useState<any[]>([]);
   const [isLoadingComments, setIsLoadingComments] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);

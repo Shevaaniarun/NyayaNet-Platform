@@ -63,7 +63,6 @@ export interface Post {
     postType: string;
     tags: string[];
     isPublic: boolean;
-    viewCount: number;
     likeCount: number;
     commentCount: number;
     createdAt: string;
@@ -172,7 +171,7 @@ export interface PostFilters {
     limit?: number;
     tags?: string[];
     postType?: 'POST' | 'QUESTION' | 'ARTICLE' | 'ANNOUNCEMENT';
-    sort?: 'newest' | 'popular' | 'liked' | 'discussed';
+    sort?: 'newest' | 'active' | 'liked' | 'relevance';
     q?: string;
 }
 

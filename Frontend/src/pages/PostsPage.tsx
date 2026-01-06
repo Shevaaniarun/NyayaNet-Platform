@@ -9,7 +9,7 @@ import { toast } from 'react-toastify';
 interface PostFilterType {
     page: number;
     limit: number;
-    sort: 'newest' | 'popular' | 'liked' | 'discussed';
+    sort: 'newest' | 'active' | 'liked' | 'relevance';
     postType?: 'POST' | 'QUESTION' | 'ARTICLE' | 'ANNOUNCEMENT';
     tags?: string[];
     q?: string;
@@ -79,7 +79,7 @@ export function PostsPage() {
     const handleFilterChange = (newFilters: {
         postType?: string;
         tags?: string[];
-        sort?: 'newest' | 'popular' | 'liked' | 'discussed';
+        sort?: 'newest' | 'active' | 'liked' | 'relevance';
         q?: string;
     }) => {
         setFilters(prev => ({
