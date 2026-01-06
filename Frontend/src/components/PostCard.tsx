@@ -9,11 +9,9 @@ import {
   Send,
   Flag,
   EyeOff,
-  Link2,
   Trash2,
   Loader2,
   FileText,
-  X,
   ExternalLink,
   Link
 } from 'lucide-react';
@@ -23,7 +21,6 @@ import { toast } from 'react-toastify';
 export interface Post {
   id: string;
   userId: string;
-  title?: string;
   author: {
     fullName: string;
     profilePhotoUrl: string;
@@ -50,7 +47,7 @@ interface PostCardProps {
   post: Post;
   currentUserId?: string;
   onDelete?: (postId: string) => void;
-  onAuthorClick?: (userId: string) => void; // Added prop
+  onAuthorClick?: (userId: string) => void; // Added this prop
 }
 
 export function PostCard({ post, currentUserId, onDelete, onAuthorClick }: PostCardProps) {
@@ -185,6 +182,12 @@ export function PostCard({ post, currentUserId, onDelete, onAuthorClick }: PostC
     }
   };
 
+  const handleAuthorClick = () => {
+    if (onAuthorClick && post.userId) {
+      onAuthorClick(post.userId);
+    }
+  };
+
   // Helper to render media
   const renderMedia = (media: any) => {
     const isImage = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(media.mimeType) ||
@@ -263,13 +266,12 @@ export function PostCard({ post, currentUserId, onDelete, onAuthorClick }: PostC
         <div className="absolute top-3 right-3 w-6 h-6 border-t border-r border-constitution-gold opacity-30"></div>
 
         {/* Author Section */}
-        <div className="flex items-center mb-6 pb-4 border-b border-constitution-gold/20">
+        <div 
+          className={`flex items-center mb-6 pb-4 border-b border-constitution-gold/20 ${onAuthorClick ? 'cursor-pointer hover:bg-constitution-gold/5 rounded-lg p-2 transition-colors' : ''}`}
+          onClick={handleAuthorClick}
+        >
           <div className="relative">
-            <div
-              className="w-12 h-12 rounded-full border-2 border-constitution-gold overflow-hidden bg-parchment-cream"
-              onClick={onAuthorClick ? () => onAuthorClick(post.userId) : undefined}
-              style={onAuthorClick ? { cursor: 'pointer' } : undefined}
-            >
+            <div className="w-12 h-12 rounded-full border-2 border-constitution-gold overflow-hidden bg-parchment-cream">
               <img
                 src={post.author.profilePhotoUrl || 'https://via.placeholder.com/150'}
                 alt={post.author.fullName}
@@ -286,11 +288,7 @@ export function PostCard({ post, currentUserId, onDelete, onAuthorClick }: PostC
 
           <div className="ml-4 flex-1">
             <div className="flex items-center space-x-2">
-              <h3
-                className="font-heading font-semibold text-ink-gray"
-                onClick={onAuthorClick ? () => onAuthorClick(post.userId) : undefined}
-                style={onAuthorClick ? { cursor: 'pointer' } : undefined}
-              >
+              <h3 className="font-heading font-semibold text-ink-gray">
                 {post.author.fullName}
               </h3>
               <span className="text-constitution-gold">•</span>
@@ -316,13 +314,6 @@ export function PostCard({ post, currentUserId, onDelete, onAuthorClick }: PostC
               {getPostTypeLabel(post.postType)}
             </span>
           </div>
-
-          {/* Title (if present) */}
-          {post.title && (
-            <h2 className="text-2xl font-heading font-bold text-ink-gray mb-4">
-              {post.title}
-            </h2>
-          )}
 
           {/* Content */}
           <div className="constitution-texture p-6 rounded">
