@@ -58,28 +58,44 @@ export class NotificationModel {
           : new Date(row.created_at).toISOString(),
     };
 
-    if (row.data?.userId) {
-      const userQuery = `
-        SELECT id, full_name as "userName", profile_photo_url as "profilePhoto"
-        FROM users
-        WHERE id = $1
-      `;
-      const userResult = await pool.query(userQuery, [row.data.userId]);
-      if (userResult.rows.length > 0) {
-        formattedNotification.data = {
-          userId: userResult.rows[0].id,
-          userName: userResult.rows[0].userName,
-        };
+    if (row.data) {
+      let parsedData = row.data;
+      if (typeof row.data === "string") {
+        try {
+          parsedData = JSON.parse(row.data);
+        } catch (e) {
+          parsedData = null;
+        }
+      }
+
+      if (parsedData && parsedData.userId) {
+        try {
+          const userQuery = `
+          SELECT id, full_name as "userName", profile_photo_url as "profilePhoto"
+          FROM users
+          WHERE id = $1
+        `;
+          const userResult = await pool.query(userQuery, [parsedData.userId]);
+
+          if (userResult.rows.length > 0) {
+            formattedNotification.data = {
+              userId: userResult.rows[0].id,
+              userName: userResult.rows[0].userName,
+            };
+          }
+        } catch (error) {
+          console.error("Error fetching user data for notification:", error);
+        }
       }
     }
 
     return formattedNotification;
   }
 
-
   static async getNotifications(
-    userId: string,input: GetNotificationsInput): Promise<GetNotificationsResult> {
-
+    userId: string,
+    input: GetNotificationsInput
+  ): Promise<GetNotificationsResult> {
     const { type, unread, page = 1, limit = 20 } = input;
     const offset = (page - 1) * limit;
 
@@ -98,41 +114,41 @@ export class NotificationModel {
     }
 
     const countQuery = `
-      SELECT COUNT(*) as total
-      FROM notifications
-      WHERE ${conditions.join(" AND ")}
-    `;
+    SELECT COUNT(*) as total
+    FROM notifications
+    WHERE ${conditions.join(" AND ")}
+  `;
     const countResult = await pool.query(countQuery, params);
     const total = parseInt(countResult.rows[0].total);
 
     const unreadQuery = `
-      SELECT COUNT(*) as count
-      FROM notifications
-      WHERE user_id = $1 AND is_read = false
-    `;
+    SELECT COUNT(*) as count
+    FROM notifications
+    WHERE user_id = $1 AND is_read = false
+  `;
     const unreadResult = await pool.query(unreadQuery, [userId]);
     const unreadCount = parseInt(unreadResult.rows[0].count);
 
     params.push(limit, offset);
     const notificationsQuery = `
-      SELECT 
-        n.id,
-        n.notification_type as type,
-        n.title,
-        n.message,
-        n.source_type,
-        n.source_id,
-        n.data,
-        n.is_read,
-        n.created_at
-      FROM notifications n
-      WHERE ${conditions.join(" AND ")}
-      ORDER BY n.created_at DESC
-      LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
-    `;
+    SELECT 
+      n.id,
+      n.notification_type as type,
+      n.title,
+      n.message,
+      n.source_type,
+      n.source_id,
+      n.data:: jsonb as data,
+      n.is_read,
+      n.created_at
+    FROM notifications n
+    WHERE ${conditions.join(" AND ")}
+    ORDER BY n.created_at DESC
+    LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
+  `;
 
     const notificationsResult = await pool.query(notificationsQuery, params);
-    console.log("Notifications Result:", notificationsResult.rows);
+
     const notifications = await Promise.all(
       notificationsResult.rows.map(async (notification) => {
         return this.mapRowToResponse(notification);
@@ -153,7 +169,10 @@ export class NotificationModel {
     };
   }
 
-  static async markAsRead(notificationId: string, userId: string): Promise<boolean> {
+  static async markAsRead(
+    notificationId: string,
+    userId: string
+  ): Promise<boolean> {
     const query = `
       UPDATE notifications
       SET is_read = true, read_at = CURRENT_TIMESTAMP
@@ -162,11 +181,10 @@ export class NotificationModel {
     `;
 
     const result = await pool.query(query, [notificationId, userId]);
-    return result.rows. length > 0;
+    return result.rows.length > 0;
   }
 
-
-  static async markAllAsRead(userId:  string): Promise<number> {
+  static async markAllAsRead(userId: string): Promise<number> {
     const query = `
       UPDATE notifications
       SET is_read = true, read_at = CURRENT_TIMESTAMP
@@ -175,9 +193,8 @@ export class NotificationModel {
     `;
 
     const result = await pool.query(query, [userId]);
-    return result. rowCount || 0;
+    return result.rowCount || 0;
   }
-
 
   static async searchNotifications(
     userId: string,
@@ -185,12 +202,14 @@ export class NotificationModel {
   ): Promise<NotificationResponse[]> {
     const { q, type, startDate, endDate } = input;
 
-    let conditions = ['user_id = $1'];
+    let conditions = ["user_id = $1"];
     const params: any[] = [userId];
     let paramIndex = 2;
 
     if (q) {
-      conditions.push(`(title ILIKE $${paramIndex} OR message ILIKE $${paramIndex})`);
+      conditions.push(
+        `(title ILIKE $${paramIndex} OR message ILIKE $${paramIndex})`
+      );
       params.push(`%${q}%`);
       paramIndex++;
     }
@@ -214,26 +233,23 @@ export class NotificationModel {
     }
 
     const query = `
-      SELECT 
-        id,
-        notification_type as type,
-        title,
-        message,
-        source_type,
-        source_id,
-        data,
-        is_read,
-        created_at
-      FROM notifications
-      WHERE ${conditions.join(' AND ')}
-      ORDER BY created_at DESC
-      LIMIT 50
-    `;
+    SELECT 
+      id,
+      notification_type as type,
+      title,
+      message,
+      source_type,
+      source_id,
+      data::jsonb as data,
+      is_read,
+      created_at
+    FROM notifications
+    WHERE ${conditions.join(" AND ")}
+    ORDER BY created_at DESC
+    LIMIT 50
+  `;
 
     const result = await pool.query(query, params);
-    return Promise.all(
-      result.rows.map(row => this.mapRowToResponse(row))
-    );
+    return Promise.all(result.rows.map((row) => this.mapRowToResponse(row)));
   }
-
 }
