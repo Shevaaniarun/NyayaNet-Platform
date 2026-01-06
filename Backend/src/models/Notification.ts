@@ -177,4 +177,63 @@ export class NotificationModel {
     const result = await pool.query(query, [userId]);
     return result. rowCount || 0;
   }
+
+
+  static async searchNotifications(
+    userId: string,
+    input: SearchNotificationsInput
+  ): Promise<NotificationResponse[]> {
+    const { q, type, startDate, endDate } = input;
+
+    let conditions = ['user_id = $1'];
+    const params: any[] = [userId];
+    let paramIndex = 2;
+
+    if (q) {
+      conditions.push(`(title ILIKE $${paramIndex} OR message ILIKE $${paramIndex})`);
+      params.push(`%${q}%`);
+      paramIndex++;
+    }
+
+    if (type) {
+      conditions.push(`notification_type = $${paramIndex}`);
+      params.push(type);
+      paramIndex++;
+    }
+
+    if (startDate) {
+      conditions.push(`created_at >= $${paramIndex}`);
+      params.push(startDate);
+      paramIndex++;
+    }
+
+    if (endDate) {
+      conditions.push(`created_at <= $${paramIndex}`);
+      params.push(endDate);
+      paramIndex++;
+    }
+
+    const query = `
+      SELECT 
+        id,
+        notification_type as type,
+        title,
+        message,
+        source_type,
+        source_id,
+        data,
+        is_read,
+        created_at
+      FROM notifications
+      WHERE ${conditions.join(' AND ')}
+      ORDER BY created_at DESC
+      LIMIT 50
+    `;
+
+    const result = await pool.query(query, params);
+    return Promise.all(
+      result.rows.map(row => this.mapRowToResponse(row))
+    );
+  }
+
 }

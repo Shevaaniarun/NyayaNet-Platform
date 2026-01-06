@@ -98,3 +98,40 @@ export const markAllAsRead = async (req: AuthRequest, res: Response) => {
     });
   }
 };
+
+
+export const searchNotifications = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: 'User not authenticated'
+      });
+    }
+
+    const { q, type, startDate, endDate } = req. query;
+
+    const notifications = await NotificationModel.searchNotifications(userId, {
+      q: q as string | undefined,
+      type:  type as string | undefined,
+      startDate: startDate as string | undefined,
+      endDate: endDate as string | undefined
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        notifications
+      }
+    });
+  } catch (error: any) {
+    console.error('Search notifications error:', error);
+    return res.status(500).json({
+      success: false,
+      message:  'Failed to search notifications',
+      error: error.message
+    });
+  }
+};
