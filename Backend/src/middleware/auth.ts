@@ -19,7 +19,7 @@ interface MulterFile {
 /**
  * Shape of data we store inside JWT
  */
-interface AuthPayload extends JwtPayload {
+export interface AuthPayload extends JwtPayload {
   userId: string;
   id?: string;  // Added for controller compatibility
   role: string;

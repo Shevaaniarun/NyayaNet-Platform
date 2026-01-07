@@ -6,6 +6,7 @@ import { toast } from 'react-toastify';
 interface CommentCardProps {
     comment: Comment;
     postId: string;
+    postAuthorId?: string;
     currentUserId?: string;
     depth?: number;
     onCommentUpdated?: () => void;
@@ -15,6 +16,7 @@ interface CommentCardProps {
 export function CommentCard({
     comment,
     postId,
+    postAuthorId,
     currentUserId,
     depth = 0,
     onCommentUpdated,
@@ -29,6 +31,7 @@ export function CommentCard({
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const isOwner = currentUserId === comment.userId;
+    const isPostAuthor = postAuthorId === comment.userId;
     const canReply = depth < 3; // Maximum 3 levels of nesting
 
     const handleUpdate = async () => {
@@ -105,6 +108,12 @@ export function CommentCard({
                         <div className="flex items-center justify-between mb-1">
                             <div className="flex items-center gap-2">
                                 <span className="font-bold text-sm text-ink-gray">{comment.author.fullName}</span>
+                                {isPostAuthor && (
+                                    <span className="px-1.5 py-0.5 bg-constitution-gold/20 border border-constitution-gold/30 rounded text-[8px] font-bold text-constitution-gold uppercase tracking-tighter">Author</span>
+                                )}
+                                {isOwner && (
+                                    <span className="px-1.5 py-0.5 bg-ink-gray/10 border border-ink-gray/20 rounded text-[8px] font-bold text-ink-gray/60 uppercase tracking-tighter">You</span>
+                                )}
                                 <span className="text-[10px] text-ink-gray/40 uppercase tracking-wider">{formatDate(comment.createdAt)}</span>
                                 {comment.isEdited && <span className="text-[10px] italic text-ink-gray/30">(edited)</span>}
                             </div>
@@ -224,6 +233,7 @@ export function CommentCard({
                                     key={reply.id}
                                     comment={reply}
                                     postId={postId}
+                                    postAuthorId={postAuthorId}
                                     currentUserId={currentUserId}
                                     depth={depth + 1}
                                     onCommentUpdated={onCommentUpdated}

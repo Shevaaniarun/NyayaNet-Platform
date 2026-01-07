@@ -76,6 +76,7 @@ export interface Post {
         fullName: string;
         profilePhotoUrl: string | null;
         designation: string | null;
+        organization: string | null;
     };
 }
 

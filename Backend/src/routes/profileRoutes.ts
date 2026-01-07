@@ -1,51 +1,35 @@
-import { Router } from "express";
-import { ProfileController } from "../controllers/profileController";
-import { authenticate } from "../middleware/auth";
+// [file name]: routes/profileRoutes.ts
+import express, { Request, Response, NextFunction } from 'express';
+import { ProfileController } from '../controllers/profileController';
+import { authenticate } from '../middleware/auth';
 
-const router = Router();
+const router = express.Router();
 
-// Public Routes (if any needed, e.g. viewing public profiles without login)
-// Currently all profile routes seem to benefit from auth or context
+// Define a type for authenticated requests
+interface AuthRequest extends Request {
+  user?: { id: string; email: string };
+}
 
-// Protected Routes
-// Note: Some might be accessible publicly if we check req.user optionally, 
-// but existing controller methods largely expect auth for write/updates.
-// For reading, we'll assume auth is preferred or required for now.
+// Helper function to handle authenticated requests
+const authHandler = (handler: (req: AuthRequest, res: Response, next: NextFunction) => any) => {
+  return (req: Request, res: Response, next: NextFunction) => {
+    return handler(req as AuthRequest, res, next);
+  };
+};
 
-router.get("/:userId", authenticate, ProfileController.getProfile);
-router.put("/", authenticate, ProfileController.updateProfile);
+// Profile routes
+router.get('/:userId', ProfileController.getProfile);
+router.put('/', authenticate, authHandler(ProfileController.updateProfile));
+router.get('/:userId/certifications', ProfileController.getCertifications);
+router.post('/certifications', authenticate, authHandler(ProfileController.addCertification));
+router.delete('/certifications/:certificationId', authenticate, authHandler(ProfileController.deleteCertification));
+router.get('/:userId/posts', ProfileController.getUserPosts);
+router.get('/:userId/discussions', ProfileController.getUserDiscussions);
+router.get('/bookmarks', authenticate, authHandler(ProfileController.getBookmarks));
+router.get('/search', authenticate, authHandler(ProfileController.searchUserContent));
 
-router.get("/:userId/followers", authenticate, (req, res) => {
-    // Placeholder - Controller doesn't have getFollowers yet
-    res.json({ success: true, data: { followers: [] } });
-});
-
-router.get("/:userId/following", authenticate, (req, res) => {
-    // Placeholder - Controller doesn't have getFollowing yet
-    res.json({ success: true, data: { following: [] } });
-});
-
-// Certifications
-router.get("/:userId/certifications", ProfileController.getCertifications);
-router.post("/certifications", authenticate, ProfileController.addCertification);
-router.delete("/certifications/:certificationId", authenticate, ProfileController.deleteCertification);
-
-// Bookmarks
-router.get("/bookmarks", authenticate, ProfileController.getBookmarks);
-
-// Certifications
-router.get("/:userId/certifications", ProfileController.getCertifications);
-router.post("/certifications", authenticate, ProfileController.addCertification);
-router.delete("/certifications/:certificationId", authenticate, ProfileController.deleteCertification);
-
-// Bookmarks
-router.get("/bookmarks", authenticate, ProfileController.getBookmarks);
-
-// Content
-router.get("/:userId/posts", authenticate, ProfileController.getUserPosts);
-router.get("/:userId/discussions", authenticate, ProfileController.getUserDiscussions);
-
-// Search
-router.get("/search", authenticate, ProfileController.searchUserContent);
+// Photo upload routes
+router.post('/upload/profile-photo', authenticate, authHandler(ProfileController.uploadProfilePhoto));
+router.post('/upload/cover-photo', authenticate, authHandler(ProfileController.uploadCoverPhoto));
 
 export default router;

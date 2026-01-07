@@ -9,11 +9,9 @@ import {
   Send,
   Flag,
   EyeOff,
-  Link2,
   Trash2,
   Loader2,
   FileText,
-  X,
   ExternalLink,
   Link,
   Eye,
@@ -24,9 +22,10 @@ import {
   Lightbulb,
   Info,
   HelpCircle,
-  Edit2
+  Edit2,
+  X
 } from 'lucide-react';
-import { likePost, savePost, createComment, deletePost, updatePost, uploadFiles } from '../api/postsAPI';
+import { likePost, savePost, createComment, getComments, deletePost, updatePost, uploadFiles } from '../api/postsAPI';
 import { toast } from 'react-toastify';
 import { CommentCard } from './Post/CommentCard';
 import { useRef } from 'react';
@@ -34,7 +33,6 @@ import { useRef } from 'react';
 export interface Post {
   id: string;
   userId: string;
-  title?: string;
   author: {
     fullName: string;
     profilePhotoUrl: string | null;
@@ -43,6 +41,7 @@ export interface Post {
     organization?: string;
   };
   postType: string;
+  title?: string;
   content: string;
   createdAt: string;
   likeCount: number;
@@ -64,9 +63,10 @@ interface PostCardProps {
   post: Post;
   currentUserId?: string;
   onDelete?: (postId: string) => void;
+  onAuthorClick?: (userId: string) => void; // Added this prop
 }
 
-export function PostCard({ post, currentUserId, onDelete }: PostCardProps) {
+export function PostCard({ post, currentUserId, onDelete, onAuthorClick }: PostCardProps) {
   const [isLiked, setIsLiked] = useState(post.isLiked || false);
   const [likeCount, setLikeCount] = useState(post.likeCount);
   const [reactionType, setReactionType] = useState<string | null>(post.reactionType || null);
@@ -85,6 +85,7 @@ export function PostCard({ post, currentUserId, onDelete }: PostCardProps) {
   const [editMedia, setEditMedia] = useState<any[]>(post.media || []);
   const [newFiles, setNewFiles] = useState<File[]>([]);
   const [isSavingPost, setIsSavingPost] = useState(false);
+  const [commentCount, setCommentCount] = useState(post.commentCount);
 
   const imageInputRef = useRef<HTMLInputElement>(null);
   const docInputRef = useRef<HTMLInputElement>(null);
@@ -92,8 +93,16 @@ export function PostCard({ post, currentUserId, onDelete }: PostCardProps) {
   const isOwner = currentUserId === post.userId;
 
   // Get current user initials for comment input
-  const userStr = localStorage.getItem('user');
-  const user = userStr ? JSON.parse(userStr) : null;
+  const fetchUser = () => {
+    try {
+      const userStr = localStorage.getItem('user');
+      return userStr ? JSON.parse(userStr) : null;
+    } catch {
+      return null;
+    }
+  };
+
+  const user = fetchUser();
   const userInitials = user?.fullName
     ? user.fullName.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)
     : 'U';
@@ -164,7 +173,6 @@ export function PostCard({ post, currentUserId, onDelete }: PostCardProps) {
   const fetchComments = async () => {
     try {
       setIsLoadingComments(true);
-      const { getComments } = await import('../api/postsAPI');
       const data = await getComments(post.id);
       setComments(data as any);
     } catch (error) {
@@ -258,8 +266,9 @@ export function PostCard({ post, currentUserId, onDelete }: PostCardProps) {
 
     try {
       const newComment = await createComment(post.id, commentText);
-      setComments([newComment as any, ...comments]);
+      setComments(prev => [newComment as any, ...prev]);
       setCommentText('');
+      setCommentCount(prev => prev + 1);
       toast.success('Comment added');
     } catch (error: any) {
       toast.error(error.message || 'Failed to add comment');
@@ -305,6 +314,12 @@ export function PostCard({ post, currentUserId, onDelete }: PostCardProps) {
       case 'delete':
         handleDelete();
         break;
+    }
+  };
+
+  const handleAuthorClick = () => {
+    if (onAuthorClick && post.userId) {
+      onAuthorClick(post.userId);
     }
   };
 
@@ -390,7 +405,10 @@ export function PostCard({ post, currentUserId, onDelete }: PostCardProps) {
         <div className="absolute top-3 right-3 w-6 h-6 border-t border-r border-constitution-gold opacity-30"></div>
 
         {/* Author Section */}
-        <div className="flex items-center mb-6 pb-4 border-b border-constitution-gold/20">
+        <div
+          className={`flex items-center mb-6 pb-4 border-b border-constitution-gold/20 ${onAuthorClick ? 'cursor-pointer hover:bg-constitution-gold/5 rounded-lg p-2 transition-colors' : ''}`}
+          onClick={handleAuthorClick}
+        >
           <div className="relative">
             <div className="w-12 h-12 rounded-full border-2 border-constitution-gold overflow-hidden bg-parchment-cream">
               <img
@@ -539,11 +557,12 @@ export function PostCard({ post, currentUserId, onDelete }: PostCardProps) {
                 </div>
               )}
             </>
-          )}
-        </div>
+          )
+          }
+        </div >
 
         {/* Interaction Bar */}
-        <div className="flex items-center justify-between pt-4 border-t border-constitution-gold/20">
+        < div className="flex items-center justify-between pt-4 border-t border-constitution-gold/20" >
           <div className="flex space-x-6">
             <div className="relative group/reactions">
               <button
@@ -606,7 +625,7 @@ export function PostCard({ post, currentUserId, onDelete }: PostCardProps) {
               className={`flex items-center space-x-2 transition-colors ${showComments ? 'text-constitution-gold' : 'text-ink-gray/70 hover:text-constitution-gold'}`}
             >
               <MessageSquare className="w-5 h-5" />
-              <span className="font-bold">{post.commentCount + comments.length}</span>
+              <span className="font-bold">{commentCount}</span>
             </button>
             <button
               onClick={handleShare}
@@ -685,69 +704,72 @@ export function PostCard({ post, currentUserId, onDelete }: PostCardProps) {
               </>
             )}
           </div>
-        </div>
+        </div >
 
         {/* Comments Section */}
-        {showComments && (
-          <div className="mt-4 pt-4 border-t border-constitution-gold/20">
-            {isLoadingComments ? (
-              <div className="flex justify-center py-4">
-                <Loader2 className="w-6 h-6 text-constitution-gold animate-spin" />
-              </div>
-            ) : (
-              <>
-                {/* Existing Comments (Recursive) */}
-                <div className="space-y-4 mb-6">
-                  {comments.map((comment: any) => (
-                    <CommentCard
-                      key={comment.id}
-                      comment={comment}
-                      postId={post.id}
-                      currentUserId={currentUserId}
-                      onCommentUpdated={fetchComments}
-                      onCommentDeleted={fetchComments}
-                    />
-                  ))}
-                  {comments.length === 0 && (
-                    <p className="text-center text-ink-gray/40 text-sm py-4 italic">
-                      No legal insights shared yet. Be the first to analyze this post.
-                    </p>
-                  )}
+        {
+          showComments && (
+            <div className="mt-4 pt-4 border-t border-constitution-gold/20">
+              {isLoadingComments ? (
+                <div className="flex justify-center py-4">
+                  <Loader2 className="w-6 h-6 text-constitution-gold animate-spin" />
                 </div>
-
-                {/* Comment Input */}
-                <div className="flex gap-4 items-start bg-constitution-gold/5 p-4 rounded-xl border border-constitution-gold/10">
-                  <div className="w-10 h-10 bg-constitution-gold rounded-full flex items-center justify-center flex-shrink-0 shadow-md">
-                    <span className="text-sm font-bold text-justice-black">{userInitials}</span>
+              ) : (
+                <>
+                  {/* Existing Comments (Recursive) */}
+                  <div className="space-y-4 mb-6">
+                    {comments.map((comment: any) => (
+                      <CommentCard
+                        key={comment.id}
+                        comment={comment}
+                        postId={post.id}
+                        postAuthorId={post.userId}
+                        currentUserId={currentUserId}
+                        onCommentUpdated={fetchComments}
+                        onCommentDeleted={fetchComments}
+                      />
+                    ))}
+                    {comments.length === 0 && (
+                      <p className="text-center text-ink-gray/40 text-sm py-4 italic">
+                        No legal insights shared yet. Be the first to analyze this post.
+                      </p>
+                    )}
                   </div>
-                  <div className="flex-1 flex flex-col gap-3">
-                    <textarea
-                      value={commentText}
-                      onChange={(e) => setCommentText(e.target.value)}
-                      placeholder="Share your legal perspective..."
-                      className="w-full px-4 py-3 bg-white border border-constitution-gold/20 rounded-xl text-sm text-ink-gray focus:outline-none focus:border-constitution-gold transition-all shadow-inner resize-none"
-                      rows={2}
-                    />
-                    <div className="flex justify-end">
-                      <button
-                        onClick={submitComment}
-                        disabled={!commentText.trim()}
-                        className="px-6 py-2 bg-constitution-gold text-justice-black rounded-lg font-bold disabled:opacity-50 hover:bg-constitution-gold/90 transition-all flex items-center gap-2 shadow-lg"
-                      >
-                        <Send className="w-4 h-4" />
-                        <span>Insight</span>
-                      </button>
+
+                  {/* Comment Input */}
+                  <div className="flex gap-4 items-start bg-constitution-gold/5 p-4 rounded-xl border border-constitution-gold/10">
+                    <div className="w-10 h-10 bg-constitution-gold rounded-full flex items-center justify-center flex-shrink-0 shadow-md">
+                      <span className="text-sm font-bold text-justice-black">{userInitials}</span>
+                    </div>
+                    <div className="flex-1 flex flex-col gap-3">
+                      <textarea
+                        value={commentText}
+                        onChange={(e) => setCommentText(e.target.value)}
+                        placeholder="Share your legal perspective..."
+                        className="w-full px-4 py-3 bg-white border border-constitution-gold/20 rounded-xl text-sm text-ink-gray focus:outline-none focus:border-constitution-gold transition-all shadow-inner resize-none"
+                        rows={2}
+                      />
+                      <div className="flex justify-end">
+                        <button
+                          onClick={submitComment}
+                          disabled={!commentText.trim()}
+                          className="px-6 py-2 bg-constitution-gold text-justice-black rounded-lg font-bold disabled:opacity-50 hover:bg-constitution-gold/90 transition-all flex items-center gap-2 shadow-lg"
+                        >
+                          <Send className="w-4 h-4" />
+                          <span>Insight</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </>
-            )}
-          </div>
-        )}
-      </div>
+                </>
+              )}
+            </div>
+          )
+        }
+      </div >
 
       {/* Bottom Decorative Border */}
-      <div className="absolute -bottom-4 left-6 right-6 h-0.5 bg-gradient-to-r from-transparent via-constitution-gold/30 to-transparent"></div>
-    </div>
+      < div className="absolute -bottom-4 left-6 right-6 h-0.5 bg-gradient-to-r from-transparent via-constitution-gold/30 to-transparent" ></div >
+    </div >
   );
 }
