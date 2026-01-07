@@ -482,7 +482,7 @@ export class UserModel {
     };
   }
 
-  static async getLikedPosts(userId: string, page = 1, limit = 20) {
+  /*static async getLikedPosts(userId: string, page = 1, limit = 20) {
     const offset = (page - 1) * limit;
 
     const result = await pool.query(
@@ -608,7 +608,7 @@ export class UserModel {
         pages: Math.ceil(parseInt(countResult.rows[0].count) / limit)
       }
     };
-  }
+  }*/
 
   static async searchUserContent(userId: string, query: string, type?: string) {
     // Return empty results for now
@@ -630,6 +630,157 @@ export class UserModel {
     );
     return result.rowCount ? result.rowCount > 0 : false;
   }
+
+  // Add this method to UserModel class
+static async getLikedPosts(userId: string, page = 1, limit = 20) {
+  const offset = (page - 1) * limit;
+  
+  try {
+    const result = await pool.query(
+      `SELECT p.id, p.title, p.content, p.like_count, p.comment_count, 
+              p.created_at, u.full_name as author_name
+       FROM post_likes pl
+       JOIN posts p ON pl.post_id = p.id
+       JOIN users u ON p.user_id = u.id
+       WHERE pl.user_id = $1
+       ORDER BY pl.created_at DESC
+       LIMIT $2 OFFSET $3`,
+      [userId, limit, offset]
+    );
+
+    const countResult = await pool.query(
+      'SELECT COUNT(*) FROM post_likes WHERE user_id = $1',
+      [userId]
+    );
+
+    return {
+      posts: result.rows.map(row => ({
+        id: row.id,
+        title: row.title,
+        content: row.content,
+        likeCount: row.like_count || 0,
+        commentCount: row.comment_count || 0,
+        authorName: row.author_name,
+        createdAt: row.created_at?.toISOString()
+      })),
+      pagination: {
+        total: parseInt(countResult.rows[0].count),
+        page,
+        limit,
+        pages: Math.ceil(parseInt(countResult.rows[0].count) / limit)
+      }
+    };
+  } catch (error) {
+    console.error('Error in getLikedPosts:', error);
+    // Return empty results if table doesn't exist yet
+    return {
+      posts: [],
+      pagination: { total: 0, page, limit, pages: 0 }
+    };
+  }
+}
+
+static async getLikedDiscussions(userId: string, page = 1, limit = 20) {
+  const offset = (page - 1) * limit;
+  
+  try {
+    const result = await pool.query(
+      `SELECT d.id, d.title, d.description, d.category,
+              d.reply_count, d.upvote_count, d.is_resolved, d.created_at,
+              u.full_name as author_name
+       FROM discussion_upvotes du
+       JOIN discussions d ON du.discussion_id = d.id
+       JOIN users u ON d.user_id = u.id
+       WHERE du.user_id = $1
+       ORDER BY du.created_at DESC
+       LIMIT $2 OFFSET $3`,
+      [userId, limit, offset]
+    );
+
+    const countResult = await pool.query(
+      'SELECT COUNT(*) FROM discussion_upvotes WHERE user_id = $1',
+      [userId]
+    );
+
+    return {
+      discussions: result.rows.map(row => ({
+        id: row.id,
+        title: row.title,
+        description: row.description,
+        category: row.category,
+        replyCount: row.reply_count || 0,
+        upvoteCount: row.upvote_count || 0,
+        isResolved: row.is_resolved || false,
+        authorName: row.author_name,
+        createdAt: row.created_at?.toISOString()
+      })),
+      pagination: {
+        total: parseInt(countResult.rows[0].count),
+        page,
+        limit,
+        pages: Math.ceil(parseInt(countResult.rows[0].count) / limit)
+      }
+    };
+  } catch (error) {
+    console.error('Error in getLikedDiscussions:', error);
+    // Return empty results if table doesn't exist yet
+    return {
+      discussions: [],
+      pagination: { total: 0, page, limit, pages: 0 }
+    };
+  }
+}
+
+static async getFollowingDiscussions(userId: string, page = 1, limit = 20) {
+  const offset = (page - 1) * limit;
+  
+  try {
+    const result = await pool.query(
+      `SELECT d.id, d.title, d.description, d.category,
+              d.reply_count, d.upvote_count, d.is_resolved, d.created_at,
+              u.full_name as author_name
+       FROM discussion_followers df
+       JOIN discussions d ON df.discussion_id = d.id
+       JOIN users u ON d.user_id = u.id
+       WHERE df.user_id = $1
+       ORDER BY d.created_at DESC
+       LIMIT $2 OFFSET $3`,
+      [userId, limit, offset]
+    );
+
+    const countResult = await pool.query(
+      'SELECT COUNT(*) FROM discussion_followers WHERE user_id = $1',
+      [userId]
+    );
+
+    return {
+      discussions: result.rows.map(row => ({
+        id: row.id,
+        title: row.title,
+        description: row.description,
+        category: row.category,
+        replyCount: row.reply_count || 0,
+        upvoteCount: row.upvote_count || 0,
+        isResolved: row.is_resolved || false,
+        authorName: row.author_name,
+        createdAt: row.created_at?.toISOString()
+      })),
+      pagination: {
+        total: parseInt(countResult.rows[0].count),
+        page,
+        limit,
+        pages: Math.ceil(parseInt(countResult.rows[0].count) / limit)
+      }
+    };
+  } catch (error) {
+    console.error('Error in getFollowingDiscussions:', error);
+    // Return empty results if table doesn't exist yet
+    return {
+      discussions: [],
+      pagination: { total: 0, page, limit, pages: 0 }
+    };
+  }
+}
 /*
   // ================== CONNECTION REQUEST METHODS ==================
   
