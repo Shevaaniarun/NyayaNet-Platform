@@ -6,7 +6,7 @@ import { ProfileStats } from "../components/Profile/ProfileStats";
 import { CertificationCard } from "../components/CertificationCard";
 import { ProfileTabs } from "../components/Profile/ProfileTabs";
 import { JusticeLoader } from "../components/JusticeLoader";
-import { Search, Award, Plus, ArrowLeft, X, UserPlus, UserCheck, Clock, Check } from "lucide-react";
+import { Search, Award, Plus, ArrowLeft, X, UserPlus, UserCheck, Clock } from "lucide-react";
 import * as profileApi from "../api/profileAPI";
 import * as networkApi from "../api/networkAPI";
 
@@ -15,6 +15,7 @@ interface ProfilePageProps {
   currentUserId?: string;
   onBack?: () => void;
   onNavigateToFeed?: () => void;
+  onNavigateToDiscussion?: (discussionId: string) => void;
 }
 
 export function ProfilePage({
@@ -22,6 +23,7 @@ export function ProfilePage({
   currentUserId,
   onBack,
   onNavigateToFeed,
+  onNavigateToDiscussion,
 }: ProfilePageProps) {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -30,6 +32,8 @@ export function ProfilePage({
   const [posts, setPosts] = useState<any[]>([]);
   const [discussions, setDiscussions] = useState<any[]>([]);
   const [bookmarks, setBookmarks] = useState<any[]>([]);
+  const [likedPosts, setLikedPosts] = useState<any[]>([]);
+  const [likedDiscussions, setLikedDiscussions] = useState<any[]>([]);
   const [showEditModal, setShowEditModal] = useState<boolean>(false);
   const [showAddCertModal, setShowAddCertModal] = useState<boolean>(false);
   const [editForm, setEditForm] = useState<any>({});
@@ -134,26 +138,40 @@ export function ProfilePage({
 
     try {
       const postsData = await profileApi.getUserPosts(targetUserId!);
-      setPosts(Array.isArray(postsData?.posts) ? postsData.posts : []);
+      setPosts(postsData?.posts || []);
     } catch (e) {
+      console.log('Posts not available');
       setPosts([]);
     }
 
     try {
-      const discussionsData = await profileApi.getUserDiscussions(
-        targetUserId!
-      );
-      setDiscussions(Array.isArray(discussionsData?.discussions) ? discussionsData.discussions : []);
+      const discussionsData = await profileApi.getUserDiscussions(targetUserId!);
+      setDiscussions(discussionsData?.discussions || []);
     } catch (e) {
+      console.log('Discussions not available');
       setDiscussions([]);
     }
 
     if (isOwnProfile) {
       try {
         const bookmarksData = await profileApi.getBookmarks();
-        setBookmarks(Array.isArray(bookmarksData?.bookmarks) ? bookmarksData.bookmarks : []);
+        setBookmarks(bookmarksData?.bookmarks || []);
       } catch (e) {
         setBookmarks([]);
+      }
+
+      try {
+        const likedPostsData = await profileApi.getLikedPosts();
+        setLikedPosts(likedPostsData?.posts || []);
+      } catch (e) {
+        setLikedPosts([]);
+      }
+
+      try {
+        const likedDiscussionsData = await profileApi.getLikedDiscussions();
+        setLikedDiscussions(likedDiscussionsData?.discussions || []);
+      } catch (e) {
+        setLikedDiscussions([]);
       }
     }
 
@@ -388,6 +406,7 @@ export function ProfilePage({
     try {
       await profileApi.deleteCertification(certId);
     } catch (err) {
+      // Silently fail in case API is not available
     }
     setCertifications((certs) => certs.filter((c) => c.id !== certId));
   };
@@ -512,8 +531,8 @@ export function ProfilePage({
           <ProfileStats
             followerCount={profile?.followerCount ?? 0}
             followingCount={profile?.followingCount ?? 0}
-            postCount={profile?.postCount ?? 0}
-            discussionCount={profile?.discussionCount ?? 0}
+            postCount={posts.length}
+            discussionCount={discussions.length}
           />
         </div>
 
@@ -567,11 +586,20 @@ export function ProfilePage({
 
         <div className="mt-6">
           <ProfileTabs
-            posts={Array.isArray(posts) ? posts : []}
-            discussions={Array.isArray(discussions) ? discussions : []}
-            bookmarks={Array.isArray(bookmarks) ? bookmarks : []}
+            posts={posts}
+            discussions={discussions}
+            bookmarks={bookmarks}
+            likedPosts={likedPosts}
+            likedDiscussions={likedDiscussions}
             isOwnProfile={isOwnProfile}
             onCreatePost={onNavigateToFeed}
+            onPostClick={(postId) => {
+              // Navigate to feed - could scroll to post
+              if (onNavigateToFeed) onNavigateToFeed();
+            }}
+            onDiscussionClick={(discussionId) => {
+              if (onNavigateToDiscussion) onNavigateToDiscussion(discussionId);
+            }}
           />
         </div>
       </div>

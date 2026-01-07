@@ -138,6 +138,27 @@ export default function App() {
         return () => clearTimeout(timer);
     }, []);
 
+    // Handle browser back/forward buttons
+    useEffect(() => {
+        const handlePopState = (event: PopStateEvent) => {
+            if (event.state?.view) {
+                setCurrentView(event.state.view);
+                if (event.state.view === 'feed' || event.state.view === 'dashboard') {
+                    refreshPosts();
+                }
+            }
+        };
+
+        window.addEventListener('popstate', handlePopState);
+
+        // Set initial state
+        if (!window.history.state?.view) {
+            window.history.replaceState({ view: currentView }, '', `/${currentView === 'dashboard' ? '' : currentView}`);
+        }
+
+        return () => window.removeEventListener('popstate', handlePopState);
+    }, []);
+
     useEffect(() => {
         const handleStorageChange = () => {
             const token = localStorage.getItem("token");
@@ -201,7 +222,7 @@ export default function App() {
         setPendingConnectionCount(0);
     };
 
-    const handleNavigation = (path: string) => {
+    const handleNavigation = (path: string, pushToHistory = true) => {
         const viewMap: Record<string, ViewType> = {
             '/': 'dashboard',
             '/feed': 'feed',
@@ -221,15 +242,26 @@ export default function App() {
             setSelectedProfileUserId(null);
         }
 
+        // Push to browser history for back button support
+        if (pushToHistory) {
+            window.history.pushState({ view: newView }, '', path);
+        }
+
         if (newView === 'feed' || newView === 'dashboard') {
             refreshPosts();
         }
     };
 
+    // Helper to navigate with history
+    const navigateTo = (view: ViewType) => {
+        const path = view === 'dashboard' ? '/' : `/${view}`;
+        handleNavigation(path, true);
+    };
+
     // Author click handler for PostCard
     const handlePostAuthorClick = (userId: string) => {
         setSelectedProfileUserId(userId);
-        setCurrentView('profile');
+        navigateTo('profile');
     };
 
     // Handle refresh of connection count
@@ -279,7 +311,7 @@ export default function App() {
                                         </div>
                                         {pendingConnectionCount > 0 && (
                                             <button
-                                                onClick={() => setCurrentView('connectionRequests')}
+                                                onClick={() => navigateTo('connectionRequests')}
                                                 className="flex items-center gap-2 px-4 py-2 bg-constitution-gold/10 border border-constitution-gold/30 text-constitution-gold rounded-lg hover:bg-constitution-gold/20 transition-colors"
                                             >
                                                 <Bell className="w-5 h-5" />
@@ -292,15 +324,15 @@ export default function App() {
                                     </div>
                                     <div className="flex space-x-4">
                                         <button
-                                            onClick={() => setCurrentView('ai')}
+                                            onClick={() => navigateTo('ai')}
                                             className="px-8 py-4 bg-constitution-gold text-justice-black rounded-lg font-bold hover:bg-constitution-gold/90 transition-colors flex items-center space-x-2"
                                         >
                                             <Sparkles className="w-5 h-5" /><span>Try Legal AI</span>
                                         </button>
                                         <button
                                             onClick={() => {
-                                                setCurrentView('profile');
                                                 setSelectedProfileUserId(null); // Ensure own profile
+                                                navigateTo('profile');
                                             }}
                                             className="px-8 py-4 border-2 border-constitution-gold text-constitution-gold rounded-lg font-bold hover:bg-constitution-gold/5 transition-colors flex items-center space-x-2"
                                         >
@@ -308,7 +340,7 @@ export default function App() {
                                         </button>
                                         {pendingConnectionCount > 0 && (
                                             <button
-                                                onClick={() => setCurrentView('connectionRequests')}
+                                                onClick={() => navigateTo('connectionRequests')}
                                                 className="px-8 py-4 bg-red-500/10 border-2 border-red-500 text-red-500 rounded-lg font-bold hover:bg-red-500/20 transition-colors flex items-center space-x-2"
                                             >
                                                 <Bell className="w-5 h-5" />
@@ -329,7 +361,7 @@ export default function App() {
 
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
                             <div className="aged-paper rounded-lg p-6 border border-constitution-gold/20 hover:border-constitution-gold/40 transition-colors cursor-pointer"
-                                onClick={() => setCurrentView('cases')}>
+                                onClick={() => navigateTo('cases')}>
                                 <div className="flex items-center justify-between">
                                     <div>
                                         <p className="text-ink-gray/60 mb-1 text-sm">Active Cases</p>
@@ -341,7 +373,7 @@ export default function App() {
                                 </div>
                             </div>
                             <div className="aged-paper rounded-lg p-6 border border-constitution-gold/20 hover:border-constitution-gold/40 transition-colors cursor-pointer"
-                                onClick={() => setCurrentView('connectionRequests')}>
+                                onClick={() => navigateTo('connectionRequests')}>
                                 <div className="flex items-center justify-between">
                                     <div>
                                         <p className="text-ink-gray/60 mb-1 text-sm">Connections</p>
@@ -360,7 +392,7 @@ export default function App() {
                                 )}
                             </div>
                             <div className="aged-paper rounded-lg p-6 border border-constitution-gold/20 hover:border-constitution-gold/40 transition-colors cursor-pointer"
-                                onClick={() => setCurrentView('ai')}>
+                                onClick={() => navigateTo('ai')}>
                                 <div className="flex items-center justify-between">
                                     <div>
                                         <p className="text-ink-gray/60 mb-1 text-sm">AI Analyses</p>
@@ -373,8 +405,8 @@ export default function App() {
                             </div>
                             <div className="aged-paper rounded-lg p-6 border border-constitution-gold/20 hover:border-constitution-gold/40 transition-colors cursor-pointer"
                                 onClick={() => {
-                                    setCurrentView('profile');
                                     setSelectedProfileUserId(null);
+                                    navigateTo('profile');
                                 }}>
                                 <div className="flex items-center justify-between">
                                     <div>
@@ -460,7 +492,7 @@ export default function App() {
                 {currentView === 'notes' && <NotesPage />}
                 {currentView === 'connectionRequests' && (
                     <NetworkPage 
-                        onBack={() => setCurrentView('dashboard')}
+                        onBack={() => navigateTo('dashboard')}
                         currentUserId={currentUser?.id}
                     />
                 )}
@@ -470,11 +502,11 @@ export default function App() {
                         // ProfilePage will show other's profile if selectedProfileUserId is set, otherwise current user's
                         userId={selectedProfileUserId || undefined}
                         currentUserId={currentUser?.id || ''}
-                        onBack={() => {
-                            setCurrentView('dashboard');
-                            setSelectedProfileUserId(null);
+                        onBack={() => navigateTo('dashboard')}
+                        onNavigateToFeed={() => navigateTo('feed')}
+                        onNavigateToDiscussion={(discussionId) => {
+                            navigateTo('discussions');
                         }}
-                        onNavigateToFeed={() => setCurrentView('feed')}
                     />
                 )}
             </div>

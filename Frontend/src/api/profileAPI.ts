@@ -20,7 +20,10 @@ profileApi.interceptors.request.use((config) => {
   return config;
 });
 
-// Profile methods
+/* ============================
+   PROFILE METHODS
+============================ */
+
 export const getProfile = async (userId: string) => {
   try {
     const response = await profileApi.get(`/profile/${userId}`);
@@ -41,25 +44,27 @@ export const updateProfile = async (data: any) => {
   }
 };
 
+/* ============================
+   PHOTO UPLOADS
+============================ */
+
 export const uploadProfilePhoto = async (file: File) => {
   try {
-    // In a real app, you'd upload to storage service first
     const formData = new FormData();
     formData.append('file', file);
-    
-    // Upload to your storage service
+
     const uploadResponse = await fetch('/api/upload', {
       method: 'POST',
       body: formData,
     });
-    
+
     const uploadResult = await uploadResponse.json();
-    
-    // Then update profile with URL
+
     const response = await profileApi.post('/profile/upload/profile-photo', {
       photoUrl: uploadResult.url,
-      thumbnailUrl: uploadResult.thumbnailUrl
+      thumbnailUrl: uploadResult.thumbnailUrl,
     });
+
     return response.data.data;
   } catch (error: any) {
     console.error('Error uploading profile photo:', error);
@@ -69,22 +74,20 @@ export const uploadProfilePhoto = async (file: File) => {
 
 export const uploadCoverPhoto = async (file: File) => {
   try {
-    // In a real app, you'd upload to storage service first
     const formData = new FormData();
     formData.append('file', file);
-    
-    // Upload to your storage service
+
     const uploadResponse = await fetch('/api/upload', {
       method: 'POST',
       body: formData,
     });
-    
+
     const uploadResult = await uploadResponse.json();
-    
-    // Then update profile with URL
+
     const response = await profileApi.post('/profile/upload/cover-photo', {
-      coverPhotoUrl: uploadResult.url
+      coverPhotoUrl: uploadResult.url,
     });
+
     return response.data.data;
   } catch (error: any) {
     console.error('Error uploading cover photo:', error);
@@ -92,19 +95,20 @@ export const uploadCoverPhoto = async (file: File) => {
   }
 };
 
-// Certificate file upload (new method)
+/* ============================
+   CERTIFICATIONS
+============================ */
+
+// Certificate file upload (mock / placeholder)
 export const uploadCertificateFile = async (file: File) => {
   try {
-    // Mock implementation - in real app, upload to storage service
     console.log('Uploading certificate file:', file.name);
-    
-    // Simulate upload delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Return mock URL - in real app, this would come from your storage service
+
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
     return {
       certificateUrl: `https://example.com/certificates/${Date.now()}_${file.name}`,
-      fileType: file.type.includes('pdf') ? 'PDF' : 'IMAGE'
+      fileType: file.type.includes('pdf') ? 'PDF' : 'IMAGE',
     };
   } catch (error: any) {
     console.error('Error uploading certificate file:', error);
@@ -112,7 +116,6 @@ export const uploadCertificateFile = async (file: File) => {
   }
 };
 
-// Certification methods
 export const getCertifications = async (userId: string) => {
   try {
     const response = await profileApi.get(`/profile/${userId}/certifications`);
@@ -143,11 +146,19 @@ export const deleteCertification = async (certificationId: string) => {
   }
 };
 
-// Content methods
-export const getUserPosts = async (userId: string, page = 1, limit = 20, sort = 'newest') => {
+/* ============================
+   USER CONTENT
+============================ */
+
+export const getUserPosts = async (
+  userId: string,
+  page = 1,
+  limit = 20,
+  sort = 'newest'
+) => {
   try {
     const response = await profileApi.get(`/profile/${userId}/posts`, {
-      params: { page, limit, sort }
+      params: { page, limit, sort },
     });
     return response.data.data;
   } catch (error: any) {
@@ -156,10 +167,14 @@ export const getUserPosts = async (userId: string, page = 1, limit = 20, sort = 
   }
 };
 
-export const getUserDiscussions = async (userId: string, page = 1, limit = 20) => {
+export const getUserDiscussions = async (
+  userId: string,
+  page = 1,
+  limit = 20
+) => {
   try {
     const response = await profileApi.get(`/profile/${userId}/discussions`, {
-      params: { page, limit }
+      params: { page, limit },
     });
     return response.data.data;
   } catch (error: any) {
@@ -168,10 +183,15 @@ export const getUserDiscussions = async (userId: string, page = 1, limit = 20) =
   }
 };
 
-export const getBookmarks = async (folder?: string, type?: string, page = 1, limit = 20) => {
+export const getBookmarks = async (
+  folder?: string,
+  type?: string,
+  page = 1,
+  limit = 20
+) => {
   try {
     const response = await profileApi.get('/profile/bookmarks', {
-      params: { folder, type, page, limit }
+      params: { folder, type, page, limit },
     });
     return response.data.data;
   } catch (error: any) {
@@ -183,11 +203,51 @@ export const getBookmarks = async (folder?: string, type?: string, page = 1, lim
 export const searchUserContent = async (query: string, type?: string) => {
   try {
     const response = await profileApi.get('/profile/search', {
-      params: { q: query, type }
+      params: { q: query, type },
     });
     return response.data.data;
   } catch (error: any) {
     console.error('Error searching content:', error);
+    throw error.response?.data || error;
+  }
+};
+
+/* ============================
+   LIKES & FOLLOWING CONTENT
+============================ */
+
+export const getLikedPosts = async (page = 1, limit = 20) => {
+  try {
+    const response = await profileApi.get('/profile/liked-posts', {
+      params: { page, limit },
+    });
+    return response.data.data;
+  } catch (error: any) {
+    console.error('Error fetching liked posts:', error);
+    throw error.response?.data || error;
+  }
+};
+
+export const getLikedDiscussions = async (page = 1, limit = 20) => {
+  try {
+    const response = await profileApi.get('/profile/liked-discussions', {
+      params: { page, limit },
+    });
+    return response.data.data;
+  } catch (error: any) {
+    console.error('Error fetching liked discussions:', error);
+    throw error.response?.data || error;
+  }
+};
+
+export const getFollowingDiscussions = async (page = 1, limit = 20) => {
+  try {
+    const response = await profileApi.get('/profile/following-discussions', {
+      params: { page, limit },
+    });
+    return response.data.data;
+  } catch (error: any) {
+    console.error('Error fetching following discussions:', error);
     throw error.response?.data || error;
   }
 };
