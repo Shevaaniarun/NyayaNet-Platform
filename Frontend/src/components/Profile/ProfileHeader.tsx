@@ -326,10 +326,7 @@ export function ProfileHeader({
                   </button>
                 </>
               ) : (
-                <>
-                  {/* Connect Button */}
-                  {renderConnectButton()}
-                  
+                <>                  
                   {/* Message button */}
                   <button
                     onClick={handleMessageButton}

@@ -441,7 +441,7 @@ export class UserModel {
     );
     return result.rowCount ? result.rowCount > 0 : false;
   }
-
+/*
   // ================== CONNECTION REQUEST METHODS ==================
   
   static async sendConnectionRequest(requesterId: string, receiverId: string, message?: string) {
@@ -701,5 +701,6 @@ export class UserModel {
       throw error;
     }
   }
+  */
 }
   
