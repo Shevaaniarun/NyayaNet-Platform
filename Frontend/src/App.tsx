@@ -6,8 +6,9 @@ import { AIAssistant } from './components/AIAssistant';
 import { JusticeLoader } from './components/JusticeLoader';
 import { CreatePost } from './components/CreatePost';
 import { MobileNotice } from './components/MobileNotice';
-import { Sparkles, TrendingUp, Gavel, Users, Bell } from 'lucide-react';
+import { Sparkles, TrendingUp, Gavel, Construction, Users, Bell } from 'lucide-react';
 import { DiscussionsPage } from './pages/DiscussionPage';
+import { PostsPage } from './pages/PostsPage';
 import RegisterPage from "./pages/RegisterPage";
 import LoginPage from "./pages/LoginPage";
 import { ProfilePage } from './pages/ProfilePage';
@@ -18,13 +19,16 @@ import { NetworkPage } from './pages/NetworkPage';
 import * as networkApi from './api/networkAPI';
 
 type ViewType =
+    | 'dashboard'
     | 'feed'
     | 'cases'
+    | 'notes'
     | 'ai'
-    | 'dashboard'
     | 'discussions'
     | 'profile'
-    | 'notes'
+    | 'network'
+    | 'chat'
+    | 'library'
     | 'connectionRequests';
 
 const getCurrentUser = () => {
@@ -68,8 +72,12 @@ const adaptPost = (apiPost: ApiPost): PostComponentType => ({
     isSaved: apiPost.isSaved,
     media: apiPost.media?.map(m => ({
         id: m.id,
-        url: m.mediaUrl,
-        type: m.mediaType
+        url: m.mediaUrl || '',  // Map mediaUrl to url
+        type: m.mediaType || '', // Map mediaType to type
+        mimeType: m.mediaType || '', // Add mimeType for compatibility
+        mediaUrl: m.mediaUrl || '', // Keep original for safety
+        mediaType: m.mediaType || '', // Keep original for safety
+        fileName: m.fileName || undefined
     }))
 });
 
@@ -106,7 +114,7 @@ export default function App() {
     // Function to load pending connection count
     const loadPendingConnectionCount = async () => {
         if (!isAuthenticated || !currentUser?.id) return;
-        
+
         try {
             // Use the network API call
             const pendingRequests = await networkApi.getPendingConnectionRequests();
@@ -210,6 +218,9 @@ export default function App() {
             '/discussions': 'discussions',
             '/profile': 'profile',
             '/notes': 'notes',
+            '/network': 'network',
+            '/chat': 'chat',
+            '/library': 'library',
             '/connection-requests': 'connectionRequests',
         };
 
@@ -458,8 +469,8 @@ export default function App() {
                 {currentView === 'ai' && <AIAssistant />}
                 {currentView === 'discussions' && <DiscussionsPage />}
                 {currentView === 'notes' && <NotesPage />}
-                {currentView === 'connectionRequests' && (
-                    <NetworkPage 
+                {(currentView === 'connectionRequests' || currentView === 'network') && (
+                    <NetworkPage
                         onBack={() => setCurrentView('dashboard')}
                         currentUserId={currentUser?.id}
                     />
