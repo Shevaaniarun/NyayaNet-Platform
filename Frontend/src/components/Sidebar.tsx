@@ -20,11 +20,25 @@ import {
 
 interface NavItem {
   path: string;
-  icon: React.ElementType;
+  icon:  React.ElementType;
   label: string;
   badge?: string | number | null;
   symbol: string;
 }
+
+const navItems:  NavItem[] = [
+  { path: '/', icon: Home, label: 'Dashboard', badge:  null, symbol: '⚖️' },
+  { path:  '/feed', icon: Newspaper, label: 'Legal Feed', badge: null, symbol: '📜' },
+  { path: '/network', icon: Users, label:  'Colleagues', badge: '3', symbol: '👥' },
+  { path: '/notifications', icon: Bell, label: 'Notifications', badge: null, symbol: '🔔' }, 
+  { path: '/chat', icon: MessageSquare, label:  'Chambers', badge: '12', symbol: '💬' },
+  { path: '/cases', icon: Briefcase, label: 'Docket', badge: '5', symbol: '📁' },
+  { path: '/notes', icon: Notebook, label:  'Case Notes', badge: null, symbol: '📝' },
+  { path: '/ai', icon: Brain, label: 'Legal AI', badge: 'New', symbol: '🧠' },
+  { path: '/discussions', icon: MessageCircle, label: 'Debates', badge:  null, symbol: '💭' },
+  { path: '/profile', icon: User, label: 'Profile', badge: null, symbol: '👤' },
+  { path: '/library', icon:  BookOpen, label: 'Library', badge: null, symbol: '📚' },
+];
 
 interface SidebarProps {
   currentPath?: string;
@@ -78,10 +92,10 @@ export function Sidebar({ currentPath = '/', onNavigate, pendingConnectionCount 
           return (
             <button
               key={item.path}
-              onClick={() => handleNavClick(item.path)}
+              onClick={() => handleNavClick(item. path)}
               className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all relative overflow-hidden group ${
                 isActive
-                  ? 'bg-constitution-gold/10 text-judge-ivory border-l-2 border-constitution-gold'
+                  ?  'bg-constitution-gold/10 text-judge-ivory border-l-2 border-constitution-gold'
                   : 'text-constitution-gold/70 hover:bg-constitution-gold/5 hover:text-judge-ivory'
               }`}
             >
@@ -89,7 +103,7 @@ export function Sidebar({ currentPath = '/', onNavigate, pendingConnectionCount 
                 {item.symbol}
               </span>
 
-              <Icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-constitution-gold' : ''}`} />
+              <Icon className={`w-5 h-5 flex-shrink-0 ${isActive ?  'text-constitution-gold' : ''}`} />
               <span className="font-medium tracking-wide flex-1 text-left">
                 {item.label}
               </span>
