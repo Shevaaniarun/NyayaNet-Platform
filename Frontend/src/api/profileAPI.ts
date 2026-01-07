@@ -223,8 +223,8 @@ export const getLikedPosts = async (page = 1, limit = 20) => {
     });
     return response.data.data;
   } catch (error: any) {
-    console.error('Error fetching liked posts:', error);
-    throw error.response?.data || error;
+    console.warn('Error fetching liked posts, returning empty array');
+    return { posts: [], pagination: { total: 0, page, limit, pages: 0 } };
   }
 };
 
@@ -235,19 +235,7 @@ export const getLikedDiscussions = async (page = 1, limit = 20) => {
     });
     return response.data.data;
   } catch (error: any) {
-    console.error('Error fetching liked discussions:', error);
-    throw error.response?.data || error;
-  }
-};
-
-export const getFollowingDiscussions = async (page = 1, limit = 20) => {
-  try {
-    const response = await profileApi.get('/profile/following-discussions', {
-      params: { page, limit },
-    });
-    return response.data.data;
-  } catch (error: any) {
-    console.error('Error fetching following discussions:', error);
-    throw error.response?.data || error;
+    console.warn('Error fetching liked discussions, returning empty array');
+    return { discussions: [], pagination: { total: 0, page, limit, pages: 0 } };
   }
 };
