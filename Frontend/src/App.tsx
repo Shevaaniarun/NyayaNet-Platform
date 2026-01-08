@@ -12,9 +12,10 @@ import { PostsPage } from './pages/PostsPage';
 import RegisterPage from "./pages/RegisterPage";
 import LoginPage from "./pages/LoginPage";
 import { ProfilePage } from './pages/ProfilePage';
+import  NotesPage  from './pages/NotesPage';
+import NotificationsPage from './pages/NotificationsPage'; 
 import { getFeed, Post as ApiPost } from './api/postsAPI';
 import { toast } from 'react-toastify';
-import NotesPage from './pages/NotesPage';
 import { NetworkPage } from './pages/NetworkPage';
 import * as networkApi from './api/networkAPI';
 
@@ -27,6 +28,7 @@ type ViewType =
     | 'discussions'
     | 'profile'
     | 'notes'
+    | 'notifications'
     | 'connectionRequests';
 
 const getCurrentUser = () => {
@@ -59,15 +61,15 @@ const adaptPost = (apiPost: ApiPost): PostComponentType => ({
         designation: apiPost.author?.designation || '',
         organization: apiPost.author?.organization || ''
     },
-    postType: apiPost.postType || 'POST',
-    content: apiPost.content,
-    createdAt: new Date(apiPost.createdAt).toLocaleDateString(),
-    likeCount: apiPost.likeCount || 0,
+    postType:  apiPost.postType || 'POST',
+    content: apiPost. content,
+    createdAt:  new Date(apiPost.createdAt).toLocaleDateString(),
+    likeCount: apiPost. likeCount || 0,
     commentCount: apiPost.commentCount || 0,
     tags: apiPost.tags || [],
     isLiked: apiPost.isLiked,
     isSaved: apiPost.isSaved,
-    media: apiPost.media?.map(m => ({
+    media: apiPost.media?. map(m => ({
         id: m.id,
         url: m.mediaUrl || '',  // Map mediaUrl to url
         type: m.mediaType || '', // Map mediaType to type
@@ -79,7 +81,7 @@ const adaptPost = (apiPost: ApiPost): PostComponentType => ({
 });
 
 const mapCaseStatus = (status: string): CaseItemComponentType['caseStatus'] => {
-    const statusMap: Record<string, CaseItemComponentType['caseStatus']> = {
+    const statusMap:  Record<string, CaseItemComponentType['caseStatus']> = {
         'active': 'active',
         'closed': 'closed',
         'hearing_scheduled': 'hearing_scheduled',
@@ -114,9 +116,9 @@ export default function App() {
         
         try {
             // Use the network API call
-            const pendingRequests = await networkApi.getPendingConnectionRequests();
-            console.log('Pending requests from API:', pendingRequests);
-            setPendingConnectionCount(pendingRequests.length || 0);
+            // const pendingRequests = await networkApi.getPendingConnectionRequests();
+            // console.log('Pending requests from API:', pendingRequests);
+            // setPendingConnectionCount(pendingRequests.length || 0);
         } catch (error) {
             console.error('Failed to load connection requests:', error);
             // Fallback to mock data for development
@@ -141,6 +143,27 @@ export default function App() {
         }, 1500); // Reduced from 4500ms for better UX
 
         return () => clearTimeout(timer);
+    }, []);
+
+    // Handle browser back/forward buttons
+    useEffect(() => {
+        const handlePopState = (event: PopStateEvent) => {
+            if (event.state?.view) {
+                setCurrentView(event.state.view);
+                if (event.state.view === 'feed' || event.state.view === 'dashboard') {
+                    refreshPosts();
+                }
+            }
+        };
+
+        window.addEventListener('popstate', handlePopState);
+
+        // Set initial state
+        if (!window.history.state?.view) {
+            window.history.replaceState({ view: currentView }, '', `/${currentView === 'dashboard' ? '' : currentView}`);
+        }
+
+        return () => window.removeEventListener('popstate', handlePopState);
     }, []);
 
     useEffect(() => {
@@ -178,10 +201,10 @@ export default function App() {
         try {
             setIsLoadingPosts(true);
             const postsData = await getFeed(1, 10);
-            setPosts(postsData.posts.map(adaptPost));
+            setPosts(postsData. posts. map(adaptPost));
         } catch (error) {
             console.error('Failed to refresh posts:', error);
-            toast.error('Failed to refresh posts');
+            toast. error('Failed to refresh posts');
         } finally {
             setIsLoadingPosts(false);
         }
@@ -206,7 +229,7 @@ export default function App() {
         setPendingConnectionCount(0);
     };
 
-    const handleNavigation = (path: string) => {
+    const handleNavigation = (path: string, pushToHistory = true) => {
         const viewMap: Record<string, ViewType> = {
             '/': 'dashboard',
             '/feed': 'feed',
@@ -215,6 +238,7 @@ export default function App() {
             '/discussions': 'discussions',
             '/profile': 'profile',
             '/notes': 'notes',
+            '/notifications': 'notifications', 
             '/connection-requests': 'connectionRequests',
         };
 
@@ -226,15 +250,26 @@ export default function App() {
             setSelectedProfileUserId(null);
         }
 
+        // Push to browser history for back button support
+        if (pushToHistory) {
+            window.history.pushState({ view: newView }, '', path);
+        }
+
         if (newView === 'feed' || newView === 'dashboard') {
             refreshPosts();
         }
     };
 
+    // Helper to navigate with history
+    const navigateTo = (view: ViewType) => {
+        const path = view === 'dashboard' ? '/' : `/${view}`;
+        handleNavigation(path, true);
+    };
+
     // Author click handler for PostCard
     const handlePostAuthorClick = (userId: string) => {
         setSelectedProfileUserId(userId);
-        setCurrentView('profile');
+        navigateTo('profile');
     };
 
     // Handle refresh of connection count
@@ -261,7 +296,7 @@ export default function App() {
         <div className="flex min-h-screen bg-justice-black">
             <MobileNotice />
             <Sidebar
-                currentPath={currentView === 'dashboard' ? '/' : `/${currentView}`}
+                currentPath={currentView === 'dashboard' ? '/' :  `/${currentView}`}
                 onNavigate={handleNavigation}
                 pendingConnectionCount={pendingConnectionCount}
             />
@@ -284,7 +319,7 @@ export default function App() {
                                         </div>
                                         {pendingConnectionCount > 0 && (
                                             <button
-                                                onClick={() => setCurrentView('connectionRequests')}
+                                                onClick={() => navigateTo('connectionRequests')}
                                                 className="flex items-center gap-2 px-4 py-2 bg-constitution-gold/10 border border-constitution-gold/30 text-constitution-gold rounded-lg hover:bg-constitution-gold/20 transition-colors"
                                             >
                                                 <Bell className="w-5 h-5" />
@@ -297,15 +332,15 @@ export default function App() {
                                     </div>
                                     <div className="flex space-x-4">
                                         <button
-                                            onClick={() => setCurrentView('ai')}
+                                            onClick={() => navigateTo('ai')}
                                             className="px-8 py-4 bg-constitution-gold text-justice-black rounded-lg font-bold hover:bg-constitution-gold/90 transition-colors flex items-center space-x-2"
                                         >
                                             <Sparkles className="w-5 h-5" /><span>Try Legal AI</span>
                                         </button>
                                         <button
                                             onClick={() => {
-                                                setCurrentView('profile');
                                                 setSelectedProfileUserId(null); // Ensure own profile
+                                                navigateTo('profile');
                                             }}
                                             className="px-8 py-4 border-2 border-constitution-gold text-constitution-gold rounded-lg font-bold hover:bg-constitution-gold/5 transition-colors flex items-center space-x-2"
                                         >
@@ -313,7 +348,7 @@ export default function App() {
                                         </button>
                                         {pendingConnectionCount > 0 && (
                                             <button
-                                                onClick={() => setCurrentView('connectionRequests')}
+                                                onClick={() => navigateTo('connectionRequests')}
                                                 className="px-8 py-4 bg-red-500/10 border-2 border-red-500 text-red-500 rounded-lg font-bold hover:bg-red-500/20 transition-colors flex items-center space-x-2"
                                             >
                                                 <Bell className="w-5 h-5" />
@@ -334,7 +369,7 @@ export default function App() {
 
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
                             <div className="aged-paper rounded-lg p-6 border border-constitution-gold/20 hover:border-constitution-gold/40 transition-colors cursor-pointer"
-                                onClick={() => setCurrentView('cases')}>
+                                onClick={() => navigateTo('cases')}>
                                 <div className="flex items-center justify-between">
                                     <div>
                                         <p className="text-ink-gray/60 mb-1 text-sm">Active Cases</p>
@@ -346,7 +381,7 @@ export default function App() {
                                 </div>
                             </div>
                             <div className="aged-paper rounded-lg p-6 border border-constitution-gold/20 hover:border-constitution-gold/40 transition-colors cursor-pointer"
-                                onClick={() => setCurrentView('connectionRequests')}>
+                                onClick={() => navigateTo('connectionRequests')}>
                                 <div className="flex items-center justify-between">
                                     <div>
                                         <p className="text-ink-gray/60 mb-1 text-sm">Connections</p>
@@ -365,7 +400,7 @@ export default function App() {
                                 )}
                             </div>
                             <div className="aged-paper rounded-lg p-6 border border-constitution-gold/20 hover:border-constitution-gold/40 transition-colors cursor-pointer"
-                                onClick={() => setCurrentView('ai')}>
+                                onClick={() => navigateTo('ai')}>
                                 <div className="flex items-center justify-between">
                                     <div>
                                         <p className="text-ink-gray/60 mb-1 text-sm">AI Analyses</p>
@@ -378,8 +413,8 @@ export default function App() {
                             </div>
                             <div className="aged-paper rounded-lg p-6 border border-constitution-gold/20 hover:border-constitution-gold/40 transition-colors cursor-pointer"
                                 onClick={() => {
-                                    setCurrentView('profile');
                                     setSelectedProfileUserId(null);
+                                    navigateTo('profile');
                                 }}>
                                 <div className="flex items-center justify-between">
                                     <div>
@@ -403,7 +438,7 @@ export default function App() {
                                 ) : posts.length > 0 ? (
                                     posts.map((post) => (
                                         <PostCard
-                                            key={post.id}
+                                            key={post. id}
                                             post={post}
                                             currentUserId={currentUser?.id}
                                             onDelete={(id) => setPosts(prev => prev.filter(p => p.id !== id))}
@@ -463,9 +498,10 @@ export default function App() {
                 {currentView === 'ai' && <AIAssistant />}
                 {currentView === 'discussions' && <DiscussionsPage />}
                 {currentView === 'notes' && <NotesPage />}
+                {currentView === 'notifications' && <NotificationsPage />}
                 {currentView === 'connectionRequests' && (
                     <NetworkPage 
-                        onBack={() => setCurrentView('dashboard')}
+                        onBack={() => navigateTo('dashboard')}
                         currentUserId={currentUser?.id}
                     />
                 )}
@@ -475,11 +511,11 @@ export default function App() {
                         // ProfilePage will show other's profile if selectedProfileUserId is set, otherwise current user's
                         userId={selectedProfileUserId || undefined}
                         currentUserId={currentUser?.id || ''}
-                        onBack={() => {
-                            setCurrentView('dashboard');
-                            setSelectedProfileUserId(null);
+                        onBack={() => navigateTo('dashboard')}
+                        onNavigateToFeed={() => navigateTo('feed')}
+                        onNavigateToDiscussion={(discussionId) => {
+                            navigateTo('discussions');
                         }}
-                        onNavigateToFeed={() => setCurrentView('feed')}
                     />
                 )}
             </div>

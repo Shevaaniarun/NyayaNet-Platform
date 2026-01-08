@@ -1,7 +1,7 @@
 // [file name]: networkAPI.ts
 import axios from 'axios';
 
-const API_BASE_URL =  'http://localhost:3000/api';
+const API_BASE_URL = 'http://localhost:3000/api';
 
 // Configure axios instance
 const networkApi = axios.create({
@@ -20,13 +20,13 @@ networkApi.interceptors.request.use((config) => {
   return config;
 });
 
-// Follow/Unfollow
-export const followUser = async (targetUserId: string) => {
+// Follow methods
+export const sendFollowRequest = async (targetUserId: string) => {
   try {
     const response = await networkApi.post(`/network/follow/${targetUserId}`);
-    return response.data;
+    return response.data.data;
   } catch (error: any) {
-    console.error('Error following user:', error);
+    console.error('Error sending follow request:', error);
     throw error.response?.data || error;
   }
 };
@@ -41,84 +41,63 @@ export const unfollowUser = async (targetUserId: string) => {
   }
 };
 
-// Connection Requests
-export const sendConnectionRequest = async (targetUserId: string, message?: string) => {
+export const acceptFollowRequest = async (requestId: string) => {
   try {
-    const response = await networkApi.post(`/network/connection-requests/${targetUserId}`, { message });
+    const response = await networkApi.post(`/network/requests/${requestId}/accept`);
     return response.data;
   } catch (error: any) {
-    console.error('Error sending connection request:', error);
+    console.error('Error accepting follow request:', error);
     throw error.response?.data || error;
   }
 };
 
-export const cancelConnectionRequest = async (requestId: string) => {
+export const rejectFollowRequest = async (requestId: string) => {
   try {
-    const response = await networkApi.post(`/network/connection-requests/${requestId}/cancel`);
+    const response = await networkApi.post(`/network/requests/${requestId}/reject`);
     return response.data;
   } catch (error: any) {
-    console.error('Error cancelling connection request:', error);
+    console.error('Error rejecting follow request:', error);
     throw error.response?.data || error;
   }
 };
 
-export const acceptConnectionRequest = async (requestId: string) => {
+export const cancelFollowRequest = async (requestId: string) => {
   try {
-    const response = await networkApi.post(`/network/connection-requests/${requestId}/accept`);
+    const response = await networkApi.post(`/network/requests/${requestId}/cancel`);
     return response.data;
   } catch (error: any) {
-    console.error('Error accepting connection request:', error);
-    throw error.response?.data || error;
-  }
-};
-
-export const rejectConnectionRequest = async (requestId: string) => {
-  try {
-    const response = await networkApi.post(`/network/connection-requests/${requestId}/reject`);
-    return response.data;
-  } catch (error: any) {
-    console.error('Error rejecting connection request:', error);
+    console.error('Error cancelling follow request:', error);
     throw error.response?.data || error;
   }
 };
 
 // Get Methods
-export const getConnectionStatus = async (targetUserId: string) => {
+export const getFollowStatus = async (targetUserId: string) => {
   try {
-    const response = await networkApi.get(`/network/connection-status/${targetUserId}`);
+    const response = await networkApi.get(`/network/follow-status/${targetUserId}`);
     return response.data.data;
   } catch (error: any) {
-    console.error('Error getting connection status:', error);
+    console.error('Error getting follow status:', error);
     throw error.response?.data || error;
   }
 };
 
-export const getPendingConnectionRequests = async () => {
+export const getFollowRequests = async () => {
   try {
-    const response = await networkApi.get('/network/connection-requests/pending');
+    const response = await networkApi.get('/network/requests/received');
     return response.data.data;
   } catch (error: any) {
-    console.error('Error getting pending connection requests:', error);
+    console.error('Error getting follow requests:', error);
     throw error.response?.data || error;
   }
 };
 
-export const getSentConnectionRequests = async () => {
+export const getPendingRequests = async () => {
   try {
-    const response = await networkApi.get('/network/connection-requests/sent');
+    const response = await networkApi.get('/network/requests/sent');
     return response.data.data;
   } catch (error: any) {
-    console.error('Error getting sent connection requests:', error);
-    throw error.response?.data || error;
-  }
-};
-
-export const getConnections = async () => {
-  try {
-    const response = await networkApi.get('/network/connections');
-    return response.data.data;
-  } catch (error: any) {
-    console.error('Error getting connections:', error);
+    console.error('Error getting pending requests:', error);
     throw error.response?.data || error;
   }
 };

@@ -18,20 +18,18 @@ const authHandler = (handler: (req: AuthRequest, res: Response, next: NextFuncti
 };
 
 // ================== FOLLOW ROUTES ==================
-router.post('/follow/:targetUserId', authenticate, authHandler(NetworkController.followUser));
+router.post('/follow/:targetUserId', authenticate, authHandler(NetworkController.sendFollowRequest));
 router.post('/unfollow/:targetUserId', authenticate, authHandler(NetworkController.unfollowUser));
 
-// ================== CONNECTION REQUEST ROUTES ==================
-router.post('/connection-requests/:targetUserId', authenticate, authHandler(NetworkController.sendConnectionRequest));
-router.post('/connection-requests/:requestId/cancel', authenticate, authHandler(NetworkController.cancelConnectionRequest));
-router.post('/connection-requests/:requestId/accept', authenticate, authHandler(NetworkController.acceptConnectionRequest));
-router.post('/connection-requests/:requestId/reject', authenticate, authHandler(NetworkController.rejectConnectionRequest));
+// ================== REQUEST HANDLING ROUTES ==================
+router.post('/requests/:requestId/accept', authenticate, authHandler(NetworkController.acceptFollowRequest));
+router.post('/requests/:requestId/reject', authenticate, authHandler(NetworkController.rejectFollowRequest));
+router.post('/requests/:requestId/cancel', authenticate, authHandler(NetworkController.cancelFollowRequest));
 
 // ================== GET ROUTES ==================
-router.get('/connection-status/:targetUserId', authenticate, authHandler(NetworkController.getConnectionStatus));
-router.get('/connection-requests/pending', authenticate, authHandler(NetworkController.getPendingConnectionRequests));
-router.get('/connection-requests/sent', authenticate, authHandler(NetworkController.getSentConnectionRequests));
-router.get('/connections', authenticate, authHandler(NetworkController.getConnections));
+router.get('/follow-status/:targetUserId', authenticate, authHandler(NetworkController.getFollowStatus));
+router.get('/requests/received', authenticate, authHandler(NetworkController.getFollowRequests));
+router.get('/requests/sent', authenticate, authHandler(NetworkController.getPendingRequests));
 router.get('/followers', authenticate, authHandler(NetworkController.getFollowers));
 router.get('/following', authenticate, authHandler(NetworkController.getFollowing));
 router.get('/search', authenticate, authHandler(NetworkController.searchUsers));
