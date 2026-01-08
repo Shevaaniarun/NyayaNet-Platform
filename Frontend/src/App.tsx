@@ -11,11 +11,10 @@ import { DiscussionsPage } from './pages/DiscussionPage';
 import RegisterPage from "./pages/RegisterPage";
 import LoginPage from "./pages/LoginPage";
 import { ProfilePage } from './pages/ProfilePage';
-import NotesPage from './pages/NotesPage';
+import  NotesPage  from './pages/NotesPage';
 import NotificationsPage from './pages/NotificationsPage'; 
 import { getFeed, Post as ApiPost } from './api/postsAPI';
 import { toast } from 'react-toastify';
-import NotesPage from './pages/NotesPage';
 import { NetworkPage } from './pages/NetworkPage';
 import * as networkApi from './api/networkAPI';
 
@@ -27,7 +26,7 @@ type ViewType =
     | 'discussions'
     | 'profile'
     | 'notes'
-    | 'notifications'; 
+    | 'notifications'
     | 'connectionRequests';
 
 const getCurrentUser = () => {
@@ -112,9 +111,9 @@ export default function App() {
         
         try {
             // Use the network API call
-            const pendingRequests = await networkApi.getPendingConnectionRequests();
-            console.log('Pending requests from API:', pendingRequests);
-            setPendingConnectionCount(pendingRequests.length || 0);
+            // const pendingRequests = await networkApi.getPendingConnectionRequests();
+            // console.log('Pending requests from API:', pendingRequests);
+            // setPendingConnectionCount(pendingRequests.length || 0);
         } catch (error) {
             console.error('Failed to load connection requests:', error);
             // Fallback to mock data for development
