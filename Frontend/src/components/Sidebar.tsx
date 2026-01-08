@@ -47,18 +47,6 @@ interface SidebarProps {
 }
 
 export function Sidebar({ currentPath = '/', onNavigate, pendingConnectionCount = 0 }: SidebarProps) {
-  const navItems: NavItem[] = [
-    { path: '/', icon: Home, label: 'Dashboard', badge: null, symbol: '⚖️' },
-    { path: '/feed', icon: Newspaper, label: 'Legal Feed', badge: null, symbol: '📜' },
-    { path: '/connection-requests', icon: Bell, label: 'Connections', badge: pendingConnectionCount > 0 ? pendingConnectionCount : null, symbol: '👥' },
-    { path: '/chat', icon: MessageSquare, label: 'Chambers', badge: '12', symbol: '💬' },
-    { path: '/cases', icon: Briefcase, label: 'Docket', badge: '5', symbol: '📁' },
-    { path: '/notes', icon: Notebook, label: 'Case Notes', badge: null, symbol: '📝' },
-    { path: '/ai', icon: Brain, label: 'Legal AI', badge: 'New', symbol: '🧠' },
-    { path: '/discussions', icon: MessageCircle, label: 'Debates', badge: null, symbol: '💭' },
-    { path: '/profile', icon: User, label: 'Profile', badge: null, symbol: '👤' },
-    { path: '/library', icon: BookOpen, label: 'Library', badge: null, symbol: '📚' },
-  ];
 
   const handleNavClick = (path: string) => {
     if (onNavigate) onNavigate(path);
