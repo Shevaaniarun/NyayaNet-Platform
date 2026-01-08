@@ -22,8 +22,8 @@ export function ProfileTabs({
     const [activeTab, setActiveTab] = useState<TabId>('posts');
 
     const tabs = [
-        { id: 'posts' as const, label: 'My Posts', icon: FileText, count: posts.length },
-        { id: 'discussions' as const, label: 'My Discussions', icon: MessageSquare, count: discussions.length },
+        { id: 'posts' as const, label: 'Posts', icon: FileText, count: posts.length },
+        { id: 'discussions' as const, label: 'Discussions', icon: MessageSquare, count: discussions.length },
         ...(isOwnProfile ? [
             { id: 'bookmarks' as const, label: 'Bookmarks', icon: Bookmark, count: bookmarks.length },
             { id: 'likedPosts' as const, label: 'Liked Posts', icon: Heart, count: likedPosts.length },
@@ -109,6 +109,11 @@ export function ProfileTabs({
         </div>
     );
 
+    // For "+ New Discussion" navigation
+    const handleNewDiscussion = () => {
+        window.location.href = '/discussions/create';
+    };
+
     return (
         <div className="aged-paper rounded-lg border border-constitution-gold/20">
             {/* Tab Headers */}
@@ -130,13 +135,25 @@ export function ProfileTabs({
                         </span>
                     </button>
                 ))}
-                {isOwnProfile && activeTab === 'posts' && (
-                    <button
-                        onClick={onCreatePost}
-                        className="ml-auto mr-4 my-2 px-4 py-2 bg-constitution-gold text-justice-black rounded-lg font-medium hover:bg-constitution-gold/90 transition-colors flex items-center gap-2"
-                    >
-                        <Plus className="w-4 h-4" />New Post
-                    </button>
+                {isOwnProfile && (
+                    <>
+                        {activeTab === 'posts' && (
+                            <button
+                                onClick={onCreatePost}
+                                className="ml-auto mr-4 my-2 px-4 py-2 bg-constitution-gold text-justice-black rounded-lg font-medium hover:bg-constitution-gold/90 transition-colors flex items-center gap-2"
+                            >
+                                <Plus className="w-4 h-4" />New Post
+                            </button>
+                        )}
+                        {activeTab === 'discussions' && (
+                            <button
+                                onClick={handleNewDiscussion}
+                                className="ml-auto mr-4 my-2 px-4 py-2 bg-constitution-gold text-justice-black rounded-lg font-medium hover:bg-constitution-gold/90 transition-colors flex items-center gap-2"
+                            >
+                                <Plus className="w-4 h-4" />New Discussion
+                            </button>
+                        )}
+                    </>
                 )}
             </div>
 

@@ -25,7 +25,8 @@ type ViewType =
     | 'discussions'
     | 'profile'
     | 'notes'
-    | 'connectionRequests';
+    | 'connectionRequests'
+    | 'createDiscussion';
 
 const getCurrentUser = () => {
     const userStr = localStorage.getItem('user');
@@ -232,6 +233,7 @@ export default function App() {
             '/profile': 'profile',
             '/notes': 'notes',
             '/connection-requests': 'connectionRequests',
+            '/create-discussion': 'createDiscussion',
         };
 
         const newView = viewMap[path] || 'dashboard';
@@ -254,12 +256,23 @@ export default function App() {
 
     // Helper to navigate with history
     const navigateTo = (view: ViewType) => {
-        const path = view === 'dashboard' ? '/' : `/${view}`;
+        const path =
+            view === 'dashboard'
+                ? '/'
+                : view === 'createDiscussion'
+                ? '/create-discussion'
+                : `/${view}`;
         handleNavigation(path, true);
     };
 
     // Author click handler for PostCard
     const handlePostAuthorClick = (userId: string) => {
+        setSelectedProfileUserId(userId);
+        navigateTo('profile');
+    };
+
+    // Handler for navigating to a profile from discussions (reuse same logic as handlePostAuthorClick)
+    const handleDiscussionProfileClick = (userId: string) => {
         setSelectedProfileUserId(userId);
         navigateTo('profile');
     };
@@ -488,7 +501,11 @@ export default function App() {
                 )}
 
                 {currentView === 'ai' && <AIAssistant />}
-                {currentView === 'discussions' && <DiscussionsPage />}
+                {currentView === 'discussions' && (
+                    <DiscussionsPage
+                        onNavigateToProfile={handleDiscussionProfileClick}
+                    />
+                )}
                 {currentView === 'notes' && <NotesPage />}
                 {currentView === 'connectionRequests' && (
                     <NetworkPage 
@@ -497,6 +514,7 @@ export default function App() {
                     />
                 )}
 
+                {/* ProfilePage "+ New Discussion" button should switch to Discussions page */}
                 {currentView === 'profile' && (
                     <ProfilePage
                         // ProfilePage will show other's profile if selectedProfileUserId is set, otherwise current user's
@@ -504,10 +522,30 @@ export default function App() {
                         currentUserId={currentUser?.id || ''}
                         onBack={() => navigateTo('dashboard')}
                         onNavigateToFeed={() => navigateTo('feed')}
-                        onNavigateToDiscussion={(discussionId) => {
+                        onNavigateToDiscussion={() => {
+                            // Navigate to Discussions page
                             navigateTo('discussions');
                         }}
                     />
+                )}
+
+                {/* Add CreateDiscussion page route */}
+                {currentView === 'createDiscussion' && (
+                    // TODO: Import and add your actual CreateDiscussion component below.
+                    // For now, a placeholder is provided.
+                    <div className="max-w-3xl mx-auto p-8">
+                        <div className="aged-paper rounded-lg p-8">
+                            <h2 className="text-3xl font-heading mb-4">Create New Discussion</h2>
+                            {/* Replace this div below with <CreateDiscussion /> or similar */}
+                            <p className="text-lg text-gray-400">Discussion creation form goes here.</p>
+                            <button
+                                className="mt-8 px-6 py-2 rounded-lg font-bold border border-constitution-gold text-constitution-gold hover:bg-constitution-gold/10"
+                                onClick={() => navigateTo('discussions')}
+                            >
+                                Back to Discussions
+                            </button>
+                        </div>
+                    </div>
                 )}
             </div>
         </div>

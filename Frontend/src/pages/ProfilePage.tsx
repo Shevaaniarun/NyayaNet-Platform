@@ -1,4 +1,4 @@
-// [file name]: ProfilePage.tsx
+
 "use client";
 import React, { useState, useEffect } from "react";
 import { ProfileHeader } from "../components/Profile/ProfileHeader";
@@ -15,9 +15,15 @@ interface ProfilePageProps {
   currentUserId?: string;
   onBack?: () => void;
   onNavigateToFeed?: () => void;
-  onNavigateToDiscussion?: (discussionId: string) => void;
+  onNavigateToDiscussion?: (discussionId?: string) => void;
 }
 
+/**
+ * Validation for selected user's profile:
+ * If userId is provided, ProfilePage loads and displays the profile for that userId.
+ * If not provided (undefined or empty), it falls back to currentUserId (your own).
+ * All data fetching is driven by `targetUserId`.
+ */
 export function ProfilePage({
   userId,
   currentUserId,
@@ -50,19 +56,37 @@ export function ProfilePage({
   });
   const [certificateFile, setCertificateFile] = useState<File | null>(null);
   const [uploadingCert, setUploadingCert] = useState<boolean>(false);
-  
+
   // Follow states
   const [followStatus, setFollowStatus] = useState<string>('NONE');
   const [isLoadingFollow, setIsLoadingFollow] = useState<boolean>(false);
   const [requestId, setRequestId] = useState<string | null>(null);
 
-  const isOwnProfile = 
-    userId == null || 
-    userId === "" || 
+  const isOwnProfile =
+    userId == null ||
+    userId === "" ||
     (currentUserId != null && userId === currentUserId);
+
   const targetUserId = userId || currentUserId;
 
-  // Load profile data and follow status
+  // Profile Stats State
+  const [profileStats, setProfileStats] = useState<{
+    followers: number,
+    following: number,
+    posts: number,
+    discussions: number,
+    likes: number
+  }>({
+    followers: 0,
+    following: 0,
+    posts: 0,
+    discussions: 0,
+    likes: 0
+  });
+
+  // --- Tabs state for conditional new post/new discussion button ---
+  const [activeTab, setActiveTab] = useState<"posts" | "discussions" | "bookmarks" | "likedPosts" | "likedDiscussions">("posts");
+
   useEffect(() => {
     if (targetUserId) {
       loadProfileData();
@@ -70,7 +94,6 @@ export function ProfilePage({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [targetUserId]);
 
-  // Load follow status when viewing someone else's profile
   useEffect(() => {
     if (targetUserId && currentUserId && !isOwnProfile) {
       loadFollowStatus();
@@ -79,7 +102,7 @@ export function ProfilePage({
 
   async function loadFollowStatus() {
     if (!currentUserId || !targetUserId || currentUserId === targetUserId) return;
-    
+
     setIsLoadingFollow(true);
     try {
       const status = await networkApi.getFollowStatus(targetUserId);
@@ -98,11 +121,30 @@ export function ProfilePage({
     setIsLoading(true);
 
     let profileData: any = null;
+    let stats = {
+      followers: 0,
+      following: 0,
+      posts: 0,
+      discussions: 0,
+      likes: 0
+    };
+
     try {
       profileData = await profileApi.getProfile(targetUserId!);
       if (!profileData || !profileData.id) throw new Error("No profile");
       setProfile(profileData);
       setEditForm(profileData);
+
+      stats.followers = typeof profileData.followerCount === "number" ? profileData.followerCount : 0;
+      stats.following = typeof profileData.followingCount === "number" ? profileData.followingCount : 0;
+      stats.posts = typeof profileData.postCount === "number" ? profileData.postCount : 0;
+      stats.discussions = typeof profileData.discussionCount === "number" ? profileData.discussionCount : 0;
+      stats.likes = typeof profileData.likes === "number"
+        ? profileData.likes
+        : (
+            (typeof profileData.likeCount === "number" && profileData.likeCount) ||
+            0
+          );
     } catch (err: any) {
       const emptyProfile = {
         id: targetUserId ?? "",
@@ -124,9 +166,17 @@ export function ProfilePage({
         postCount: 0,
         discussionCount: 0,
         isFollowing: false,
+        likes: 0,
       };
       setProfile(emptyProfile);
       setEditForm(emptyProfile);
+      stats = {
+        followers: 0,
+        following: 0,
+        posts: 0,
+        discussions: 0,
+        likes: 0
+      };
     }
 
     try {
@@ -140,7 +190,6 @@ export function ProfilePage({
       const postsData = await profileApi.getUserPosts(targetUserId!);
       setPosts(postsData?.posts || []);
     } catch (e) {
-      console.log('Posts not available');
       setPosts([]);
     }
 
@@ -148,7 +197,6 @@ export function ProfilePage({
       const discussionsData = await profileApi.getUserDiscussions(targetUserId!);
       setDiscussions(discussionsData?.discussions || []);
     } catch (e) {
-      console.log('Discussions not available');
       setDiscussions([]);
     }
 
@@ -173,8 +221,13 @@ export function ProfilePage({
       } catch (e) {
         setLikedDiscussions([]);
       }
+    } else {
+      setBookmarks([]);
+      setLikedPosts([]);
+      setLikedDiscussions([]);
     }
 
+    setProfileStats(stats);
     setIsLoading(false);
   }
 
@@ -191,13 +244,12 @@ export function ProfilePage({
             setRequestId(followResult.requestId);
           }
           break;
-        
+
         case 'unfollow':
           if (window.confirm('Are you sure you want to unfollow this user?')) {
             await networkApi.unfollowUser(targetUserId);
             setFollowStatus('NONE');
             setRequestId(null);
-            // Update follower count
             if (profile) {
               setProfile({
                 ...profile,
@@ -206,7 +258,7 @@ export function ProfilePage({
             }
           }
           break;
-        
+
         case 'cancel_request':
           if (requestId) {
             await networkApi.cancelFollowRequest(requestId);
@@ -215,8 +267,7 @@ export function ProfilePage({
           setRequestId(null);
           break;
       }
-      
-      // Reload profile to update counts
+
       await loadProfileData();
     } catch (error: any) {
       console.error(`Follow action failed:`, error);
@@ -254,7 +305,7 @@ export function ProfilePage({
             Unfollow
           </button>
         );
-      
+
       case 'FOLLOWED_BY':
         return (
           <button
@@ -266,7 +317,7 @@ export function ProfilePage({
             Follow Back
           </button>
         );
-      
+
       case 'MUTUAL':
         return (
           <button
@@ -278,7 +329,7 @@ export function ProfilePage({
             Unfollow
           </button>
         );
-      
+
       case 'PENDING':
         return (
           <button
@@ -290,7 +341,7 @@ export function ProfilePage({
             Pending
           </button>
         );
-      
+
       case 'NONE':
       default:
         return (
@@ -405,9 +456,7 @@ export function ProfilePage({
     if (!window.confirm("Are you sure you want to delete this certification?")) return;
     try {
       await profileApi.deleteCertification(certId);
-    } catch (err) {
-      // Silently fail in case API is not available
-    }
+    } catch (err) {}
     setCertifications((certs) => certs.filter((c) => c.id !== certId));
   };
 
@@ -472,6 +521,21 @@ export function ProfilePage({
     setShowAddCertModal(false);
   };
 
+  const handleDiscussionOwnerClick = (discussion: any) => {
+    if (discussion && discussion.authorId) {
+      window.location.href = `/profile/${discussion.authorId}`;
+    }
+  };
+
+  // ---- ProfileTab CREATE HANDLERS ----
+  // Only upward event for "+ New Discussion"
+  const handleCreateDiscussion = () => {
+    // Call only the upward event, no direct navigation logic here
+    if (onNavigateToDiscussion) {
+      onNavigateToDiscussion();
+    }
+  };
+
   if (isLoading) return <JusticeLoader />;
 
   return (
@@ -529,10 +593,11 @@ export function ProfilePage({
 
         <div className="mt-6">
           <ProfileStats
-            followerCount={profile?.followerCount ?? 0}
-            followingCount={profile?.followingCount ?? 0}
-            postCount={posts.length}
-            discussionCount={discussions.length}
+            followerCount={profileStats.followers}
+            followingCount={profileStats.following}
+            postCount={profileStats.posts}
+            discussionCount={profileStats.discussions}
+            likesCount={profileStats.likes}
           />
         </div>
 
@@ -584,6 +649,7 @@ export function ProfilePage({
           )}
         </div>
 
+        {/* --------- TAB HEADER BUTTONS INSIDE ProfileTabs --------- */}
         <div className="mt-6">
           <ProfileTabs
             posts={posts}
@@ -592,14 +658,18 @@ export function ProfilePage({
             likedPosts={likedPosts}
             likedDiscussions={likedDiscussions}
             isOwnProfile={isOwnProfile}
-            onCreatePost={onNavigateToFeed}
+            onCreatePost={() => {}} // do nothing, event up to parent if used
+            // + New Discussion: upward-only event uses App-level navigation
+            onCreateDiscussion={handleCreateDiscussion}
             onPostClick={(postId) => {
-              // Navigate to feed - could scroll to post
               if (onNavigateToFeed) onNavigateToFeed();
             }}
             onDiscussionClick={(discussionId) => {
               if (onNavigateToDiscussion) onNavigateToDiscussion(discussionId);
             }}
+            onDiscussionTitleClick={handleDiscussionOwnerClick}
+            activeTab={activeTab}
+            setActiveTab={setActiveTab}
           />
         </div>
       </div>
@@ -859,7 +929,7 @@ export function ProfilePage({
                       onChange={(e) =>
                         setNewCert({ ...newCert, issueDate: e.target.value })
                       }
-                      className="w-full px-4 py-2 bg-justice-black border border-constitution-gold/20 rounded-lg text-judge-ivory focus:outline-none focus:border-constitution-gold/50"
+                    className="w-full px-4 py-2 bg-justice-black border border-constitution-gold/20 rounded-lg text-judge-ivory focus:outline-none focus:border-constitution-gold/50"
                     />
                   </div>
 
@@ -873,7 +943,7 @@ export function ProfilePage({
                       onChange={(e) =>
                         setNewCert({ ...newCert, expiryDate: e.target.value })
                       }
-                      className="w-full px-4 py-2 bg-justice-black border border-constitution-gold/20 rounded-lg text-judge-ivory focus:outline-none focus:border-constitution-gold/50"
+                    className="w-full px-4 py-2 bg-justice-black border border-constitution-gold/20 rounded-lg text-judge-ivory focus:outline-none focus:border-constitution-gold/50"
                     />
                   </div>
                 </div>
@@ -959,3 +1029,4 @@ export function ProfilePage({
     </div>
   );
 }
+

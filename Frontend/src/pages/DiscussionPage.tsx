@@ -57,7 +57,10 @@ interface DiscussionFilterType {
   following?: boolean;
 }
 
-// Available discussion categories
+interface DiscussionsPageProps {
+  onNavigateToProfile: (userId: string) => void;
+}
+
 // Available discussion categories (mapped to backend enum)
 const DISCUSSION_CATEGORIES = [
   'CONSTITUTIONAL_LAW',
@@ -75,7 +78,7 @@ const DISCUSSION_CATEGORIES = [
   'INTERNATIONAL_LAW',
 ];
 
-export function DiscussionsPage() {
+export function DiscussionsPage({ onNavigateToProfile }: DiscussionsPageProps) {
   const [discussions, setDiscussions] = useState<Discussion[]>([]);
   const [selectedDiscussion, setSelectedDiscussion] = useState<DiscussionDetailState | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -339,6 +342,11 @@ export function DiscussionsPage() {
 
   const currentUserId = getCurrentUserId();
 
+  // Handler for author profile navigation
+  const handleAuthorClick = (userId: string) => {
+    onNavigateToProfile(userId);
+  };
+
   // Loading state
   if (isLoading && !selectedDiscussion) {
     return (
@@ -536,16 +544,31 @@ export function DiscussionsPage() {
 
         {/* Discussions List */}
         <div className="space-y-6">
-          {discussions.map((discussion) => (
-            <DiscussionCard
-              key={discussion.id}
-              discussion={discussion}
-              onClick={() => handleDiscussionClick(discussion)}
-              onFollow={() => handleFollow(discussion.id)}
-              onSave={() => handleSave(discussion.id)}
-              onUpvote={() => handleUpvote(discussion.id)}
-            />
-          ))}
+          {discussions.map((discussion) => {
+            // Only allow navigating to profile if the author exists and is not the current user
+            const canViewProfile =
+              discussion.author &&
+              discussion.author.id &&
+              currentUserId &&
+              discussion.author.id !== currentUserId;
+
+            return (
+              <DiscussionCard
+                key={discussion.id}
+                discussion={discussion}
+                onClick={() => handleDiscussionClick(discussion)}
+                onFollow={() => handleFollow(discussion.id)}
+                onSave={() => handleSave(discussion.id)}
+                onUpvote={() => handleUpvote(discussion.id)}
+                onAuthorClick={
+                  canViewProfile
+                    ? () => handleAuthorClick(discussion.author.id)
+                    : undefined
+                }
+                // Remove the titleProps logic, as navigation now uses onAuthorClick prop
+              />
+            );
+          })}
         </div>
 
         {discussions.length === 0 && !isLoading && (
