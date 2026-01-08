@@ -7,6 +7,7 @@ import profileRoutes from './routes/profileRoutes';
 import postRoutes from './routes/postRoutes';
 import authRoutes from './routes/authRoutes';
 import uploadRoutes from './routes/uploadRoutes';
+import notificationRoutes from './routes/notificationRoutes';
 import noteRoutes from "./routes/noteRoutes";
 import networkRoutes from './routes/networkRoutes';
 
@@ -36,6 +37,7 @@ app.get('/api/health', (req, res) => {
     res.json({ status: 'healthy', timestamp: new Date().toISOString(), service: 'NyayaNet Backend' });
 });
 
+app.use('/api/notifications', notificationRoutes);
 app.use('/api/discussions', discussionRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/posts', postRoutes);
