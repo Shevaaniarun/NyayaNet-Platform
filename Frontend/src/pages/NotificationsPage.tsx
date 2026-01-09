@@ -3,12 +3,17 @@ import { Bell, Loader2 } from 'lucide-react';
 import { NotificationItem } from '../components/Notifications/NotificationItem';
 import { NotificationFilters } from '../components/Notifications/NotificationFilter';
 import { NotificationActions } from '../components/Notifications/NotificationAction';
+import { NotificationStatsModal } from '../components/Notifications/NotificationStatsModal';
 import {
     getNotifications,
     markNotificationAsRead,
     markAllAsRead,
     searchNotifications,
-    Notification
+    deleteNotification,
+    bulkDeleteNotifications,
+    getNotificationStats,
+    Notification,
+    NotificationStats
 } from '../api/notificationsAPI';
 import { toast } from 'react-toastify';
 
@@ -19,14 +24,17 @@ export default function NotificationsPage() {
     const [showUnreadOnly, setShowUnreadOnly] = useState(false);
     const [unreadCount, setUnreadCount] = useState(0);
     const [isMarkingAllRead, setIsMarkingAllRead] = useState(false);
+    const [isBulkDeleting, setIsBulkDeleting] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const [pagination, setPagination] = useState({
         total: 0,
-        page:  1,
+        page:   1,
         limit: 20,
         pages: 1
     });
+    const [showStatsModal, setShowStatsModal] = useState(false);
+    const [stats, setStats] = useState<NotificationStats | null>(null);
 
     useEffect(() => {
         fetchNotifications();
@@ -38,7 +46,7 @@ export default function NotificationsPage() {
             
             const params:  any = {
                 page: currentPage,
-                limit:  20
+                limit:   20
             };
 
             if (selectedType && selectedType !== '') {
@@ -49,14 +57,11 @@ export default function NotificationsPage() {
                 params.unread = true;
             }
 
-
             const data = await getNotifications(params);
-
-            setNotifications(data.notifications);
+            setNotifications(data. notifications);
             setUnreadCount(data.unreadCount);
-            setPagination(data. pagination);
-        } catch (error:  any) {
-            console.error('❌ Fetch error:', error);
+            setPagination(data.pagination);
+        } catch (error:   any) {
             toast.error(error.message || 'Failed to load notifications');
         } finally {
             setLoading(false);
@@ -68,13 +73,28 @@ export default function NotificationsPage() {
             try {
                 await markNotificationAsRead(notification.id);
                 setNotifications(prev =>
-                    prev.map(n => n.id === notification.id ?  { ...n, isRead: true } : n)
+                    prev.map(n => n.id === notification.id ? { ...n, isRead: true } : n)
                 );
                 setUnreadCount(prev => Math.max(0, prev - 1));
                 toast.success('Marked as read');
-            } catch (error: any) {
+            } catch (error:  any) {
                 toast.error('Failed to mark as read');
             }
+        }
+    };
+
+    const handleDeleteNotification = async (notificationId: string) => {
+        try {
+            await deleteNotification(notificationId);
+            setNotifications(prev => prev.filter(n => n.id !== notificationId));
+            toast.success('Notification deleted');
+            
+            const deletedNotif = notifications.find(n => n.id === notificationId);
+            if (deletedNotif && ! deletedNotif.isRead) {
+                setUnreadCount(prev => Math.max(0, prev - 1));
+            }
+        } catch (error: any) {
+            toast.error(error.message || 'Failed to delete notification');
         }
     };
 
@@ -82,7 +102,7 @@ export default function NotificationsPage() {
         try {
             setIsMarkingAllRead(true);
             await markAllAsRead();
-            setNotifications(prev => prev. map(n => ({ ...n, isRead: true })));
+            setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
             setUnreadCount(0);
             toast.success('All notifications marked as read');
         } catch (error: any) {
@@ -92,7 +112,34 @@ export default function NotificationsPage() {
         }
     };
 
-    const handleSearch = async (query:  string) => {
+    const handleBulkDelete = async () => {
+        if (! window.confirm('Delete all read notifications?  This cannot be undone.')) {
+            return;
+        }
+
+        try {
+            setIsBulkDeleting(true);
+            const result = await bulkDeleteNotifications({ deleteAllRead: true });
+            toast.success(`${result.deletedCount} notifications deleted`);
+            fetchNotifications(); 
+        } catch (error: any) {
+            toast.error(error.message || 'Failed to delete notifications');
+        } finally {
+            setIsBulkDeleting(false);
+        }
+    };
+
+    const handleViewStats = async () => {
+        try {
+            const statsData = await getNotificationStats();
+            setStats(statsData);
+            setShowStatsModal(true);
+        } catch (error: any) {
+            toast. error('Failed to load statistics');
+        }
+    };
+
+    const handleSearch = async (query: string) => {
         setSearchQuery(query);
         if (query.trim()) {
             try {
@@ -119,7 +166,7 @@ export default function NotificationsPage() {
     const handleToggleUnread = () => {
         setShowUnreadOnly(!showUnreadOnly);
         setCurrentPage(1);
-        setSearchQuery(''); 
+        setSearchQuery('');
     };
 
     return (
@@ -142,7 +189,10 @@ export default function NotificationsPage() {
                 <NotificationActions
                     onMarkAllAsRead={handleMarkAllAsRead}
                     onSearch={handleSearch}
+                    onBulkDelete={handleBulkDelete}
+                    onViewStats={handleViewStats}
                     isMarkingAllRead={isMarkingAllRead}
+                    isBulkDeleting={isBulkDeleting}
                 />
 
                 <NotificationFilters
@@ -173,6 +223,7 @@ export default function NotificationsPage() {
                                     key={notification.id}
                                     notification={notification}
                                     onClick={handleNotificationClick}
+                                    onDelete={handleDeleteNotification}
                                 />
                             ))}
 
@@ -191,7 +242,7 @@ export default function NotificationsPage() {
                                     <button
                                         onClick={() => setCurrentPage(prev => prev + 1)}
                                         disabled={currentPage === pagination.pages}
-                                        className="px-4 py-2 bg-white border border-constitution-gold/30 rounded-lg text-sm font-medium text-ink-gray disabled: opacity-50 hover:bg-constitution-gold/5 transition-colors"
+                                        className="px-4 py-2 bg-white border border-constitution-gold/30 rounded-lg text-sm font-medium text-ink-gray disabled:opacity-50 hover:bg-constitution-gold/5 transition-colors"
                                     >
                                         Next
                                     </button>
@@ -201,6 +252,13 @@ export default function NotificationsPage() {
                     )}
                 </div>
             </div>
+
+            {showStatsModal && (
+                <NotificationStatsModal
+                    stats={stats}
+                    onClose={() => setShowStatsModal(false)}
+                />
+            )}
         </div>
     );
 }
