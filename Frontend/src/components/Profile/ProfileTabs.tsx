@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { FileText, MessageSquare, Bookmark, Plus, X } from 'lucide-react';
+import { PostCard } from '../PostCard';
+import { toast } from 'react-toastify';
 
 interface ProfileTabsProps {
     posts: any[];
@@ -62,13 +64,14 @@ export function ProfileTabs({ posts, discussions, bookmarks, isOwnProfile, onCre
                             {posts.length > 0 ? (
                                 <div className="space-y-4">
                                     {posts.map((post) => (
-                                        <div key={post.id} className="p-4 bg-justice-black/20 rounded-lg border border-constitution-gold/10 hover:border-constitution-gold/30 transition-colors cursor-pointer">
-                                            <h3 className="font-medium text-ink-gray mb-2">{post.title || 'Untitled Post'}</h3>
-                                            <p className="text-sm text-ink-gray/70 line-clamp-2">{post.content}</p>
-                                            <div className="flex items-center gap-4 mt-3 text-xs text-ink-gray/50">
-                                                <span>{post.likeCount} likes</span><span>{post.commentCount} comments</span>
-                                            </div>
-                                        </div>
+                                        <PostCard
+                                            key={post.id}
+                                            post={post}
+                                            onDelete={(id) => {
+                                                // Handle local state update if needed, though ProfilePage manages this
+                                                toast.success('Post deleted');
+                                            }}
+                                        />
                                     ))}
                                 </div>
                             ) : (

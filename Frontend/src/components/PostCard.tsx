@@ -80,6 +80,8 @@ export function PostCard({ post, currentUserId, onDelete, onAuthorClick }: PostC
   const [isDeleting, setIsDeleting] = useState(false);
 
   const [commentCount, setCommentCount] = useState(post.commentCount);
+  const [showReactionPicker, setShowReactionPicker] = useState(false);
+  const [currentReaction, setCurrentReaction] = useState<string | null>(post.reactionType || null);
 
   const imageInputRef = useRef<HTMLInputElement>(null);
   const docInputRef = useRef<HTMLInputElement>(null);
@@ -104,14 +106,20 @@ export function PostCard({ post, currentUserId, onDelete, onAuthorClick }: PostC
   const API_BASE_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3000/api';
   const ASSETS_BASE_URL = API_BASE_URL.replace('/api', '');
 
-  const handleLike = async () => {
+  const handleLike = async (reactionType: string = 'LIKE') => {
     try {
-      const result = await likePost(post.id);
+      // If clicking the same reaction, it will be toggled off by the backend
+      const result = await likePost(post.id, reactionType);
       setIsLiked(result.liked);
       setLikeCount(result.count);
-      toast.success(result.liked ? 'Post liked' : 'Post unliked');
+      setCurrentReaction(result.liked ? result.reactionType : null);
+
+      const action = result.liked ? 'reacted' : 'removed reaction';
+      const typeLabel = reactionType.toLowerCase().replace('_', ' ');
+      toast.success(result.liked ? `Post marked as ${typeLabel}` : 'Reaction removed');
+      setShowReactionPicker(false);
     } catch (error: any) {
-      toast.error(error.message || 'Failed to like post');
+      toast.error(error.message || 'Failed to process reaction');
     }
   };
 
@@ -396,13 +404,55 @@ export function PostCard({ post, currentUserId, onDelete, onAuthorClick }: PostC
 
         <div className="flex items-center justify-between pt-4 border-t border-constitution-gold/20">
           <div className="flex space-x-6">
-            <button
-              onClick={handleLike}
-              className={`flex items-center space-x-2 transition-colors ${isLiked ? 'text-red-500' : 'text-ink-gray/70 hover:text-red-500'}`}
-            >
-              <Heart className={`w-5 h-5 ${isLiked ? 'fill-current' : ''}`} />
-              <span className="font-bold">{likeCount}</span>
-            </button>
+            <div className="relative">
+              <button
+                onClick={() => handleLike(currentReaction || 'LIKE')}
+                onMouseEnter={() => setShowReactionPicker(true)}
+                className={`flex items-center space-x-2 transition-colors ${isLiked ? 'text-constitution-gold' : 'text-ink-gray/70 hover:text-constitution-gold'}`}
+              >
+                {currentReaction === 'INSIGHTFUL' ? <Lightbulb className="w-5 h-5 fill-current" /> :
+                  currentReaction === 'INFORMATIVE' ? <Info className="w-5 h-5 fill-current" /> :
+                    currentReaction === 'NEED_CLARIFICATION' ? <HelpCircle className="w-5 h-5 fill-current" /> :
+                      <ThumbsUp className={`w-5 h-5 ${isLiked && (!currentReaction || currentReaction === 'LIKE') ? 'fill-current' : ''}`} />}
+                <span className="font-bold">{likeCount}</span>
+              </button>
+
+              {showReactionPicker && (
+                <div
+                  className="absolute bottom-full left-0 mb-2 p-2 bg-white rounded-full shadow-xl border border-constitution-gold/20 flex gap-2 z-50 animate-in fade-in slide-in-from-bottom-2"
+                  onMouseLeave={() => setShowReactionPicker(false)}
+                >
+                  <button
+                    onClick={() => handleLike('LIKE')}
+                    className={`p-2 rounded-full hover:bg-constitution-gold/10 transition-colors ${currentReaction === 'LIKE' ? 'bg-constitution-gold/20 text-constitution-gold' : 'text-ink-gray/60'}`}
+                    title="Like"
+                  >
+                    <ThumbsUp className="w-5 h-5" />
+                  </button>
+                  <button
+                    onClick={() => handleLike('INSIGHTFUL')}
+                    className={`p-2 rounded-full hover:bg-constitution-gold/10 transition-colors ${currentReaction === 'INSIGHTFUL' ? 'bg-constitution-gold/20 text-constitution-gold' : 'text-ink-gray/60'}`}
+                    title="Insightful"
+                  >
+                    <Lightbulb className="w-5 h-5" />
+                  </button>
+                  <button
+                    onClick={() => handleLike('INFORMATIVE')}
+                    className={`p-2 rounded-full hover:bg-constitution-gold/10 transition-colors ${currentReaction === 'INFORMATIVE' ? 'bg-constitution-gold/20 text-constitution-gold' : 'text-ink-gray/60'}`}
+                    title="Informative"
+                  >
+                    <Info className="w-5 h-5" />
+                  </button>
+                  <button
+                    onClick={() => handleLike('NEED_CLARIFICATION')}
+                    className={`p-2 rounded-full hover:bg-constitution-gold/10 transition-colors ${currentReaction === 'NEED_CLARIFICATION' ? 'bg-constitution-gold/20 text-constitution-gold' : 'text-ink-gray/60'}`}
+                    title="Need Clarification"
+                  >
+                    <HelpCircle className="w-5 h-5" />
+                  </button>
+                </div>
+              )}
+            </div>
             <button
               onClick={handleCommentToggle}
               className={`flex items-center space-x-2 transition-colors ${showComments ? 'text-constitution-gold' : 'text-ink-gray/70 hover:text-constitution-gold'}`}
