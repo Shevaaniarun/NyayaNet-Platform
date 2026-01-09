@@ -11,7 +11,7 @@ const getConnectionString = () => {
     if (process.env.DATABASE_URL) {
         return process.env.DATABASE_URL;
     }
-    return `postgresql://${process.env.DB_USER || 'postgres'}:${process.env.DB_PASSWORD || 'postgres'}@${process.env.DB_HOST || 'localhost'}:${process.env.DB_PORT || 5433}/${process.env.DB_NAME || 'nyayanet'}`;
+    return `postgresql://${process.env.DB_USER || 'postgres'}:${process.env.DB_PASSWORD || 'postgres'}@${process.env.DB_HOST || 'localhost'}:${process.env.DB_PORT || 5432}/${process.env.DB_NAME || 'nyayanet'}`;
 };
 
 const connectionString = getConnectionString();
