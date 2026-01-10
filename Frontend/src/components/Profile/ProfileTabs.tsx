@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { FileText, MessageSquare, Bookmark, Plus, Heart } from 'lucide-react';
+import { FileText, MessageSquare, Bookmark, Plus, Heart, Eye } from 'lucide-react';
 
 interface ProfileTabsProps {
     posts: any[];
@@ -11,13 +11,14 @@ interface ProfileTabsProps {
     onCreatePost?: () => void;
     onPostClick?: (postId: string) => void;
     onDiscussionClick?: (discussionId: string) => void;
+    onFollowingDiscussionsClick?: () => void;
 }
 
-type TabId = 'posts' | 'discussions' | 'bookmarks' | 'likedPosts' | 'likedDiscussions';
+type TabId = 'posts' | 'discussions' | 'bookmarks' | 'likedPosts' | 'likedDiscussions' | 'followingDiscussions';
 
 export function ProfileTabs({
     posts, discussions, bookmarks, likedPosts, likedDiscussions,
-    isOwnProfile, onCreatePost, onPostClick, onDiscussionClick
+    isOwnProfile, onCreatePost, onPostClick, onDiscussionClick, onFollowingDiscussionsClick
 }: ProfileTabsProps) {
     const [activeTab, setActiveTab] = useState<TabId>('posts');
 
@@ -28,6 +29,7 @@ export function ProfileTabs({
             { id: 'bookmarks' as const, label: 'Bookmarks', icon: Bookmark, count: bookmarks.length },
             { id: 'likedPosts' as const, label: 'Liked Posts', icon: Heart, count: likedPosts.length },
             { id: 'likedDiscussions' as const, label: 'Liked Discussions', icon: Heart, count: likedDiscussions.length },
+            { id: 'followingDiscussions' as const, label: 'Following Discussions', icon: Eye, count: null, isNavigation: true },
         ] : []),
     ];
 
@@ -116,28 +118,24 @@ export function ProfileTabs({
                 {tabs.map((tab) => (
                     <button
                         key={tab.id}
-                        onClick={() => setActiveTab(tab.id)}
+                        onClick={() => { if ((tab as any).isNavigation && tab.id === 'followingDiscussions') { onFollowingDiscussionsClick?.(); } else { setActiveTab(tab.id); } }}
                         className={`flex items-center gap-2 px-4 py-4 font-medium transition-colors whitespace-nowrap ${activeTab === tab.id
-                                ? 'text-constitution-gold border-b-2 border-constitution-gold -mb-[2px]'
-                                : 'text-ink-gray/60 hover:text-ink-gray'
+                            ? 'text-constitution-gold border-b-2 border-constitution-gold -mb-[2px]'
+                            : 'text-ink-gray/60 hover:text-ink-gray'
                             }`}
                     >
                         <tab.icon className="w-4 h-4" />
                         <span className="hidden sm:inline">{tab.label}</span>
-                        <span className={`px-2 py-0.5 rounded-full text-xs ${activeTab === tab.id ? 'bg-constitution-gold/20 text-constitution-gold' : 'bg-ink-gray/10 text-ink-gray/60'
-                            }`}>
-                            {tab.count}
-                        </span>
+                        {(tab as any).isNavigation ? (
+                            <span className="text-xs opacity-60">→</span>
+                        ) : (
+                            <span className={`px-2 py-0.5 rounded-full text-xs ${activeTab === tab.id ? 'bg-constitution-gold/20 text-constitution-gold' : 'bg-ink-gray/10 text-ink-gray/60'}`}>
+                                {tab.count}
+                            </span>
+                        )}
                     </button>
                 ))}
-                {isOwnProfile && activeTab === 'posts' && (
-                    <button
-                        onClick={onCreatePost}
-                        className="ml-auto mr-4 my-2 px-4 py-2 bg-constitution-gold text-justice-black rounded-lg font-medium hover:bg-constitution-gold/90 transition-colors flex items-center gap-2"
-                    >
-                        <Plus className="w-4 h-4" />New Post
-                    </button>
-                )}
+
             </div>
 
             {/* Tab Content */}

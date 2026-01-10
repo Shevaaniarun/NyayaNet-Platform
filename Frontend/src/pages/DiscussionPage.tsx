@@ -75,7 +75,30 @@ const DISCUSSION_CATEGORIES = [
   'INTERNATIONAL_LAW',
 ];
 
-export function DiscussionsPage() {
+// Helper component for stat cards
+function StatCard({ icon: Icon, title, value }: { icon: any; title: string; value: number }) {
+  return (
+    <div className="aged-paper rounded-lg p-4 border border-constitution-gold/20">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-ink-gray/60 text-xs md:text-sm mb-1">{title}</p>
+          <p className="font-heading font-bold text-ink-gray text-xl md:text-2xl">
+            {value.toLocaleString()}
+          </p>
+        </div>
+        <div className="w-8 h-8 md:w-10 md:h-10 bg-constitution-gold/10 rounded-full flex items-center justify-center">
+          <Icon className="w-4 h-4 md:w-5 md:h-5 text-constitution-gold" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+interface DiscussionsPageProps {
+  initialFollowing?: boolean;
+}
+
+export function DiscussionsPage({ initialFollowing }: DiscussionsPageProps) {
   const [discussions, setDiscussions] = useState<Discussion[]>([]);
   const [selectedDiscussion, setSelectedDiscussion] = useState<DiscussionDetailState | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -84,7 +107,8 @@ export function DiscussionsPage() {
   const [filters, setFilters] = useState<DiscussionFilterType>({
     page: 1,
     limit: 10,
-    sort: 'newest'
+    sort: 'newest',
+    following: initialFollowing
   });
   const [pagination, setPagination] = useState({
     total: 0,
@@ -488,18 +512,27 @@ export function DiscussionsPage() {
               Legal Debates
             </h1>
           </div>
-          <button
-            onClick={() => setShowCreateForm(true)}
-            disabled={isCreating}
-            className="px-4 md:px-6 py-2 md:py-3 bg-constitution-gold text-justice-black rounded-lg font-bold hover:bg-constitution-gold/90 transition-colors flex items-center space-x-2 w-full md:w-auto justify-center disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isCreating ? (
-              <Loader2 className="w-4 h-4 md:w-5 md:h-5 animate-spin" />
-            ) : (
-              <Plus className="w-4 h-4 md:w-5 md:h-5" />
-            )}
-            <span>{isCreating ? 'Creating...' : 'Start Discussion'}</span>
-          </button>
+          <div className="flex gap-3 w-full md:w-auto">
+            <button
+              onClick={() => setFilters(prev => ({ ...prev, following: !prev.following }))}
+              className={`px-4 md:px-6 py-2 md:py-3 rounded-lg font-bold transition-colors flex items-center space-x-2 justify-center border ${filters.following ? 'bg-constitution-gold/20 border-constitution-gold text-constitution-gold' : 'border-constitution-gold/30 text-ink-gray hover:border-constitution-gold/60'}`}
+            >
+              <Users className="w-4 h-4 md:w-5 md:h-5" />
+              <span>Following</span>
+            </button>
+            <button
+              onClick={() => setShowCreateForm(true)}
+              disabled={isCreating}
+              className="px-4 md:px-6 py-2 md:py-3 bg-constitution-gold text-justice-black rounded-lg font-bold hover:bg-constitution-gold/90 transition-colors flex items-center space-x-2 w-full md:w-auto justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isCreating ? (
+                <Loader2 className="w-4 h-4 md:w-5 md:h-5 animate-spin" />
+              ) : (
+                <Plus className="w-4 h-4 md:w-5 md:h-5" />
+              )}
+              <span>{isCreating ? 'Creating...' : 'Start Discussion'}</span>
+            </button>
+          </div>
         </div>
 
         {/* Stats */}
@@ -593,21 +626,3 @@ export function DiscussionsPage() {
   );
 }
 
-// Helper component for stat cards
-function StatCard({ icon: Icon, title, value }: { icon: any; title: string; value: number }) {
-  return (
-    <div className="aged-paper rounded-lg p-4 border border-constitution-gold/20">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-ink-gray/60 text-xs md:text-sm mb-1">{title}</p>
-          <p className="font-heading font-bold text-ink-gray text-xl md:text-2xl">
-            {value.toLocaleString()}
-          </p>
-        </div>
-        <div className="w-8 h-8 md:w-10 md:h-10 bg-constitution-gold/10 rounded-full flex items-center justify-center">
-          <Icon className="w-4 h-4 md:w-5 md:h-5 text-constitution-gold" />
-        </div>
-      </div>
-    </div>
-  );
-}

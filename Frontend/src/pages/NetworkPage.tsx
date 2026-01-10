@@ -22,6 +22,7 @@ import { JusticeLoader } from "../components/JusticeLoader";
 interface NetworkPageProps {
   onBack?: () => void;
   currentUserId?: string;
+  initialTab?: 'followers' | 'following';
 }
 
 type TabType = 'followers' | 'following' | 'requests' | 'pending';
@@ -254,8 +255,8 @@ const UserCard: React.FC<UserCardProps> = ({
   );
 };
 
-export function NetworkPage({ onBack, currentUserId }: NetworkPageProps) {
-  const [activeTab, setActiveTab] = useState<TabType>('followers');
+export function NetworkPage({ onBack, currentUserId, initialTab }: NetworkPageProps) {
+  const [activeTab, setActiveTab] = useState<TabType>(initialTab || 'followers');
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);

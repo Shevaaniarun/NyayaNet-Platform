@@ -6,7 +6,7 @@ import { ProfileStats } from "../components/Profile/ProfileStats";
 import { CertificationCard } from "../components/CertificationCard";
 import { ProfileTabs } from "../components/Profile/ProfileTabs";
 import { JusticeLoader } from "../components/JusticeLoader";
-import { Search, Award, Plus, ArrowLeft, X, UserPlus, UserCheck, Clock } from "lucide-react";
+import { Search, Award, Plus, ArrowLeft, X, UserPlus, UserCheck, Clock, FileText } from "lucide-react";
 import * as profileApi from "../api/profileAPI";
 import * as networkApi from "../api/networkAPI";
 
@@ -16,6 +16,8 @@ interface ProfilePageProps {
   onBack?: () => void;
   onNavigateToFeed?: () => void;
   onNavigateToDiscussion?: (discussionId: string) => void;
+  onNavigateToNetwork?: (tab: 'followers' | 'following') => void;
+  onNavigateToFollowingDiscussions?: () => void;
 }
 
 export function ProfilePage({
@@ -24,6 +26,8 @@ export function ProfilePage({
   onBack,
   onNavigateToFeed,
   onNavigateToDiscussion,
+  onNavigateToNetwork,
+  onNavigateToFollowingDiscussions,
 }: ProfilePageProps) {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -50,15 +54,15 @@ export function ProfilePage({
   });
   const [certificateFile, setCertificateFile] = useState<File | null>(null);
   const [uploadingCert, setUploadingCert] = useState<boolean>(false);
-  
+
   // Follow states
-  const [followStatus, setFollowStatus] = useState<string>('NONE');
+  const [followStatus, setFollowStatus] = useState<'NONE' | 'PENDING' | 'CONNECTED' | 'REQUEST_SENT' | 'FOLLOWING' | 'FOLLOWED_BY' | 'MUTUAL'>('NONE');
   const [isLoadingFollow, setIsLoadingFollow] = useState<boolean>(false);
   const [requestId, setRequestId] = useState<string | null>(null);
 
-  const isOwnProfile = 
-    userId == null || 
-    userId === "" || 
+  const isOwnProfile =
+    userId == null ||
+    userId === "" ||
     (currentUserId != null && userId === currentUserId);
   const targetUserId = userId || currentUserId;
 
@@ -79,7 +83,7 @@ export function ProfilePage({
 
   async function loadFollowStatus() {
     if (!currentUserId || !targetUserId || currentUserId === targetUserId) return;
-    
+
     setIsLoadingFollow(true);
     try {
       const status = await networkApi.getFollowStatus(targetUserId);
@@ -191,7 +195,7 @@ export function ProfilePage({
             setRequestId(followResult.requestId);
           }
           break;
-        
+
         case 'unfollow':
           if (window.confirm('Are you sure you want to unfollow this user?')) {
             await networkApi.unfollowUser(targetUserId);
@@ -206,7 +210,7 @@ export function ProfilePage({
             }
           }
           break;
-        
+
         case 'cancel_request':
           if (requestId) {
             await networkApi.cancelFollowRequest(requestId);
@@ -215,7 +219,7 @@ export function ProfilePage({
           setRequestId(null);
           break;
       }
-      
+
       // Reload profile to update counts
       await loadProfileData();
     } catch (error: any) {
@@ -254,7 +258,7 @@ export function ProfilePage({
             Unfollow
           </button>
         );
-      
+
       case 'FOLLOWED_BY':
         return (
           <button
@@ -266,7 +270,7 @@ export function ProfilePage({
             Follow Back
           </button>
         );
-      
+
       case 'MUTUAL':
         return (
           <button
@@ -278,7 +282,7 @@ export function ProfilePage({
             Unfollow
           </button>
         );
-      
+
       case 'PENDING':
         return (
           <button
@@ -290,7 +294,7 @@ export function ProfilePage({
             Pending
           </button>
         );
-      
+
       case 'NONE':
       default:
         return (
@@ -386,7 +390,7 @@ export function ProfilePage({
             (p: any) =>
               (p.title && p.title.toLowerCase().includes(q)) ||
               (p.content && p.content.toLowerCase().includes(q))
-            )
+          )
           : []
       );
       setDiscussions((prev = []) =>
@@ -395,7 +399,7 @@ export function ProfilePage({
             (d: any) =>
               (d.title && d.title.toLowerCase().includes(q)) ||
               (d.description && d.description.toLowerCase().includes(q))
-            )
+          )
           : []
       );
     }
@@ -442,9 +446,9 @@ export function ProfilePage({
       fileType,
       tags: newCert.tags
         ? newCert.tags
-            .split(",")
-            .map((t) => t.trim())
-            .filter((t) => t)
+          .split(",")
+          .map((t) => t.trim())
+          .filter((t) => t)
         : [],
     };
 
@@ -517,7 +521,7 @@ export function ProfilePage({
           isOwnProfile={isOwnProfile}
           onEditProfile={handleEditProfile}
           onPhotoUpdate={handlePhotoUpdate}
-          connectionStatus={followStatus}
+          connectionStatus={(['NONE', 'PENDING', 'CONNECTED', 'REQUEST_SENT'].includes(followStatus) ? followStatus : 'CONNECTED') as 'NONE' | 'PENDING' | 'CONNECTED' | 'REQUEST_SENT'}
         />
 
         {/* Follow Button Section */}
@@ -533,6 +537,8 @@ export function ProfilePage({
             followingCount={profile?.followingCount ?? 0}
             postCount={posts.length}
             discussionCount={discussions.length}
+            onFollowersClick={() => onNavigateToNetwork?.('followers')}
+            onFollowingClick={() => onNavigateToNetwork?.('following')}
           />
         </div>
 
@@ -585,6 +591,24 @@ export function ProfilePage({
         </div>
 
         <div className="mt-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <FileText className="w-5 h-5 text-constitution-gold" />
+              <h2 className="font-heading font-bold text-judge-ivory">
+                Activity & Contributions
+              </h2>
+            </div>
+            {isOwnProfile && (
+              <button
+                onClick={onNavigateToFeed}
+                className="flex items-center gap-1 px-3 py-1.5 bg-constitution-gold text-justice-black rounded-lg font-medium text-sm hover:bg-constitution-gold/90"
+                type="button"
+              >
+                <Plus className="w-4 h-4" />
+                New Post
+              </button>
+            )}
+          </div>
           <ProfileTabs
             posts={posts}
             discussions={discussions}
@@ -600,6 +624,7 @@ export function ProfilePage({
             onDiscussionClick={(discussionId) => {
               if (onNavigateToDiscussion) onNavigateToDiscussion(discussionId);
             }}
+            onFollowingDiscussionsClick={onNavigateToFollowingDiscussions}
           />
         </div>
       </div>

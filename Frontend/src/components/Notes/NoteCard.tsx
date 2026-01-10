@@ -55,7 +55,7 @@ const NoteCard: React.FC<NoteCardProps> = ({
 
     try {
       const original = scrollRef.current;
-      
+
       // Create a clean version for PDF - simpler approach
       const pdfContainer = document.createElement('div');
       pdfContainer.style.position = 'fixed';
@@ -69,7 +69,7 @@ const NoteCard: React.FC<NoteCardProps> = ({
       pdfContainer.style.border = '2px solid #8b4513';
       pdfContainer.style.borderRadius = '0';
       pdfContainer.style.boxShadow = '0 8px 32px rgba(101, 67, 33, 0.3)';
-      
+
       // Add title
       const title = document.createElement('h1');
       title.textContent = note.title;
@@ -80,19 +80,19 @@ const NoteCard: React.FC<NoteCardProps> = ({
       title.style.paddingBottom = '1.5rem';
       title.style.borderBottom = '2px solid rgba(139, 69, 19, 0.2)';
       pdfContainer.appendChild(title);
-      
+
       // Add content
       const content = document.createElement('div');
       content.innerHTML = note.content.split('\n').map(line => `<p style="margin-bottom: 1rem; line-height: 1.8; text-align: justify;">${line}</p>`).join('');
       pdfContainer.appendChild(content);
-      
+
       // Add divider
       const divider = document.createElement('div');
       divider.style.margin = '3rem 0';
       divider.style.height = '1px';
       divider.style.background = 'linear-gradient(to right, transparent 10%, rgba(139, 69, 19, 0.4) 50%, transparent 90%)';
       pdfContainer.appendChild(divider);
-      
+
       // Add timestamp
       const timestamp = document.createElement('div');
       timestamp.textContent = `Recorded: ${formatDate(note.updatedAt)}`;
@@ -102,13 +102,13 @@ const NoteCard: React.FC<NoteCardProps> = ({
       timestamp.style.fontStyle = 'italic';
       timestamp.style.marginTop = '2rem';
       pdfContainer.appendChild(timestamp);
-      
+
       document.body.appendChild(pdfContainer);
-      
+
       // Calculate height based on content
       await new Promise(resolve => setTimeout(resolve, 100));
       const contentHeight = pdfContainer.scrollHeight;
-      
+
       const canvas = await html2canvas(pdfContainer, {
         scale: 2,
         backgroundColor: '#f5e6c8',
@@ -119,9 +119,9 @@ const NoteCard: React.FC<NoteCardProps> = ({
         windowWidth: 600,
         windowHeight: contentHeight,
       });
-      
+
       document.body.removeChild(pdfContainer);
-      
+
       const imgData = canvas.toDataURL('image/png');
 
       const pdf = new jsPDF({
@@ -132,20 +132,20 @@ const NoteCard: React.FC<NoteCardProps> = ({
 
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
-      
+
       // Calculate image dimensions
       const imgWidth = pageWidth;
       const imgHeight = (canvas.height * pageWidth) / canvas.width;
-      
+
       // Handle multi-page content
       let heightLeft = imgHeight;
       let position = 0;
       const pagePadding = 40; // Padding for better appearance
-      
+
       // Add first page
       pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
       heightLeft -= pageHeight;
-      
+
       // Add additional pages if needed
       while (heightLeft >= 0) {
         position = heightLeft - imgHeight;
@@ -153,7 +153,7 @@ const NoteCard: React.FC<NoteCardProps> = ({
         pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
         heightLeft -= pageHeight;
       }
-      
+
       pdf.save(`${note.title.replace(/\s+/g, '_')}.pdf`);
       onExportPDF(note);
     } catch (err) {
@@ -168,7 +168,7 @@ const NoteCard: React.FC<NoteCardProps> = ({
     <div className={`relative ${rotationClass}`}>
       {/* Glow effect from code 2 */}
       <div className="absolute inset-0 bg-constitution-gold/5 rounded-lg blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 -z-10"></div>
-      
+
       {/* Ancient Scroll Card with tape INSIDE it */}
       <div className={`ancient-scroll group ${contentHeightClass}`} ref={scrollRef}>
         {/* Golden Tape Effect - Positioned absolutely to .ancient-scroll */}
