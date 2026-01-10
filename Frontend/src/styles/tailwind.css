@@ -1,7 +1,7 @@
+@import url('https://fonts.googleapis.com/css2?family=Reenie+Beanie&display=swap');
 @import 'tailwindcss' source(none);
 @source '../**/*.{js,ts,jsx,tsx}';
 /* Add to your tailwind.css or index.css */
-@import url('https://fonts.googleapis.com/css2?family=Reenie+Beanie&display=swap');
 
 /* Custom utilities */
 .line-clamp-2 {

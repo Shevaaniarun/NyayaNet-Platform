@@ -11,8 +11,8 @@ import { DiscussionsPage } from './pages/DiscussionPage';
 import RegisterPage from "./pages/RegisterPage";
 import LoginPage from "./pages/LoginPage";
 import { ProfilePage } from './pages/ProfilePage';
-import  NotesPage  from './pages/NotesPage';
-import NotificationsPage from './pages/NotificationsPage'; 
+import NotesPage from './pages/NotesPage';
+import NotificationsPage from './pages/NotificationsPage';
 import { getFeed, Post as ApiPost } from './api/postsAPI';
 import { toast } from 'react-toastify';
 import { NetworkPage } from './pages/NetworkPage';
@@ -48,35 +48,33 @@ const getCurrentUser = () => {
     }
 };
 
-// Fixed type adapter based on actual API response
 const adaptPost = (apiPost: ApiPost): PostComponentType => ({
     id: apiPost.id,
     userId: apiPost.userId,
     author: {
         fullName: apiPost.author?.fullName || 'Unknown User',
         profilePhotoUrl: apiPost.author?.profilePhotoUrl || '',
-        // Use default values since API doesn't provide role and organization
-        role: 'Legal Professional', // Default value
+        role: 'Legal Professional',
         designation: apiPost.author?.designation || '',
-        organization: apiPost.author?.organization || '' // Default value
+        organization: apiPost.author?.organization || ''
     },
-    postType:  apiPost.postType || 'POST',
-    content: apiPost. content,
-    createdAt:  new Date(apiPost.createdAt).toLocaleDateString(),
-    likeCount: apiPost. likeCount || 0,
+    postType: apiPost.postType || 'POST',
+    content: apiPost.content,
+    createdAt: new Date(apiPost.createdAt).toLocaleDateString(),
+    likeCount: apiPost.likeCount || 0,
     commentCount: apiPost.commentCount || 0,
     tags: apiPost.tags || [],
     isLiked: apiPost.isLiked,
     isSaved: apiPost.isSaved,
-    media: apiPost.media?. map(m => ({
+    media: apiPost.media?.map(m => ({
         id: m.id,
         url: m.mediaUrl,
-        type: m. mediaType
+        type: m.mediaType
     }))
 });
 
 const mapCaseStatus = (status: string): CaseItemComponentType['caseStatus'] => {
-    const statusMap:  Record<string, CaseItemComponentType['caseStatus']> = {
+    const statusMap: Record<string, CaseItemComponentType['caseStatus']> = {
         'active': 'active',
         'closed': 'closed',
         'hearing_scheduled': 'hearing_scheduled',
@@ -94,29 +92,22 @@ export default function App() {
     const [cases] = useState<CaseItemComponentType[]>([]);
     const [pendingConnectionCount, setPendingConnectionCount] = useState(0);
 
-    // Initialize auth state properly
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [authView, setAuthView] = useState<"register" | "login">("register");
     const [currentView, setCurrentView] = useState<ViewType>('dashboard');
-
-    // State for viewing another user's profile
     const [selectedProfileUserId, setSelectedProfileUserId] = useState<string | null>(null);
+    const [networkInitialTab, setNetworkInitialTab] = useState<'followers' | 'following' | undefined>(undefined);
+    const [discussionsShowFollowing, setDiscussionsShowFollowing] = useState(false);
 
-    // Get current user
     const currentUser = getCurrentUser();
 
-    // Function to load pending connection count
     const loadPendingConnectionCount = async () => {
         if (!isAuthenticated || !currentUser?.id) return;
-        
         try {
-            // Use the network API call
             // const pendingRequests = await networkApi.getPendingConnectionRequests();
-            // console.log('Pending requests from API:', pendingRequests);
             // setPendingConnectionCount(pendingRequests.length || 0);
         } catch (error) {
             console.error('Failed to load connection requests:', error);
-            // Fallback to mock data for development
             const mockCount = Math.floor(Math.random() * 5);
             setPendingConnectionCount(mockCount);
         }
@@ -135,12 +126,11 @@ export default function App() {
 
         const timer = setTimeout(() => {
             setIsLoading(false);
-        }, 1500); // Reduced from 4500ms for better UX
+        }, 1500);
 
         return () => clearTimeout(timer);
     }, []);
 
-    // Handle browser back/forward buttons
     useEffect(() => {
         const handlePopState = (event: PopStateEvent) => {
             if (event.state?.view) {
@@ -153,7 +143,6 @@ export default function App() {
 
         window.addEventListener('popstate', handlePopState);
 
-        // Set initial state
         if (!window.history.state?.view) {
             window.history.replaceState({ view: currentView }, '', `/${currentView === 'dashboard' ? '' : currentView}`);
         }
@@ -192,14 +181,13 @@ export default function App() {
 
     const refreshPosts = async () => {
         if (!isAuthenticated) return;
-
         try {
             setIsLoadingPosts(true);
             const postsData = await getFeed(1, 10);
-            setPosts(postsData. posts. map(adaptPost));
+            setPosts(postsData.posts.map(adaptPost));
         } catch (error) {
             console.error('Failed to refresh posts:', error);
-            toast. error('Failed to refresh posts');
+            toast.error('Failed to refresh posts');
         } finally {
             setIsLoadingPosts(false);
         }
@@ -233,19 +221,26 @@ export default function App() {
             '/discussions': 'discussions',
             '/profile': 'profile',
             '/notes': 'notes',
-            '/notifications': 'notifications', 
+            '/notifications': 'notifications',
             '/connection-requests': 'connectionRequests',
+            '/connectionRequests': 'connectionRequests',
         };
 
         const newView = viewMap[path] || 'dashboard';
         setCurrentView(newView);
 
-        // Clear profile user selection on navigation
         if (newView !== 'profile') {
             setSelectedProfileUserId(null);
         }
 
-        // Push to browser history for back button support
+        if (newView !== 'connectionRequests') {
+            setNetworkInitialTab(undefined);
+        }
+
+        if (newView !== 'discussions') {
+            setDiscussionsShowFollowing(false);
+        }
+
         if (pushToHistory) {
             window.history.pushState({ view: newView }, '', path);
         }
@@ -255,19 +250,26 @@ export default function App() {
         }
     };
 
-    // Helper to navigate with history
     const navigateTo = (view: ViewType) => {
-        const path = view === 'dashboard' ? '/' : `/${view}`;
-        handleNavigation(path, true);
+        const pathMap: Record<ViewType, string> = {
+            'dashboard': '/',
+            'feed': '/feed',
+            'cases': '/cases',
+            'ai': '/ai',
+            'discussions': '/discussions',
+            'profile': '/profile',
+            'notes': '/notes',
+            'notifications': '/notifications',
+            'connectionRequests': '/connectionRequests'
+        };
+        handleNavigation(pathMap[view]);
     };
 
-    // Author click handler for PostCard
     const handlePostAuthorClick = (userId: string) => {
         setSelectedProfileUserId(userId);
         navigateTo('profile');
     };
 
-    // Handle refresh of connection count
     const handleRefreshConnectionCount = () => {
         loadPendingConnectionCount();
     };
@@ -291,7 +293,7 @@ export default function App() {
         <div className="flex min-h-screen bg-justice-black">
             <MobileNotice />
             <Sidebar
-                currentPath={currentView === 'dashboard' ? '/' :  `/${currentView}`}
+                currentPath={currentView === 'dashboard' ? '/' : `/${currentView}`}
                 onNavigate={handleNavigation}
                 pendingConnectionCount={pendingConnectionCount}
             />
@@ -433,7 +435,7 @@ export default function App() {
                                 ) : posts.length > 0 ? (
                                     posts.map((post) => (
                                         <PostCard
-                                            key={post. id}
+                                            key={post.id}
                                             post={post}
                                             currentUserId={currentUser?.id}
                                             onDelete={(id) => setPosts(prev => prev.filter(p => p.id !== id))}
@@ -491,13 +493,14 @@ export default function App() {
                 )}
 
                 {currentView === 'ai' && <AIAssistant />}
-                {currentView === 'discussions' && <DiscussionsPage />}
+                {currentView === 'discussions' && <DiscussionsPage initialFollowing={discussionsShowFollowing} />}
                 {currentView === 'notes' && <NotesPage />}
                 {currentView === 'notifications' && <NotificationsPage />}
                 {currentView === 'connectionRequests' && (
-                    <NetworkPage 
+                    <NetworkPage
                         onBack={() => navigateTo('dashboard')}
                         currentUserId={currentUser?.id}
+                        initialTab={networkInitialTab}
                     />
                 )}
 
@@ -509,6 +512,14 @@ export default function App() {
                         onBack={() => navigateTo('dashboard')}
                         onNavigateToFeed={() => navigateTo('feed')}
                         onNavigateToDiscussion={(discussionId) => {
+                            navigateTo('discussions');
+                        }}
+                        onNavigateToNetwork={(tab) => {
+                            setNetworkInitialTab(tab);
+                            navigateTo('connectionRequests');
+                        }}
+                        onNavigateToFollowingDiscussions={() => {
+                            setDiscussionsShowFollowing(true);
                             navigateTo('discussions');
                         }}
                     />

@@ -266,14 +266,14 @@ export function PostCard({ post, currentUserId, onDelete, onAuthorClick }: PostC
         <div className="absolute top-3 right-3 w-6 h-6 border-t border-r border-constitution-gold opacity-30"></div>
 
         {/* Author Section */}
-        <div 
+        <div
           className={`flex items-center mb-6 pb-4 border-b border-constitution-gold/20 ${onAuthorClick ? 'cursor-pointer hover:bg-constitution-gold/5 rounded-lg p-2 transition-colors' : ''}`}
           onClick={handleAuthorClick}
         >
           <div className="relative">
             <div className="w-12 h-12 rounded-full border-2 border-constitution-gold overflow-hidden bg-parchment-cream">
               <img
-                src={post.author.profilePhotoUrl || 'https://via.placeholder.com/150'}
+                src={post.author.profilePhotoUrl || 'https://placehold.co/150'}
                 alt={post.author.fullName}
                 className="w-full h-full object-cover"
               />

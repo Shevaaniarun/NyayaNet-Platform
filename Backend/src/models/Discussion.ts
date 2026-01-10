@@ -136,133 +136,6 @@ export class DiscussionModel {
     }
   }
 
-  // Get discussions with filters
-  static async findAll(filters: any, userId?: string): Promise<{ discussions: any[], total: number }> {
-    const {
-      page = 1,
-      limit = 20,
-      category,
-      type,
-      tags,
-      status,
-      sort = 'newest',
-      following = false,
-      q
-    } = filters;
-
-    const offset = (page - 1) * limit;
-
-    // Build common filter conditions
-    let baseConditions = ['d.is_public = true'];
-    const commonParams: any[] = [];
-    let pIdx = 1;
-
-    if (q) {
-      baseConditions.push(`(
-        d.title ILIKE $${pIdx} OR 
-        d.description ILIKE $${pIdx} OR 
-        EXISTS(
-          SELECT 1 FROM users u 
-          WHERE u.id = d.user_id AND u.full_name ILIKE $${pIdx}
-        ) OR
-        EXISTS(
-          SELECT 1 FROM unnest(d.tags) AS t 
-          WHERE t ILIKE $${pIdx} OR ('#' || t) ILIKE $${pIdx}
-        )
-      )`);
-      commonParams.push(`%${q}%`);
-      pIdx++;
-    }
-
-    if (category) {
-      baseConditions.push(`d.category = $${pIdx}`);
-      commonParams.push(category);
-      pIdx++;
-    }
-
-    if (type) {
-      baseConditions.push(`d.discussion_type = $${pIdx}`);
-      commonParams.push(type);
-      pIdx++;
-    }
-
-    if (tags && (Array.isArray(tags) ? tags.length > 0 : !!tags)) {
-      const tagsArray = this.normalizeTags(tags);
-      baseConditions.push(`EXISTS (
-        SELECT 1 FROM unnest(d.tags) AS t 
-        WHERE UPPER(t) = ANY($${pIdx}::text[])
-      )`);
-      commonParams.push(tagsArray);
-      pIdx++;
-    }
-
-    if (status === 'resolved') {
-      baseConditions.push('d.is_resolved = true');
-    } else if (status === 'active') {
-      baseConditions.push('d.is_resolved = false');
-    }
-
-    if (following && userId) {
-      baseConditions.push(`EXISTS(
-        SELECT 1 FROM discussion_followers df 
-        WHERE df.discussion_id = d.id AND df.user_id = $${pIdx}
-      )`);
-      commonParams.push(userId);
-      pIdx++;
-    }
-
-    const whereClause = baseConditions.length > 0 ? `WHERE ${baseConditions.join(' AND ')}` : '';
-
-    // 1. Get total count
-    const countQuery = `SELECT COUNT(*) as total FROM discussions d ${whereClause}`;
-    const countResult = await pool.query(countQuery, commonParams);
-    const total = parseInt(countResult.rows[0].total);
-
-    // 2. Build sort clause
-    let sortClause = 'd.created_at DESC';
-    switch (sort) {
-      case 'active':
-        sortClause = 'd.reply_count DESC';
-        break;
-      case 'popular':
-        sortClause = 'd.view_count DESC';
-        break;
-      case 'upvoted':
-        sortClause = 'd.upvote_count DESC';
-        break;
-    }
-
-    // 3. Get paginated results
-    const finalParams = [...commonParams];
-    const limitIdx = finalParams.length + 1;
-    const offsetIdx = finalParams.length + 2;
-    const userIdx = finalParams.length + 3;
-    finalParams.push(limit, offset, userId || null);
-
-    const query = `
-      SELECT 
-        d.*,
-        u.full_name as author_name,
-        u.role as author_role,
-        u.profile_photo_url as author_photo,
-        CASE WHEN $${userIdx}::uuid IS NULL THEN false ELSE EXISTS(SELECT 1 FROM discussion_followers df WHERE df.discussion_id = d.id AND df.user_id = $${userIdx}) END as is_following,
-        CASE WHEN $${userIdx}::uuid IS NULL THEN false ELSE EXISTS(SELECT 1 FROM user_bookmarks ub WHERE ub.entity_type = 'DISCUSSION' AND ub.entity_id = d.id AND ub.user_id = $${userIdx}) END as is_saved,
-        CASE WHEN $${userIdx}::uuid IS NULL THEN false ELSE EXISTS(SELECT 1 FROM discussion_upvotes du WHERE du.discussion_id = d.id AND du.user_id = $${userIdx}) END as is_upvoted
-      FROM discussions d
-      LEFT JOIN users u ON d.user_id = u.id
-      ${whereClause}
-      ORDER BY ${sortClause}
-      LIMIT $${limitIdx} OFFSET $${offsetIdx};
-    `;
-
-    const result = await pool.query(query, finalParams);
-
-    return {
-      discussions: result.rows,
-      total
-    };
-  }
-
   // Update discussion
   static async update(id: string, updates: Partial<Discussion>, userId: string): Promise<Discussion | null> {
     const allowedUpdates = ['title', 'description', 'tags', 'is_public', 'is_resolved'];
@@ -327,7 +200,7 @@ export class DiscussionModel {
       UPDATE discussions 
       SET best_answer_id = $1, is_resolved = true, updated_at = CURRENT_TIMESTAMP
       WHERE id = $2
-      RETURNING *;
+        RETURNING *;
     `;
 
     const result = await pool.query(query, [replyId, discussionId]);
@@ -431,17 +304,17 @@ export class DiscussionModel {
 
     if (q) {
       baseConditions.push(`(
-        d.title ILIKE $${pIdx} OR 
+          d.title ILIKE $${pIdx} OR 
         d.description ILIKE $${pIdx} OR 
         EXISTS(
-          SELECT 1 FROM users u 
+            SELECT 1 FROM users u 
           WHERE u.id = d.user_id AND u.full_name ILIKE $${pIdx}
-        ) OR
+          ) OR
         EXISTS(
-          SELECT 1 FROM unnest(d.tags) AS t 
-          WHERE t ILIKE $${pIdx} OR ('#' || t) ILIKE $${pIdx}
-        )
-      )`);
+            SELECT 1 FROM unnest(d.tags) AS t 
+          WHERE t ILIKE $${pIdx} OR('#' || t) ILIKE $${pIdx}
+          )
+        )`);
       commonParams.push(`%${q}%`);
       pIdx++;
     }
@@ -460,19 +333,19 @@ export class DiscussionModel {
 
     if (tags && (Array.isArray(tags) ? tags.length > 0 : !!tags)) {
       const tagsArray = this.normalizeTags(tags);
-      baseConditions.push(`EXISTS (
-        SELECT 1 FROM unnest(d.tags) AS t 
+      baseConditions.push(`EXISTS(
+          SELECT 1 FROM unnest(d.tags) AS t 
         WHERE UPPER(t) = ANY($${pIdx}::text[])
-      )`);
+        )`);
       commonParams.push(tagsArray);
       pIdx++;
     }
 
     if (author) {
       baseConditions.push(`EXISTS(
-        SELECT 1 FROM users u 
+          SELECT 1 FROM users u 
         WHERE u.id = d.user_id AND u.full_name ILIKE $${pIdx}
-      )`);
+        )`);
       commonParams.push(`%${author}%`);
       pIdx++;
     }
@@ -505,13 +378,13 @@ export class DiscussionModel {
       case 'relevance':
         if (q) {
           orderBy = `
-            CASE 
+        CASE 
               WHEN d.title ILIKE $1 THEN 1
               WHEN d.description ILIKE $1 THEN 2
               ELSE 3
-            END,
-            d.reply_count DESC
-          `;
+        END,
+          d.reply_count DESC
+            `;
         }
         break;
     }
@@ -524,29 +397,29 @@ export class DiscussionModel {
     finalParams.push(limit, offset, userId || null);
 
     const query = `
-      SELECT 
+        SELECT
         d.id,
-        d.title,
-        d.description,
-        d.discussion_type,
-        d.category,
-        d.tags,
-        d.reply_count,
-        d.upvote_count,
-        d.view_count,
-        d.is_resolved,
-        d.created_at,
-        d.last_activity_at,
-        u.full_name as author_name,
-        u.profile_photo_url as author_photo,
-        CASE WHEN $${userIdx}::uuid IS NULL THEN false ELSE EXISTS(SELECT 1 FROM discussion_followers df WHERE df.discussion_id = d.id AND df.user_id = $${userIdx}) END as is_following,
-        CASE WHEN $${userIdx}::uuid IS NULL THEN false ELSE EXISTS(SELECT 1 FROM discussion_upvotes du WHERE du.discussion_id = d.id AND du.user_id = $${userIdx}) END as is_upvoted
+          d.title,
+          d.description,
+          d.discussion_type,
+          d.category,
+          d.tags,
+          d.reply_count,
+          d.upvote_count,
+          d.view_count,
+          d.is_resolved,
+          d.created_at,
+          d.last_activity_at,
+          u.full_name as author_name,
+          u.profile_photo_url as author_photo,
+          CASE WHEN $${userIdx}::uuid IS NULL THEN false ELSE EXISTS(SELECT 1 FROM discussion_followers df WHERE df.discussion_id = d.id AND df.user_id = $${userIdx}) END as is_following,
+            CASE WHEN $${userIdx}::uuid IS NULL THEN false ELSE EXISTS(SELECT 1 FROM discussion_upvotes du WHERE du.discussion_id = d.id AND du.user_id = $${userIdx}) END as is_upvoted
       FROM discussions d
       LEFT JOIN users u ON d.user_id = u.id
       ${whereClause}
       ORDER BY ${orderBy}
       LIMIT $${limitIdx} OFFSET $${offsetIdx};
-    `;
+        `;
 
     const result = await pool.query(query, finalParams);
 
