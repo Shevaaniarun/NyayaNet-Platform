@@ -17,6 +17,7 @@ import { getFeed, Post as ApiPost } from './api/postsAPI';
 import { toast } from 'react-toastify';
 import { NetworkPage } from './pages/NetworkPage';
 import * as networkApi from './api/networkAPI';
+import { Toaster } from "react-hot-toast";
 
 type ViewType =
     | 'feed'
