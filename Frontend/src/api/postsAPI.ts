@@ -254,7 +254,7 @@ export async function deleteComment(commentId: string): Promise<void> {
 
 export async function getComments(postId: string, page = 1, limit = 50): Promise<Comment[]> {
     const params = new URLSearchParams({ page: page.toString(), limit: limit.toString() });
-    const response = await fetch(`${API_BASE_URL}/posts/${postId}/comments?${params}`, {
+    const response = await fetch(`${API_BASE_URL}/posts/${postId}/comments`, {
         headers: createHeaders()
     });
 
