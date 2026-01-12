@@ -179,3 +179,25 @@ export async function bulkDeleteNotifications(params: {
   const result = await response.json();
   return result.data;
 }
+
+export async function createPostLikeNotification(params: {
+  postOwnerId: string;
+  likerId: string;
+  likerName: string;
+  postId: string;
+  postTitle:  string;
+}): Promise<{ notificationId: string }> {
+  const response = await fetch(`${API_BASE_URL}/notifications/post-like`, {
+    method: 'POST',
+    headers: createHeaders(true),
+    body: JSON.stringify(params)
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Failed to create post like notification');
+  }
+
+  const result = await response.json();
+  return result.data;
+}
