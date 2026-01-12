@@ -6,7 +6,7 @@ import { AIAssistant } from './components/AIAssistant';
 import { JusticeLoader } from './components/JusticeLoader';
 import { CreatePost } from './components/CreatePost';
 import { MobileNotice } from './components/MobileNotice';
-import { Sparkles, TrendingUp, Gavel, Users, Bell, Construction } from 'lucide-react';
+import { Sparkles, TrendingUp, Gavel, Construction, Users, Bell } from 'lucide-react';
 import { DiscussionsPage } from './pages/DiscussionPage';
 import { PostsPage } from './pages/PostsPage';
 import RegisterPage from "./pages/RegisterPage";
@@ -27,8 +27,10 @@ type ViewType =
     | 'ai'
     | 'discussions'
     | 'profile'
-    | 'notes'
     | 'notifications'
+    | 'network'
+    | 'chat'
+    | 'library'
     | 'connectionRequests';
 
 const getCurrentUser = () => {
@@ -50,16 +52,17 @@ const getCurrentUser = () => {
     }
 };
 
-// Update the adaptPost function in App.tsx
+// Fixed type adapter based on actual API response
 const adaptPost = (apiPost: ApiPost): PostComponentType => ({
     id: apiPost.id,
     userId: apiPost.userId,
     author: {
         fullName: apiPost.author?.fullName || 'Unknown User',
         profilePhotoUrl: apiPost.author?.profilePhotoUrl || '',
-        role: 'Legal Professional',
+        // Use default values since API doesn't provide role and organization
+        role: 'Legal Professional', // Default value
         designation: apiPost.author?.designation || '',
-        organization: apiPost.author?.organization || ''
+        organization: apiPost.author?.organization || '' // Default value
     },
     postType:  apiPost.postType || 'POST',
     content: apiPost. content,
@@ -113,7 +116,7 @@ export default function App() {
     // Function to load pending connection count
     const loadPendingConnectionCount = async () => {
         if (!isAuthenticated || !currentUser?.id) return;
-        
+
         try {
             // Use the network API call
             // const pendingRequests = await networkApi.getPendingConnectionRequests();
@@ -239,6 +242,9 @@ export default function App() {
             '/profile': 'profile',
             '/notes': 'notes',
             '/notifications': 'notifications', 
+            '/network': 'network',
+            '/chat': 'chat',
+            '/library': 'library',
             '/connection-requests': 'connectionRequests',
         };
 
@@ -498,10 +504,9 @@ export default function App() {
                 {currentView === 'ai' && <AIAssistant />}
                 {currentView === 'discussions' && <DiscussionsPage />}
                 {currentView === 'notes' && <NotesPage />}
-                {currentView === 'notifications' && <NotificationsPage />}
-                {currentView === 'connectionRequests' && (
-                    <NetworkPage 
-                        onBack={() => navigateTo('dashboard')}
+                {(currentView === 'connectionRequests' || currentView === 'network') && (
+                    <NetworkPage
+                        onBack={() => setCurrentView('dashboard')}
                         currentUserId={currentUser?.id}
                     />
                 )}

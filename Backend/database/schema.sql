@@ -442,6 +442,7 @@ CREATE TABLE post_comments (
     content TEXT NOT NULL,
     comment_count INTEGER DEFAULT 0,
     is_edited BOOLEAN DEFAULT FALSE,
+    is_deleted BOOLEAN DEFAULT FALSE,
     
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import {
   Heart,
   MessageSquare,
@@ -14,10 +14,21 @@ import {
   FileText,
   ExternalLink,
   Link,
+  Eye,
+  Smile,
+  Zap,
+  Award,
+  ThumbsUp,
+  Lightbulb,
+  Info,
+  HelpCircle,
+  Edit2,
+  X,
   Image as ImageIcon
 } from 'lucide-react';
-import { likePost, savePost, createComment, deletePost } from '../api/postsAPI';
+import { likePost, savePost, createComment, getComments, deletePost, updatePost, uploadFiles } from '../api/postsAPI';
 import { toast } from 'react-toastify';
+import { CommentCard } from './Post/CommentCard';
 
 export interface Post {
   id: string;
@@ -30,6 +41,7 @@ export interface Post {
     organization: string;
   };
   postType: string;
+  title?: string;
   content: string;
   createdAt: string;
   likeCount: number;
@@ -67,11 +79,24 @@ export function PostCard({ post, currentUserId, onDelete, onAuthorClick }: PostC
   const [showMenu, setShowMenu] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  const [commentCount, setCommentCount] = useState(post.commentCount);
+
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  const docInputRef = useRef<HTMLInputElement>(null);
+
   const isOwner = currentUserId === post.userId;
 
   // Get current user initials for comment input
-  const userStr = localStorage.getItem('user');
-  const user = userStr ? JSON.parse(userStr) : null;
+  const fetchUser = () => {
+    try {
+      const userStr = localStorage.getItem('user');
+      return userStr ? JSON.parse(userStr) : null;
+    } catch {
+      return null;
+    }
+  };
+
+  const user = fetchUser();
   const userInitials = user?.fullName
     ? user.fullName.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)
     : 'U';
@@ -129,7 +154,6 @@ export function PostCard({ post, currentUserId, onDelete, onAuthorClick }: PostC
   const fetchComments = async () => {
     try {
       setIsLoadingComments(true);
-      const { getComments } = await import('../api/postsAPI');
       const data = await getComments(post.id);
       setComments(data as any);
     } catch (error) {
@@ -144,8 +168,9 @@ export function PostCard({ post, currentUserId, onDelete, onAuthorClick }: PostC
 
     try {
       const newComment = await createComment(post.id, commentText);
-      setComments([newComment as any, ...comments]);
+      setComments(prev => [newComment as any, ...prev]);
       setCommentText('');
+      setCommentCount(prev => prev + 1);
       toast.success('Comment added');
     } catch (error: any) {
       toast.error(error.message || 'Failed to add comment');
@@ -197,19 +222,14 @@ export function PostCard({ post, currentUserId, onDelete, onAuthorClick }: PostC
     }
   };
 
-  // Helper to render media
   const renderMedia = (media: any) => {
-    // Safely get the URL with multiple fallbacks
     const mediaUrl = media?.url || media?.mediaUrl || '';
-    // Safely get the mimeType with multiple fallbacks
     const mimeType = media?.mimeType || media?.mediaType || media?.type || '';
     const fileName = media?.fileName || '';
-    
-    // Check if it's an image using both mimeType and file extension
-    const isImage = mimeType.includes('image/') || 
+
+    const isImage = mimeType.includes('image/') ||
       (mediaUrl && mediaUrl.match(/\.(jpg|jpeg|png|gif|webp|svg|bmp|jfif)$/i));
-    
-    // Build the full URL - check if it's already a full URL or needs the base
+
     let fullMediaUrl = mediaUrl;
     if (mediaUrl && !mediaUrl.startsWith('http') && !mediaUrl.startsWith('data:')) {
       fullMediaUrl = `${ASSETS_BASE_URL}${mediaUrl}`;
@@ -227,7 +247,6 @@ export function PostCard({ post, currentUserId, onDelete, onAuthorClick }: PostC
             alt="Post media"
             className="w-full h-full object-cover"
             onError={(e) => {
-              // Show a placeholder when image fails to load
               (e.target as HTMLImageElement).style.display = 'none';
               const parent = (e.target as HTMLImageElement).parentElement;
               if (parent) {
@@ -248,7 +267,6 @@ export function PostCard({ post, currentUserId, onDelete, onAuthorClick }: PostC
       );
     }
 
-    // Document / PDF UI
     return (
       <div
         key={media.id}
@@ -275,7 +293,6 @@ export function PostCard({ post, currentUserId, onDelete, onAuthorClick }: PostC
     );
   };
 
-  // Fix: Display Post Type Badge
   const getPostTypeLabel = (type: string) => {
     switch (type) {
       case 'QUESTION': return 'Question';
@@ -296,17 +313,12 @@ export function PostCard({ post, currentUserId, onDelete, onAuthorClick }: PostC
 
   return (
     <div className="relative mb-8">
-      {/* Aged Paper Container */}
       <div className="aged-paper rounded-lg p-6 relative overflow-hidden">
-        {/* Top Border Decoration */}
         <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-constitution-gold to-transparent"></div>
-
-        {/* Corner Accents */}
         <div className="absolute top-3 left-3 w-6 h-6 border-t border-l border-constitution-gold opacity-30"></div>
         <div className="absolute top-3 right-3 w-6 h-6 border-t border-r border-constitution-gold opacity-30"></div>
 
-        {/* Author Section */}
-        <div 
+        <div
           className={`flex items-center mb-6 pb-4 border-b border-constitution-gold/20 ${onAuthorClick ? 'cursor-pointer hover:bg-constitution-gold/5 rounded-lg p-2 transition-colors' : ''}`}
           onClick={handleAuthorClick}
         >
@@ -321,7 +333,6 @@ export function PostCard({ post, currentUserId, onDelete, onAuthorClick }: PostC
                 }}
               />
             </div>
-            {/* Role Badge */}
             <div className="absolute -bottom-1 -right-1">
               <div className="w-6 h-6 bg-constitution-gold rounded-full border-2 border-parchment-cream flex items-center justify-center">
                 <Scale className="w-3 h-3 text-justice-black" />
@@ -349,30 +360,25 @@ export function PostCard({ post, currentUserId, onDelete, onAuthorClick }: PostC
           </div>
         </div>
 
-        {/* Post Content */}
         <div className="mb-6">
-          {/* Post Type Indicator */}
           <div className={`inline-flex items-center px-3 py-1 mb-4 border rounded-full ${getPostTypeColor(post.postType)}`}>
             <span className="tracking-wide uppercase font-bold" style={{ fontSize: '0.7rem' }}>
               {getPostTypeLabel(post.postType)}
             </span>
           </div>
 
-          {/* Content */}
           <div className="constitution-texture p-6 rounded">
             <p className="text-ink-gray leading-relaxed font-body whitespace-pre-wrap">
               {post.content}
             </p>
           </div>
 
-          {/* Media Attachments */}
           {post.media && post.media.length > 0 && (
             <div className="mt-4 flex flex-col gap-3">
               {post.media.map((media) => renderMedia(media))}
             </div>
           )}
 
-          {/* Tags */}
           {post.tags && post.tags.length > 0 && (
             <div className="mt-4 flex flex-wrap gap-2">
               {post.tags.map((tag) => (
@@ -388,7 +394,6 @@ export function PostCard({ post, currentUserId, onDelete, onAuthorClick }: PostC
           )}
         </div>
 
-        {/* Interaction Bar */}
         <div className="flex items-center justify-between pt-4 border-t border-constitution-gold/20">
           <div className="flex space-x-6">
             <button
@@ -403,7 +408,7 @@ export function PostCard({ post, currentUserId, onDelete, onAuthorClick }: PostC
               className={`flex items-center space-x-2 transition-colors ${showComments ? 'text-constitution-gold' : 'text-ink-gray/70 hover:text-constitution-gold'}`}
             >
               <MessageSquare className="w-5 h-5" />
-              <span className="font-bold">{post.commentCount + comments.length}</span>
+              <span className="font-bold">{commentCount}</span>
             </button>
             <button
               onClick={handleShare}
@@ -428,7 +433,6 @@ export function PostCard({ post, currentUserId, onDelete, onAuthorClick }: PostC
               {isDeleting ? <Loader2 className="w-5 h-5 animate-spin" /> : <MoreVertical className="w-5 h-5" />}
             </button>
 
-            {/* Dropdown Menu */}
             {showMenu && (
               <>
                 <div
@@ -475,7 +479,6 @@ export function PostCard({ post, currentUserId, onDelete, onAuthorClick }: PostC
           </div>
         </div>
 
-        {/* Comments Section */}
         {showComments && (
           <div className="mt-4 pt-4 border-t border-constitution-gold/20">
             {isLoadingComments ? (
@@ -484,54 +487,46 @@ export function PostCard({ post, currentUserId, onDelete, onAuthorClick }: PostC
               </div>
             ) : (
               <>
-                {/* Existing Comments */}
-                <div className="space-y-3 mb-4 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
-                  {comments.map((comment) => (
-                    <div key={comment.id} className="flex gap-3">
-                      <div className="w-8 h-8 bg-constitution-gold/20 rounded-full flex items-center justify-center flex-shrink-0">
-                        <span className="text-xs font-bold text-constitution-gold">
-                          {comment.author?.fullName?.charAt(0) || 'U'}
-                        </span>
-                      </div>
-                      <div className="flex-1 bg-constitution-gold/5 rounded-lg p-3">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="font-medium text-sm text-ink-gray">
-                            {comment.author?.fullName || 'Anonymous'}
-                          </span>
-                          <span className="text-xs text-ink-gray/50">
-                            {new Date(comment.createdAt).toLocaleDateString()}
-                          </span>
-                        </div>
-                        <p className="text-sm text-ink-gray/80">{comment.content}</p>
-                      </div>
-                    </div>
+                <div className="space-y-4 mb-6">
+                  {comments.map((comment: any) => (
+                    <CommentCard
+                      key={comment.id}
+                      comment={comment}
+                      postId={post.id}
+                      currentUserId={currentUserId}
+                      onCommentUpdated={fetchComments}
+                      onCommentDeleted={fetchComments}
+                    />
                   ))}
                   {comments.length === 0 && (
-                    <p className="text-center text-ink-gray/40 text-sm py-2">No comments yet. Be the first to share your thoughts!</p>
+                    <p className="text-center text-ink-gray/40 text-sm py-4 italic">
+                      No legal insights shared yet. Be the first to analyze this post.
+                    </p>
                   )}
                 </div>
 
-                {/* Comment Input */}
-                <div className="flex gap-3 mt-4">
-                  <div className="w-8 h-8 bg-constitution-gold rounded-full flex items-center justify-center flex-shrink-0">
-                    <span className="text-xs font-bold text-justice-black">{userInitials}</span>
+                <div className="flex gap-4 items-start bg-constitution-gold/5 p-4 rounded-xl border border-constitution-gold/10">
+                  <div className="w-10 h-10 bg-constitution-gold rounded-full flex items-center justify-center flex-shrink-0 shadow-md">
+                    <span className="text-sm font-bold text-justice-black">{userInitials}</span>
                   </div>
-                  <div className="flex-1 flex gap-2">
-                    <input
-                      type="text"
+                  <div className="flex-1 flex flex-col gap-3">
+                    <textarea
                       value={commentText}
                       onChange={(e) => setCommentText(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && submitComment()}
                       placeholder="Share your legal perspective..."
-                      className="flex-1 px-4 py-2 bg-white border border-constitution-gold/30 rounded-lg text-sm text-ink-gray focus:outline-none focus:border-constitution-gold transition-colors"
+                      className="w-full px-4 py-3 bg-white border border-constitution-gold/20 rounded-xl text-sm text-ink-gray focus:outline-none focus:border-constitution-gold transition-all shadow-inner resize-none"
+                      rows={2}
                     />
-                    <button
-                      onClick={submitComment}
-                      disabled={!commentText.trim()}
-                      className="px-4 py-2 bg-constitution-gold text-justice-black rounded-lg font-bold disabled:opacity-50 hover:bg-constitution-gold/90 transition-colors"
-                    >
-                      <Send className="w-4 h-4" />
-                    </button>
+                    <div className="flex justify-end">
+                      <button
+                        onClick={submitComment}
+                        disabled={!commentText.trim()}
+                        className="px-6 py-2 bg-constitution-gold text-justice-black rounded-lg font-bold disabled:opacity-50 hover:bg-constitution-gold/90 transition-all flex items-center gap-2 shadow-lg"
+                      >
+                        <Send className="w-4 h-4" />
+                        <span>Insight</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
               </>
@@ -540,8 +535,7 @@ export function PostCard({ post, currentUserId, onDelete, onAuthorClick }: PostC
         )}
       </div>
 
-      {/* Bottom Decorative Border */}
-      <div className="absolute -bottom-4 left-6 right-6 h-0.5 bg-gradient-to-r from-transparent via-constitution-gold/30 to-transparent"></div>
+      <div className="absolute -bottom-4 left-6 right-6 h-0.5 bg-gradient-to-r from-transparent via-constitution-gold/30 to-transparent" />
     </div>
   );
 }

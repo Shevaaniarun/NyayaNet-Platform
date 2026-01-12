@@ -432,7 +432,8 @@ export class PostModel {
           id: userId,
           fullName: user.full_name,
           profilePhotoUrl: user.profile_photo_url
-        }
+        },
+        replies: []
       };
     } catch (error) {
       await client.query('ROLLBACK');
