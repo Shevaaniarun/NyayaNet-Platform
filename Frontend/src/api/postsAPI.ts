@@ -58,7 +58,7 @@ export interface Comment {
 export interface Post {
     id: string;
     userId: string;
-    title: string | null;
+    title: string;
     content: string;
     postType: string;
     tags: string[];
