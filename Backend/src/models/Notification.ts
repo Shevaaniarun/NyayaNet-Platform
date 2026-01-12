@@ -256,4 +256,138 @@ export class NotificationModel {
     const result = await pool.query(query, params);
     return Promise.all(result.rows.map((row) => this.mapRowToResponse(row)));
   }
+
+  static async getNotificationStats(userId: string): Promise<{
+    totalNotifications: number;
+    unreadCount: number;
+    readCount: number;
+    countByType: Record<string, number>;
+    countByDay: Array<{ date: string; count: number }>;
+  }> {
+    const countQuery = `
+    SELECT 
+      COUNT(*) as total,
+      COUNT(*) FILTER (WHERE is_read = false) as unread,
+      COUNT(*) FILTER (WHERE is_read = true) as read
+    FROM notifications
+    WHERE user_id = $1
+  `;
+    const countResult = await pool.query(countQuery, [userId]);
+
+    const typeQuery = `
+    SELECT 
+      notification_type,
+      COUNT(*) as count
+    FROM notifications
+    WHERE user_id = $1
+    GROUP BY notification_type
+    ORDER BY count DESC
+  `;
+    const typeResult = await pool.query(typeQuery, [userId]);
+
+    const dayQuery = `
+    SELECT 
+      DATE(created_at) as date,
+      COUNT(*) as count
+    FROM notifications
+    WHERE user_id = $1 
+      AND created_at >= NOW() - INTERVAL '7 days'
+    GROUP BY DATE(created_at)
+    ORDER BY date DESC
+  `;
+    const dayResult = await pool.query(dayQuery, [userId]);
+
+    const countByType: Record<string, number> = {};
+    typeResult.rows.forEach((row) => {
+      countByType[row.notification_type] = parseInt(row.count);
+    });
+
+    const countByDay = dayResult.rows.map((row) => ({
+      date: row.date.toISOString().split("T")[0],
+      count: parseInt(row.count),
+    }));
+
+    return {
+      totalNotifications: parseInt(countResult.rows[0].total),
+      unreadCount: parseInt(countResult.rows[0].unread),
+      readCount: parseInt(countResult.rows[0].read),
+      countByType,
+      countByDay,
+    };
+  }
+
+  static async deleteNotification(
+    userId: string,
+    notificationId: string
+  ): Promise<void> {
+    const query = `
+    DELETE FROM notifications
+    WHERE id = $1 AND user_id = $2
+  `;
+    const result = await pool.query(query, [notificationId, userId]);
+
+    if (result.rowCount === 0) {
+      throw new Error("Notification not found or unauthorized");
+    }
+  }
+
+  static async bulkDeleteNotifications(
+    userId: string,
+    notificationIds?: string[],
+    deleteAllRead?: boolean,
+    deleteAllBefore?: Date
+  ): Promise<number> {
+    let query = "DELETE FROM notifications WHERE user_id = $1";
+    const params: any[] = [userId];
+    let paramIndex = 2;
+
+    if (notificationIds && notificationIds.length > 0) {
+      query += ` AND id = ANY($${paramIndex}::uuid[])`;
+      params.push(notificationIds);
+      paramIndex++;
+    } else if (deleteAllRead) {
+      query += " AND is_read = true";
+    } else if (deleteAllBefore) {
+      query += ` AND created_at < $${paramIndex}`;
+      params.push(deleteAllBefore);
+      paramIndex++;
+    }
+
+    const result = await pool.query(query, params);
+    return result.rowCount || 0;
+  }
+
+  // static async createNewFollowerNotification(
+  //   receiverId: string,
+  //   followerId: string,
+  //   followerName: string
+  // ): Promise<string> {
+  //   const query = `
+  //   INSERT INTO notifications (
+  //     user_id,
+  //     notification_type,
+  //     title,
+  //     message,
+  //     source_type,
+  //     source_id,
+  //     data,
+  //     is_read
+  //   ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+  //   RETURNING id
+  // `;
+
+  //   const values = [
+  //     receiverId,
+  //     "NEW_FOLLOWER",
+  //     "New Follower",
+  //     `${followerName} started following you`,
+  //     "USER",
+  //     followerId,
+  //     JSON.stringify({ userId: followerId }),
+  //     false,
+  //   ];
+
+  //   const result = await pool.query(query, values);
+  //   return result.rows[0].id;
+  // }
 }
