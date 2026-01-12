@@ -32,9 +32,11 @@ interface DiscussionCardProps {
   onFollow?: (e: React.MouseEvent) => void;
   onSave?: (e: React.MouseEvent) => void;
   onUpvote?: (e: React.MouseEvent) => void;
+  titleProps?: React.HTMLAttributes<HTMLHeadingElement>;
+  onAuthorClick?: (userId: string) => void; // ADDED
 }
 
-export function DiscussionCard({ discussion, onClick, onFollow, onSave, onUpvote }: DiscussionCardProps) {
+export function DiscussionCard({ discussion, onClick, onFollow, onSave, onUpvote, titleProps, onAuthorClick }: DiscussionCardProps) {
 
   const getTypeColor = (type: string) => {
     switch (type) {
@@ -88,7 +90,18 @@ export function DiscussionCard({ discussion, onClick, onFollow, onSave, onUpvote
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <p className="font-bold text-ink-gray text-sm hover:text-constitution-gold transition-colors">
+                <p
+                  className="font-bold text-ink-gray text-sm hover:text-constitution-gold transition-colors"
+                  onClick={
+                    onAuthorClick
+                      ? (e) => {
+                          e.stopPropagation();
+                          onAuthorClick(discussion.author.id);
+                        }
+                      : undefined
+                  }
+                  style={onAuthorClick ? { cursor: 'pointer' } : undefined}
+                >
                   {discussion.author.fullName}
                 </p>
                 <span className="w-1 h-1 bg-ink-gray/30 rounded-full"></span>
@@ -147,7 +160,16 @@ export function DiscussionCard({ discussion, onClick, onFollow, onSave, onUpvote
             )}
           </div>
 
-          <h3 className="font-heading font-bold text-ink-gray text-xl mb-2 line-clamp-2 leading-tight group-hover:text-constitution-gold transition-colors">
+          {/* 
+            The title h3 now spreads ...titleProps directly.
+            It does NOT assign its own onClick/stopPropagation -- that's now handled by the passed-in titleProps (see DiscussionsPage.tsx).
+            This prevents double stopPropagation/onClick calling.
+          */}
+          <h3
+            className={`font-heading font-bold text-ink-gray text-xl mb-2 line-clamp-2 leading-tight group-hover:text-constitution-gold transition-colors ${titleProps?.className ?? ''}`}
+            {...titleProps}
+            style={{ ...(titleProps?.style || {}) }}
+          >
             {discussion.title}
           </h3>
 

@@ -7,7 +7,6 @@ import {
   Users, 
   UserPlus, 
   UserCheck, 
-  UserX, 
   Clock, 
   User, 
   Check, 
@@ -25,22 +24,29 @@ interface NetworkPageProps {
   currentUserId?: string;
 }
 
-type TabType = 'connections' | 'followers' | 'following' | 'pending' | 'sent' | 'search';
+type TabType = 'followers' | 'following' | 'requests' | 'pending';
 
 interface UserCardProps {
   user: any;
-  connectionType: string;
-  onAction: (userId: string, action: string) => void;
+  tabType: TabType;
+  onAction: (userId: string, action: string, requestId?: string) => void;
   currentUserId?: string;
+  requestId?: string;
 }
 
-const UserCard: React.FC<UserCardProps> = ({ user, connectionType, onAction, currentUserId }) => {
+const UserCard: React.FC<UserCardProps> = ({ 
+  user, 
+  tabType, 
+  onAction, 
+  currentUserId,
+  requestId 
+}) => {
   const [isLoading, setIsLoading] = useState(false);
   
   const handleAction = async (action: string) => {
     setIsLoading(true);
     try {
-      await onAction(user.id, action);
+      await onAction(user.id, action, requestId);
     } finally {
       setIsLoading(false);
     }
@@ -49,49 +55,31 @@ const UserCard: React.FC<UserCardProps> = ({ user, connectionType, onAction, cur
   const getActionButton = () => {
     if (user.id === currentUserId) return null;
 
-    switch (connectionType) {
-      case 'connected':
-      case 'mutual':
-        return (
-          <button
-            onClick={() => handleAction('unfollow')}
-            className="px-3 py-1.5 border border-constitution-gold/30 text-constitution-gold rounded-lg text-sm hover:bg-constitution-gold/5 flex items-center gap-1"
-            disabled={isLoading}
-            type="button"
-          >
-            {isLoading ? (
-              <Loader2 className="w-3 h-3 animate-spin" />
-            ) : (
-              <>
-                <UserCheck className="w-3 h-3" />
-                Connected
-              </>
-            )}
-          </button>
-        );
-      
-      case 'following':
-        return (
-          <button
-            onClick={() => handleAction('unfollow')}
-            className="px-3 py-1.5 border border-constitution-gold/30 text-constitution-gold rounded-lg text-sm hover:bg-constitution-gold/5 flex items-center gap-1"
-            disabled={isLoading}
-            type="button"
-          >
-            {isLoading ? (
-              <Loader2 className="w-3 h-3 animate-spin" />
-            ) : (
-              <>
-                <UserCheck className="w-3 h-3" />
-                Following
-              </>
-            )}
-          </button>
-        );
-      
-      case 'follower':
-        return (
-          <div className="flex gap-2">
+    switch (tabType) {
+      case 'followers':
+        // People following me
+        if (user.isFollowingBack) {
+          // Mutual follow - show Unfollow
+          return (
+            <button
+              onClick={() => handleAction('unfollow')}
+              className="px-3 py-1.5 border border-constitution-gold/30 text-constitution-gold rounded-lg text-sm hover:bg-constitution-gold/5 flex items-center gap-1"
+              disabled={isLoading}
+              type="button"
+            >
+              {isLoading ? (
+                <Loader2 className="w-3 h-3 animate-spin" />
+              ) : (
+                <>
+                  <UserCheck className="w-3 h-3" />
+                  Unfollow
+                </>
+              )}
+            </button>
+          );
+        } else {
+          // They follow me, I don't follow back - show Follow Back
+          return (
             <button
               onClick={() => handleAction('follow')}
               className="px-3 py-1.5 bg-constitution-gold text-justice-black rounded-lg text-sm font-medium hover:bg-constitution-gold/90 flex items-center gap-1"
@@ -107,40 +95,86 @@ const UserCard: React.FC<UserCardProps> = ({ user, connectionType, onAction, cur
                 </>
               )}
             </button>
+          );
+        }
+
+      case 'following':
+        // People I'm following
+        if (user.isFollowedBy) {
+          // Mutual follow - show Unfollow
+          return (
             <button
-              onClick={() => handleAction('remove')}
+              onClick={() => handleAction('unfollow')}
+              className="px-3 py-1.5 border border-constitution-gold/30 text-constitution-gold rounded-lg text-sm hover:bg-constitution-gold/5 flex items-center gap-1"
+              disabled={isLoading}
+              type="button"
+            >
+              {isLoading ? (
+                <Loader2 className="w-3 h-3 animate-spin" />
+              ) : (
+                <>
+                  <UserCheck className="w-3 h-3" />
+                  Unfollow
+                </>
+              )}
+            </button>
+          );
+        } else {
+          // I follow them, they don't follow back - show Following
+          return (
+            <button
+              onClick={() => handleAction('unfollow')}
+              className="px-3 py-1.5 border border-constitution-gold/30 text-constitution-gold rounded-lg text-sm hover:bg-constitution-gold/5 flex items-center gap-1"
+              disabled={isLoading}
+              type="button"
+            >
+              {isLoading ? (
+                <Loader2 className="w-3 h-3 animate-spin" />
+              ) : (
+                <>
+                  <UserCheck className="w-3 h-3" />
+                  Following
+                </>
+              )}
+            </button>
+          );
+        }
+
+      case 'requests':
+        // People who sent me follow requests
+        return (
+          <div className="flex gap-2">
+            <button
+              onClick={() => handleAction('accept_request')}
+              className="px-3 py-1.5 bg-constitution-gold text-justice-black rounded-lg text-sm font-medium hover:bg-constitution-gold/90 flex items-center gap-1"
+              disabled={isLoading}
+              type="button"
+            >
+              {isLoading ? (
+                <Loader2 className="w-3 h-3 animate-spin" />
+              ) : (
+                <>
+                  <Check className="w-3 h-3" />
+                  Accept
+                </>
+              )}
+            </button>
+            <button
+              onClick={() => handleAction('reject_request')}
               className="px-3 py-1.5 border border-red-400/30 text-red-400 rounded-lg text-sm hover:bg-red-400/5"
               disabled={isLoading}
               type="button"
             >
-              {isLoading ? '...' : 'Remove'}
+              {isLoading ? '...' : 'Reject'}
             </button>
           </div>
         );
-      
-      case 'none':
+
+      case 'pending':
+        // My pending requests
         return (
           <button
-            onClick={() => handleAction('connect')}
-            className="px-3 py-1.5 bg-constitution-gold text-justice-black rounded-lg text-sm font-medium hover:bg-constitution-gold/90 flex items-center gap-1"
-            disabled={isLoading}
-            type="button"
-          >
-            {isLoading ? (
-              <Loader2 className="w-3 h-3 animate-spin" />
-            ) : (
-              <>
-                <UserPlus className="w-3 h-3" />
-                Connect
-              </>
-            )}
-          </button>
-        );
-      
-      case 'request_sent':
-        return (
-          <button
-            onClick={() => handleAction('cancel')}
+            onClick={() => handleAction('cancel_request')}
             className="px-3 py-1.5 border border-constitution-gold/30 text-constitution-gold rounded-lg text-sm hover:bg-constitution-gold/5 flex items-center gap-1"
             disabled={isLoading}
             type="button"
@@ -150,12 +184,12 @@ const UserCard: React.FC<UserCardProps> = ({ user, connectionType, onAction, cur
             ) : (
               <>
                 <Clock className="w-3 h-3" />
-                Request Sent
+                Pending
               </>
             )}
           </button>
         );
-      
+
       default:
         return null;
     }
@@ -221,50 +255,45 @@ const UserCard: React.FC<UserCardProps> = ({ user, connectionType, onAction, cur
 };
 
 export function NetworkPage({ onBack, currentUserId }: NetworkPageProps) {
-  const [activeTab, setActiveTab] = useState<TabType>('connections');
+  const [activeTab, setActiveTab] = useState<TabType>('followers');
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   
   // Data states
-  const [connections, setConnections] = useState<any[]>([]);
   const [followers, setFollowers] = useState<any[]>([]);
   const [following, setFollowing] = useState<any[]>([]);
-  const [pendingRequests, setPendingRequests] = useState<any[]>([]);
-  const [sentRequests, setSentRequests] = useState<any[]>([]);
+  const [requests, setRequests] = useState<any[]>([]);
+  const [pending, setPending] = useState<any[]>([]);
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [stats, setStats] = useState({
-    connections: 0,
     followers: 0,
     following: 0,
-    pendingRequests: 0,
-    sentRequests: 0
+    requests: 0,
+    pending: 0
   });
 
   const loadNetworkData = useCallback(async () => {
     setIsLoading(true);
     try {
       const [
-        connectionsData,
         followersData,
         followingData,
+        requestsData,
         pendingData,
-        sentData,
         statsData
       ] = await Promise.all([
-        networkApi.getConnections(),
         networkApi.getFollowers(),
         networkApi.getFollowing(),
-        networkApi.getPendingConnectionRequests(),
-        networkApi.getSentConnectionRequests(),
+        networkApi.getFollowRequests(),
+        networkApi.getPendingRequests(),
         networkApi.getNetworkStats()
       ]);
 
-      setConnections(connectionsData || []);
       setFollowers(followersData || []);
       setFollowing(followingData || []);
-      setPendingRequests(pendingData || []);
-      setSentRequests(sentData || []);
+      setRequests(requestsData || []);
+      setPending(pendingData || []);
       setStats(statsData || {});
     } catch (error) {
       console.error('Failed to load network data:', error);
@@ -275,13 +304,15 @@ export function NetworkPage({ onBack, currentUserId }: NetworkPageProps) {
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!searchQuery.trim()) return;
+    if (!searchQuery.trim()) {
+      setSearchResults([]);
+      return;
+    }
 
     setIsSearching(true);
     try {
       const result = await networkApi.searchUsers(searchQuery);
       setSearchResults(result.users || []);
-      setActiveTab('search');
     } catch (error) {
       console.error('Search failed:', error);
       setSearchResults([]);
@@ -290,58 +321,55 @@ export function NetworkPage({ onBack, currentUserId }: NetworkPageProps) {
     }
   };
 
-  const handleUserAction = async (userId: string, action: string) => {
+  const handleUserAction = async (userId: string, action: string, requestId?: string) => {
     try {
       switch (action) {
         case 'follow':
-          await networkApi.followUser(userId);
-          await loadNetworkData(); // Refresh data
+          await networkApi.sendFollowRequest(userId);
+          await loadNetworkData();
           break;
         
         case 'unfollow':
           if (window.confirm('Are you sure you want to unfollow this user?')) {
             await networkApi.unfollowUser(userId);
-            await loadNetworkData(); // Refresh data
+            await loadNetworkData();
           }
           break;
         
-        case 'connect':
-          await networkApi.sendConnectionRequest(userId);
-          await loadNetworkData(); // Refresh data
+        case 'accept_request':
+          if (requestId) {
+            await networkApi.acceptFollowRequest(requestId);
+          } else {
+            const request = requests.find(req => req.user?.id === userId);
+            if (request) {
+              await networkApi.acceptFollowRequest(request.id);
+            }
+          }
+          await loadNetworkData();
           break;
         
-        case 'cancel':
-          // Find the request ID
-          const sentRequest = sentRequests.find(req => req.user.id === userId);
-          if (sentRequest) {
-            await networkApi.cancelConnectionRequest(sentRequest.id);
-            await loadNetworkData(); // Refresh data
+        case 'reject_request':
+          if (requestId) {
+            await networkApi.rejectFollowRequest(requestId);
+          } else {
+            const request = requests.find(req => req.user?.id === userId);
+            if (request) {
+              await networkApi.rejectFollowRequest(request.id);
+            }
           }
+          await loadNetworkData();
           break;
         
-        case 'accept':
-          const pendingRequest = pendingRequests.find(req => req.user.id === userId);
-          if (pendingRequest) {
-            await networkApi.acceptConnectionRequest(pendingRequest.id);
-            await loadNetworkData(); // Refresh data
+        case 'cancel_request':
+          if (requestId) {
+            await networkApi.cancelFollowRequest(requestId);
+          } else {
+            const pendingRequest = pending.find(req => req.user?.id === userId);
+            if (pendingRequest) {
+              await networkApi.cancelFollowRequest(pendingRequest.id);
+            }
           }
-          break;
-        
-        case 'reject':
-          const pendingReq = pendingRequests.find(req => req.user.id === userId);
-          if (pendingReq) {
-            await networkApi.rejectConnectionRequest(pendingReq.id);
-            await loadNetworkData(); // Refresh data
-          }
-          break;
-        
-        case 'remove':
-          // This would be a custom endpoint to remove a follower
-          if (window.confirm('Are you sure you want to remove this follower?')) {
-            // Implement remove follower API call
-            console.log('Remove follower:', userId);
-            await loadNetworkData(); // Refresh data
-          }
+          await loadNetworkData();
           break;
       }
     } catch (error: any) {
@@ -353,31 +381,30 @@ export function NetworkPage({ onBack, currentUserId }: NetworkPageProps) {
   const getTabContent = () => {
     if (isLoading) return <JusticeLoader />;
 
+    // Show search results when there are search results
+    if (searchResults.length > 0) {
+      return renderSearchResults();
+    }
+
     switch (activeTab) {
-      case 'connections':
-        return renderUserList(connections, 'connected');
-      
       case 'followers':
-        return renderUserList(followers, 'follower');
+        return renderUserList(followers, 'followers');
       
       case 'following':
         return renderUserList(following, 'following');
       
+      case 'requests':
+        return renderRequestList(requests, 'requests');
+      
       case 'pending':
-        return renderRequestList(pendingRequests, 'pending');
-      
-      case 'sent':
-        return renderRequestList(sentRequests, 'sent');
-      
-      case 'search':
-        return renderSearchResults();
+        return renderRequestList(pending, 'pending');
       
       default:
         return null;
     }
   };
 
-  const renderUserList = (users: any[], connectionType: string) => {
+  const renderUserList = (users: any[], tabType: TabType) => {
     if (users.length === 0) {
       return (
         <div className="text-center py-12">
@@ -393,16 +420,17 @@ export function NetworkPage({ onBack, currentUserId }: NetworkPageProps) {
           <UserCard
             key={user.id}
             user={user}
-            connectionType={connectionType}
+            tabType={tabType}
             onAction={handleUserAction}
             currentUserId={currentUserId}
+            requestId={user.requestId}
           />
         ))}
       </div>
     );
   };
 
-  const renderRequestList = (requests: any[], type: 'pending' | 'sent') => {
+  const renderRequestList = (requests: any[], type: 'requests' | 'pending') => {
     if (requests.length === 0) {
       return (
         <div className="text-center py-12">
@@ -415,77 +443,31 @@ export function NetworkPage({ onBack, currentUserId }: NetworkPageProps) {
     return (
       <div className="space-y-4">
         {requests.map((request) => (
-          <div key={request.id} className="flex items-center justify-between p-4 border border-constitution-gold/10 rounded-lg">
-            <div className="flex items-center gap-4 flex-1">
-              <div className="flex-shrink-0">
-                {request.user?.profilePhotoUrl ? (
-                  <img
-                    src={request.user.profilePhotoUrl}
-                    alt={request.user.fullName}
-                    className="w-12 h-12 rounded-full object-cover border border-constitution-gold/30"
-                  />
-                ) : (
-                  <div className="w-12 h-12 rounded-full bg-constitution-gold/20 flex items-center justify-center border border-constitution-gold/30">
-                    <span className="text-constitution-gold font-semibold text-xl">
-                      {request.user?.fullName?.[0] || '?'}
-                    </span>
-                  </div>
-                )}
-              </div>
-              <div className="flex-1">
-                <h3 className="font-medium text-ink-gray">{request.user?.fullName}</h3>
-                <div className="text-sm text-ink-gray/60 space-y-1 mt-1">
-                  {request.user?.designation && <div>{request.user.designation}</div>}
-                  {request.user?.organization && <div>{request.user.organization}</div>}
-                </div>
-                {request.requestMessage && (
-                  <div className="mt-2 text-sm text-ink-gray/70 italic">
-                    "{request.requestMessage}"
-                  </div>
-                )}
-                <div className="mt-2 text-xs text-ink-gray/50">
-                  {type === 'pending' ? 'Received ' : 'Sent '}
-                  {new Date(request.requestedAt).toLocaleDateString()}
-                </div>
-              </div>
-            </div>
-            <div className="flex gap-2 ml-4">
-              {type === 'pending' ? (
-                <>
-                  <button
-                    onClick={() => handleUserAction(request.user.id, 'accept')}
-                    className="px-4 py-2 bg-constitution-gold text-justice-black rounded-lg font-medium hover:bg-constitution-gold/90 flex items-center gap-2"
-                    type="button"
-                  >
-                    <Check className="w-4 h-4" />Accept
-                  </button>
-                  <button
-                    onClick={() => handleUserAction(request.user.id, 'reject')}
-                    className="px-4 py-2 border border-constitution-gold/30 text-constitution-gold rounded-lg hover:bg-constitution-gold/5 flex items-center gap-2"
-                    type="button"
-                  >
-                    <X className="w-4 h-4" />Reject
-                  </button>
-                </>
-              ) : (
-                <button
-                  onClick={() => handleUserAction(request.user.id, 'cancel')}
-                  className="px-4 py-2 border border-constitution-gold/30 text-constitution-gold rounded-lg hover:bg-constitution-gold/5"
-                  type="button"
-                >
-                  Cancel Request
-                </button>
-              )}
-            </div>
-          </div>
+          <UserCard
+            key={request.id}
+            user={request.user}
+            tabType={type === 'requests' ? 'requests' : 'pending'}
+            onAction={handleUserAction}
+            currentUserId={currentUserId}
+            requestId={request.id}
+          />
         ))}
       </div>
     );
   };
 
   const renderSearchResults = () => {
-    if (isSearching) return <JusticeLoader />;
-    
+    if (isSearching) {
+      return (
+        <div className="text-center py-12">
+          <div className="flex justify-center">
+            <Loader2 className="w-8 h-8 text-constitution-gold animate-spin" />
+          </div>
+          <p className="text-ink-gray/60 mt-4">Searching...</p>
+        </div>
+      );
+    }
+
     if (searchResults.length === 0) {
       return (
         <div className="text-center py-12">
@@ -499,17 +481,19 @@ export function NetworkPage({ onBack, currentUserId }: NetworkPageProps) {
     return (
       <div className="space-y-4">
         {searchResults.map((user) => {
-          let connectionType = 'none';
-          if (user.connectionType === 'mutual') connectionType = 'connected';
-          else if (user.connectionType === 'following') connectionType = 'following';
-          else if (user.connectionType === 'follower') connectionType = 'follower';
-          else if (user.connectionType === 'request_sent') connectionType = 'request_sent';
+          // Determine the tab type based on user's follow status
+          let tabType: TabType = 'followers';
+          if (user.isFollowing && !user.isFollower) {
+            tabType = 'following';
+          } else if (user.hasPendingRequest) {
+            tabType = 'pending';
+          }
 
           return (
             <UserCard
               key={user.id}
               user={user}
-              connectionType={connectionType}
+              tabType={tabType}
               onAction={handleUserAction}
               currentUserId={currentUserId}
             />
@@ -524,11 +508,10 @@ export function NetworkPage({ onBack, currentUserId }: NetworkPageProps) {
   }, [loadNetworkData]);
 
   const tabs = [
-    { id: 'connections', label: 'Connections', icon: Users, count: stats.connections },
     { id: 'followers', label: 'Followers', icon: User, count: stats.followers },
     { id: 'following', label: 'Following', icon: UserCheck, count: stats.following },
-    { id: 'pending', label: 'Pending', icon: Clock, count: stats.pendingRequests },
-    { id: 'sent', label: 'Sent', icon: Mail, count: stats.sentRequests },
+    { id: 'requests', label: 'Requests', icon: Mail, count: stats.requests },
+    { id: 'pending', label: 'Pending', icon: Clock, count: stats.pending },
   ];
 
   return (
@@ -550,7 +533,7 @@ export function NetworkPage({ onBack, currentUserId }: NetworkPageProps) {
           <p className="text-ink-gray/60">Connect with legal professionals and build your network</p>
         </div>
 
-        {/* Search Bar */}
+        {/* Search Bar - Fixed font color to white */}
         <form onSubmit={handleSearch} className="mb-8">
           <div className="relative">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-ink-gray/50" />
@@ -559,7 +542,7 @@ export function NetworkPage({ onBack, currentUserId }: NetworkPageProps) {
               placeholder="Search for legal professionals..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-12 pr-24 py-3 bg-aged-paper border border-constitution-gold/20 rounded-lg text-ink-gray placeholder-ink-gray/50 focus:outline-none focus:border-constitution-gold/50"
+              className="w-full pl-12 pr-24 py-3 bg-aged-paper border border-constitution-gold/20 rounded-lg text-judge-ivory placeholder-ink-gray/50 focus:outline-none focus:border-constitution-gold/50"
             />
             <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2">
               <button
@@ -581,7 +564,7 @@ export function NetworkPage({ onBack, currentUserId }: NetworkPageProps) {
           </div>
         </form>
 
-        {/* Tabs - Fixed contrast issue */}
+        {/* Tabs */}
         <div className="mb-6">
           <div className="flex gap-1 overflow-x-auto pb-2">
             {tabs.map((tab) => {
@@ -590,7 +573,11 @@ export function NetworkPage({ onBack, currentUserId }: NetworkPageProps) {
               return (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id as TabType)}
+                  onClick={() => {
+                    setActiveTab(tab.id as TabType);
+                    setSearchResults([]);
+                    setSearchQuery('');
+                  }}
                   className={`flex items-center gap-2 px-6 py-3 font-medium transition-all whitespace-nowrap rounded-t-lg ${
                     isActive 
                       ? 'bg-aged-paper text-constitution-gold border-t border-x border-constitution-gold/20 shadow-sm' 
