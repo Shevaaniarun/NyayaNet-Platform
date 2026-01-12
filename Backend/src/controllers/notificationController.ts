@@ -269,3 +269,46 @@ export const createNewFollowerNotification = async (req: AuthRequest, res: Respo
     });
   }
 };
+
+export const createPostLikeNotification = async (req: AuthRequest, res: Response) => {
+  try {
+    const { postOwnerId, likerId, likerName, postId, postTitle } = req.body;
+
+    if (! postOwnerId || !likerId || !likerName || !postId || !postTitle) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required fields: postOwnerId, likerId, likerName, postId, postTitle'
+      });
+    }
+
+    if (postOwnerId === likerId) {
+      return res.status(200).json({
+        success: true,
+        message: 'No notification created for self-like'
+      });
+    }
+
+    const notificationId = await NotificationModel.createPostLikeNotification(
+      postOwnerId,
+      likerId,
+      likerName,
+      postId,
+      postTitle
+    );
+
+    return res.status(201).json({
+      success: true,
+      message:  'Post like notification created',
+      data: {
+        notificationId
+      }
+    });
+  } catch (error: any) {
+    console.error('Create post like notification error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to create notification',
+      error: error.message
+    });
+  }
+};

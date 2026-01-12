@@ -396,4 +396,52 @@ export class NotificationModel {
       throw error;
     }
   }
+
+  static async createPostLikeNotification(
+    postOwnerId: string,
+    likerId: string,
+    likerName: string,
+    postId: string,
+    postTitle: string
+  ): Promise<string> {
+    if (postOwnerId === likerId) {
+      console.log("⚠️ User liked their own post, skipping notification");
+      return "";
+    }
+
+    const query = `
+    INSERT INTO notifications (
+      user_id,
+      notification_type,
+      title,
+      message,
+      source_type,
+      source_id,
+      data,
+      is_read
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+    RETURNING id
+  `;
+
+    const truncatedTitle =
+      postTitle.length > 50 ? postTitle.substring(0, 50) + "..." : postTitle;
+
+    const values = [
+      postOwnerId,
+      "POST_LIKE",
+      "New Like",
+      `${likerName} liked your post: "${truncatedTitle}"`,
+      "POST",
+      postId,
+      JSON.stringify({
+        userId: likerId,
+        userName: likerName,
+        postId: postId,
+        postTitle: postTitle,
+      }),
+      false,
+    ];
+    const result = await pool.query(query, values);
+    return result.rows[0].id;
+  }
 }
