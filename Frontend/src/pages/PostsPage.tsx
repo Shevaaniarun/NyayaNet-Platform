@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Plus, FileText, Heart, MessageSquare, TrendingUp, Loader2 } from 'lucide-react';
-import { PostCard } from '../components/PostCard';
-import { CreatePost } from '../components/CreatePost';
+import { PostCard } from '../components/Post/PostCard';
+import { CreatePost } from '../components/Post/CreatePost';
 import { PostFilters } from '../components/Post/PostFilters';
 import { getPosts } from '../api/postsAPI';
 import { toast } from 'react-toastify';

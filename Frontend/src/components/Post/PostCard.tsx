@@ -26,9 +26,9 @@ import {
   X,
   Image as ImageIcon
 } from 'lucide-react';
-import { likePost, savePost, createComment, getComments, deletePost, updatePost, uploadFiles } from '../api/postsAPI';
+import { likePost, savePost, createComment, getComments, deletePost, updatePost, uploadFiles } from '../../api/postsAPI';
 import { toast } from 'react-toastify';
-import { CommentCard } from './Post/CommentCard';
+import { CommentCard } from './CommentCard';
 
 export interface Post {
   id: string;
@@ -41,7 +41,7 @@ export interface Post {
     organization: string;
   };
   postType: string;
-  title?: string;
+  title: string;
   content: string;
   createdAt: string;
   likeCount: number;
@@ -374,6 +374,23 @@ export function PostCard({ post, currentUserId, onDelete, onAuthorClick }: PostC
               {getPostTypeLabel(post.postType)}
             </span>
           </div>
+          {post.title && post.title.trim() && (
+  <div className="mb-8 text-center">
+    {/* Clean, professional headline - center aligned */}
+    <h2 className="text-3xl md:text-4xl font-heading font-bold text-justice-black mb-6 leading-tight mx-auto max-w-4xl">
+      {post.title}
+    </h2>
+    
+    {/* Simple but elegant separator - center aligned */}
+    <div className="flex items-center justify-center mb-4">
+      <div className="h-0.5 w-16 bg-justice-black/10"></div>
+      <div className="mx-4">
+        <Scale className="w-5 h-5 text-constitution-gold" />
+      </div>
+      <div className="h-0.5 w-16 bg-justice-black/10"></div>
+    </div>
+  </div>
+)}
 
           <div className="constitution-texture p-6 rounded">
             <p className="text-ink-gray leading-relaxed font-body whitespace-pre-wrap">

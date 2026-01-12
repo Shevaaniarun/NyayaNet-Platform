@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Sidebar } from './components/Sidebar';
-import { PostCard, Post as PostComponentType } from './components/PostCard';
+import { PostCard, Post as PostComponentType } from './components/Post/PostCard';
 import { CaseCard, CaseItem as CaseItemComponentType } from './components/CaseCard';
 import { AIAssistant } from './components/AIAssistant';
 import { JusticeLoader } from './components/JusticeLoader';
-import { CreatePost } from './components/CreatePost';
+import { CreatePost } from './components/Post/CreatePost';
 import { MobileNotice } from './components/MobileNotice';
 import { Sparkles, TrendingUp, Gavel, Construction, Users, Bell } from 'lucide-react';
 import { DiscussionsPage } from './pages/DiscussionPage';
@@ -65,6 +65,7 @@ const adaptPost = (apiPost: ApiPost): PostComponentType => ({
         organization: apiPost.author?.organization || '' // Default value
     },
     postType:  apiPost.postType || 'POST',
+    title: apiPost.title || '', 
     content: apiPost. content,
     createdAt:  new Date(apiPost.createdAt).toLocaleDateString(),
     likeCount: apiPost. likeCount || 0,
