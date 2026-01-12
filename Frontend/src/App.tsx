@@ -12,8 +12,8 @@ import { PostsPage } from './pages/PostsPage';
 import RegisterPage from "./pages/RegisterPage";
 import LoginPage from "./pages/LoginPage";
 import { ProfilePage } from './pages/ProfilePage';
-import  NotesPage  from './pages/NotesPage';
-import NotificationsPage from './pages/NotificationsPage'; 
+import NotesPage from './pages/NotesPage';
+import NotificationsPage from './pages/NotificationsPage';
 import { getFeed, Post as ApiPost } from './api/postsAPI';
 import { toast } from 'react-toastify';
 import { NetworkPage } from './pages/NetworkPage';
@@ -64,15 +64,15 @@ const adaptPost = (apiPost: ApiPost): PostComponentType => ({
         designation: apiPost.author?.designation || '',
         organization: apiPost.author?.organization || '' // Default value
     },
-    postType:  apiPost.postType || 'POST',
-    content: apiPost. content,
-    createdAt:  new Date(apiPost.createdAt).toLocaleDateString(),
-    likeCount: apiPost. likeCount || 0,
+    postType: apiPost.postType || 'POST',
+    content: apiPost.content,
+    createdAt: new Date(apiPost.createdAt).toLocaleDateString(),
+    likeCount: apiPost.likeCount || 0,
     commentCount: apiPost.commentCount || 0,
     tags: apiPost.tags || [],
     isLiked: apiPost.isLiked,
     isSaved: apiPost.isSaved,
-    media: apiPost.media?. map(m => ({
+    media: apiPost.media?.map(m => ({
         id: m.id,
         url: m.mediaUrl || '',  // Map mediaUrl to url
         type: m.mediaType || '', // Map mediaType to type
@@ -84,7 +84,7 @@ const adaptPost = (apiPost: ApiPost): PostComponentType => ({
 });
 
 const mapCaseStatus = (status: string): CaseItemComponentType['caseStatus'] => {
-    const statusMap:  Record<string, CaseItemComponentType['caseStatus']> = {
+    const statusMap: Record<string, CaseItemComponentType['caseStatus']> = {
         'active': 'active',
         'closed': 'closed',
         'hearing_scheduled': 'hearing_scheduled',
@@ -204,10 +204,10 @@ export default function App() {
         try {
             setIsLoadingPosts(true);
             const postsData = await getFeed(1, 10);
-            setPosts(postsData. posts. map(adaptPost));
+            setPosts(postsData.posts.map(adaptPost));
         } catch (error) {
             console.error('Failed to refresh posts:', error);
-            toast. error('Failed to refresh posts');
+            toast.error('Failed to refresh posts');
         } finally {
             setIsLoadingPosts(false);
         }
@@ -241,7 +241,7 @@ export default function App() {
             '/discussions': 'discussions',
             '/profile': 'profile',
             '/notes': 'notes',
-            '/notifications': 'notifications', 
+            '/notifications': 'notifications',
             '/network': 'network',
             '/connection-requests': 'connectionRequests',
             '/create-discussion': 'createDiscussion',
@@ -271,8 +271,8 @@ export default function App() {
             view === 'dashboard'
                 ? '/'
                 : view === 'createDiscussion'
-                ? '/create-discussion'
-                : `/${view}`;
+                    ? '/create-discussion'
+                    : `/${view}`;
         handleNavigation(path, true);
     };
 
@@ -312,7 +312,7 @@ export default function App() {
         <div className="flex min-h-screen bg-justice-black">
             <MobileNotice />
             <Sidebar
-                currentPath={currentView === 'dashboard' ? '/' :  `/${currentView}`}
+                currentPath={currentView === 'dashboard' ? '/' : `/${currentView}`}
                 onNavigate={handleNavigation}
                 pendingConnectionCount={pendingConnectionCount}
             />
@@ -454,7 +454,7 @@ export default function App() {
                                 ) : posts.length > 0 ? (
                                     posts.map((post) => (
                                         <PostCard
-                                            key={post. id}
+                                            key={post.id}
                                             post={post}
                                             currentUserId={currentUser?.id}
                                             onDelete={(id) => setPosts(prev => prev.filter(p => p.id !== id))}
@@ -471,32 +471,7 @@ export default function App() {
                     </div>
                 )}
 
-                {currentView === 'feed' && (
-                    <div className="flex-1 p-6 overflow-y-auto">
-                        <div className="max-w-3xl mx-auto space-y-6">
-                            <CreatePost onPostCreated={refreshPosts} />
-                            {isLoadingPosts ? (
-                                <div className="flex justify-center p-8">
-                                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-justice-blue"></div>
-                                </div>
-                            ) : posts.length > 0 ? (
-                                posts.map((post) => (
-                                    <PostCard
-                                        key={post.id}
-                                        post={post}
-                                        currentUserId={currentUser?.id}
-                                        onDelete={(id) => setPosts(prev => prev.filter(p => p.id !== id))}
-                                        onAuthorClick={handlePostAuthorClick}
-                                    />
-                                ))
-                            ) : (
-                                <div className="text-center py-12 text-gray-400">
-                                    <p>No posts found. Be the first to post something!</p>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                )}
+                {currentView === 'feed' && <PostsPage />}
 
                 {currentView === 'cases' && (
                     <div className="min-h-screen bg-justice-black p-8">
