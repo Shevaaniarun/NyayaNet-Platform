@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { FileText, MessageSquare, Bookmark, Plus, Heart } from 'lucide-react';
-import { toast } from 'react-toastify';
 
 interface ProfileTabsProps {
     posts: any[];
@@ -36,21 +35,23 @@ export function ProfileTabs({
     const [activeTab, setActiveTab] = useState<TabId>('posts');
 
     const tabs = [
-        { id: 'posts' as const, label: 'My Posts', icon: FileText, count: posts.length },
-        { id: 'discussions' as const, label: 'My Discussions', icon: MessageSquare, count: discussions.length },
-        ...(isOwnProfile
-            ? [
-                  { id: 'bookmarks' as const, label: 'Bookmarks', icon: Bookmark, count: bookmarks.length },
-                  { id: 'likedPosts' as const, label: 'Liked Posts', icon: Heart, count: likedPosts.length },
-                  { id: 'likedDiscussions' as const, label: 'Liked Discussions', icon: Heart, count: likedDiscussions.length }
-              ]
-            : [])
+        { id: 'posts' as const, label: 'Posts', icon: FileText, count: posts.length },
+        { id: 'discussions' as const, label: 'Discussions', icon: MessageSquare, count: discussions.length },
+        ...(isOwnProfile ? [
+            { id: 'bookmarks' as const, label: 'Bookmarks', icon: Bookmark, count: bookmarks.length },
+            { id: 'likedPosts' as const, label: 'Liked Posts', icon: Heart, count: likedPosts.length },
+            { id: 'likedDiscussions' as const, label: 'Liked Discussions', icon: Heart, count: likedDiscussions.length }
+        ] : [])
     ];
 
     const handlePostClick = (id: string) => onPostClick?.(id);
     const handleDiscussionClick = (id: string) => onDiscussionClick?.(id);
 
-    /* ---------------- Compact Cards ---------------- */
+    const handleNewDiscussion = () => {
+        window.location.href = '/discussions/create';
+    };
+
+    /* ---------------- Cards ---------------- */
 
     const renderPostCard = (post: any, showAuthor = false) => (
         <div
@@ -141,13 +142,26 @@ export function ProfileTabs({
                     </button>
                 ))}
 
-                {isOwnProfile && activeTab === 'posts' && (
-                    <button
-                        onClick={onCreatePost}
-                        className="ml-auto mr-4 my-2 px-4 py-2 bg-constitution-gold text-justice-black rounded-lg font-medium hover:bg-constitution-gold/90 flex items-center gap-2"
-                    >
-                        <Plus className="w-4 h-4" /> New Post
-                    </button>
+                {isOwnProfile && (
+                    <>
+                        {activeTab === 'posts' && (
+                            <button
+                                onClick={onCreatePost}
+                                className="ml-auto mr-4 my-2 px-4 py-2 bg-constitution-gold text-justice-black rounded-lg font-medium hover:bg-constitution-gold/90 flex items-center gap-2"
+                            >
+                                <Plus className="w-4 h-4" /> New Post
+                            </button>
+                        )}
+
+                        {activeTab === 'discussions' && (
+                            <button
+                                onClick={handleNewDiscussion}
+                                className="ml-auto mr-4 my-2 px-4 py-2 bg-constitution-gold text-justice-black rounded-lg font-medium hover:bg-constitution-gold/90 flex items-center gap-2"
+                            >
+                                <Plus className="w-4 h-4" /> New Discussion
+                            </button>
+                        )}
+                    </>
                 )}
             </div>
 
@@ -167,20 +181,20 @@ export function ProfileTabs({
                 {activeTab === 'bookmarks' && isOwnProfile &&
                     (bookmarks.length
                         ? <div className="space-y-4">
-                              {bookmarks.map(b => (
-                                  <div
-                                      key={b.id}
-                                      onClick={() =>
-                                          b.entityType === 'POST'
-                                              ? handlePostClick(b.entityId)
-                                              : handleDiscussionClick(b.entityId)
-                                      }
-                                      className="p-4 bg-justice-black/20 rounded-lg border border-constitution-gold/10 hover:border-constitution-gold/30 cursor-pointer"
-                                  >
-                                      <h3 className="font-medium text-ink-gray">{b.title}</h3>
-                                  </div>
-                              ))}
-                          </div>
+                            {bookmarks.map(b => (
+                                <div
+                                    key={b.id}
+                                    onClick={() =>
+                                        b.entityType === 'POST'
+                                            ? handlePostClick(b.entityId)
+                                            : handleDiscussionClick(b.entityId)
+                                    }
+                                    className="p-4 bg-justice-black/20 rounded-lg border border-constitution-gold/10 hover:border-constitution-gold/30 cursor-pointer"
+                                >
+                                    <h3 className="font-medium text-ink-gray">{b.title}</h3>
+                                </div>
+                            ))}
+                        </div>
                         : emptyState(Bookmark, 'No bookmarks yet'))}
 
                 {activeTab === 'likedPosts' && isOwnProfile &&
@@ -192,7 +206,6 @@ export function ProfileTabs({
                     (likedDiscussions.length
                         ? <div className="space-y-4">{likedDiscussions.map(d => renderDiscussionCard(d, true))}</div>
                         : emptyState(Heart, 'No liked discussions yet'))}
-
             </div>
         </div>
     );
