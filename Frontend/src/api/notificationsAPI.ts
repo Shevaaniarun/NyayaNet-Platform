@@ -250,3 +250,25 @@ export async function createDiscussionUpvoteNotification(params: {
   const result = await response.json();
   return result.data;
 }
+
+export async function createConnectionRequestNotification(params: {
+  receiverId: string;
+  requesterId: string;
+  requesterName: string;
+  requestMessage?:  string;
+  requestId:  string;
+}): Promise<{ notificationId: string }> {
+  const response = await fetch(`${API_BASE_URL}/notifications/connection-request`, {
+    method: 'POST',
+    headers:  createHeaders(true),
+    body: JSON.stringify(params)
+  });
+
+  if (!response.ok) {
+    const error = await response. json();
+    throw new Error(error.message || 'Failed to create connection request notification');
+  }
+
+  const result = await response.json();
+  return result.data;
+}
