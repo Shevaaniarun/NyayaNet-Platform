@@ -420,3 +420,53 @@ export const createDiscussionUpvoteNotification = async (req: AuthRequest, res: 
     });
   }
 };
+
+
+export const createConnectionRequestNotification = async (req: AuthRequest, res: Response) => {
+  try {
+    const { 
+      receiverId, 
+      requesterId, 
+      requesterName, 
+      requestMessage,
+      requestId
+    } = req.body;
+
+    if (!receiverId || !requesterId || !requesterName || !requestId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required fields:  receiverId, requesterId, requesterName, requestId'
+      });
+    }
+
+    if (receiverId === requesterId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Cannot send connection request to self'
+      });
+    }
+
+    const notificationId = await NotificationModel.createConnectionRequestNotification(
+      receiverId,
+      requesterId,
+      requesterName,
+      requestMessage || 'Would like to connect with you',
+      requestId
+    );
+
+    return res.status(201).json({
+      success: true,
+      message: 'Connection request notification created',
+      data: {
+        notificationId
+      }
+    });
+  } catch (error:  any) {
+    console.error('Create connection request notification error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to create notification',
+      error: error.message
+    });
+  }
+};

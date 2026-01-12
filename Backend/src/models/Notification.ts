@@ -582,4 +582,60 @@ export class NotificationModel {
     const result = await pool.query(query, values);
     return result.rows[0].id;
   }
+
+  static async createConnectionRequestNotification(
+    receiverId: string,
+    requesterId: string,
+    requesterName: string,
+    requestMessage: string,
+    requestId: string
+  ): Promise<string> {
+    if (receiverId === requesterId) {
+      console.log("⚠️ Cannot send connection request to self");
+      return "";
+    }
+
+    const query = `
+    INSERT INTO notifications (
+      user_id,
+      notification_type,
+      title,
+      message,
+      source_type,
+      source_id,
+      data,
+      is_read
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+    RETURNING id
+  `;
+
+    const message = requestMessage
+      ? `${requesterName} sent you a connection request: "${requestMessage}"`
+      : `${requesterName} sent you a connection request`;
+
+    const values = [
+      receiverId,
+      "CONNECTION_REQUEST",
+      "New Connection Request",
+      message,
+      "USER",
+      requesterId,
+      JSON.stringify({
+        userId: requesterId,
+        userName: requesterName,
+        requestMessage: requestMessage,
+        requestId: requestId,
+      }),
+      false,
+    ];
+
+    console.log("📝 Creating connection request notification:", {
+      receiverId,
+      requesterId,
+      requestId,
+    });
+
+    const result = await pool.query(query, values);
+    return result.rows[0].id;
+  }
 }
