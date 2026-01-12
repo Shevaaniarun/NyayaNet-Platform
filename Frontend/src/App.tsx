@@ -518,6 +518,7 @@ export default function App() {
                     />
                 )}
                 {currentView === 'notes' && <NotesPage />}
+                {currentView === 'notifications' && <NotificationsPage />}
                 {(currentView === 'connectionRequests' || currentView === 'network') && (
                     <NetworkPage
                         onBack={() => setCurrentView('dashboard')}
