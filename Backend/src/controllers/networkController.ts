@@ -1,6 +1,9 @@
 // [file name]: networkController.ts
 import { Request, Response } from 'express';
 import { NetworkModel } from '../models/Network';
+import { NotificationModel } from '../models/Notification';
+import { findUserById } from '../models/User';
+import pool from '../config/database';
 
 interface AuthRequest extends Request {
   user?: { id: string; email: string };
@@ -62,25 +65,50 @@ export class NetworkController {
 
   static async acceptFollowRequest(req: AuthRequest, res: Response) {
     try {
-      const userId = req.user?.id;
+      const userId = req. user?.id;
       const { requestId } = req.params;
       
-      if (!userId) return res.status(401).json({ success: false, message: 'Authentication required' });
+      if (!userId) return res.status(401).json({ success: false, message:  'Authentication required' });
       if (!requestId) return res.status(400).json({ success: false, message: 'Request ID required' });
 
       const result = await NetworkModel.acceptFollowRequest(requestId, userId);
       
-      if (!result.success) {
-        return res.status(404).json({ success: false, message: result.message });
+      if (!result. success) {
+        return res. status(404).json({ success: false, message: result.message });
       }
       
-      return res.json({
+      try {
+        const followerUserId = result.followerId;
+        
+        const follower = await findUserById(userId);
+        const followerName = follower?.full_name || 'Someone';
+        if (followerUserId) {
+          try {
+            const notificationId = await NotificationModel.createNewFollowerNotification(
+              followerUserId,
+              userId,
+              followerName
+            );
+            
+          } catch (createError:  any) {
+            console.error('❌ Error creating notification:', createError.message);
+            console.error('❌ Full error:', createError);
+          }
+        } else {
+          console.error('❌ No followerUserId found! ');
+        }
+      } catch (notifError: any) {
+        console.error('⚠️ Failed to create follower notification:', notifError.message);
+        console.error('Full error:', notifError);
+      }
+      
+      return res. json({
         success: true,
         message: 'Follow request accepted'
       });
     } catch (error: any) {
       console.error('acceptFollowRequest error:', error.message);
-      return res.status(500).json({ success: false, message: 'Error accepting follow request', error: error.message });
+      return res.status(500).json({ success: false, message:  'Error accepting follow request', error: error.message });
     }
   }
 

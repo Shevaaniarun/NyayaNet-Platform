@@ -236,36 +236,36 @@ export const bulkDeleteNotifications = async (req: AuthRequest, res: Response) =
 };
 
 
-// export const createNewFollowerNotification = async (req: AuthRequest, res: Response) => {
-//   try {
-//     const { receiverId, followerId, followerName } = req.body;
+export const createNewFollowerNotification = async (req: AuthRequest, res: Response) => {
+  try {
+    const { receiverId, followerId, followerName } = req.body;
 
-//     if (! receiverId || !followerId || !followerName) {
-//       return res.status(400).json({
-//         success: false,
-//         message: 'Missing required fields:  receiverId, followerId, followerName'
-//       });
-//     }
+    if (! receiverId || !followerId || !followerName) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required fields:  receiverId, followerId, followerName'
+      });
+    }
 
-//     const notificationId = await NotificationModel. createNewFollowerNotification(
-//       receiverId,
-//       followerId,
-//       followerName
-//     );
+    const notificationId = await NotificationModel. createNewFollowerNotification(
+      receiverId,
+      followerId,
+      followerName
+    );
 
-//     return res.status(201).json({
-//       success: true,
-//       message: 'New follower notification created',
-//       data: {
-//         notificationId
-//       }
-//     });
-//   } catch (error: any) {
-//     console.error('Create follower notification error:', error);
-//     return res.status(500).json({
-//       success: false,
-//       message: 'Failed to create notification',
-//       error: error.message
-//     });
-//   }
-// };
+    return res.status(201).json({
+      success: true,
+      message: 'New follower notification created',
+      data: {
+        notificationId
+      }
+    });
+  } catch (error: any) {
+    console.error('Create follower notification error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to create notification',
+      error: error.message
+    });
+  }
+};

@@ -357,37 +357,43 @@ export class NotificationModel {
     return result.rowCount || 0;
   }
 
-  // static async createNewFollowerNotification(
-  //   receiverId: string,
-  //   followerId: string,
-  //   followerName: string
-  // ): Promise<string> {
-  //   const query = `
-  //   INSERT INTO notifications (
-  //     user_id,
-  //     notification_type,
-  //     title,
-  //     message,
-  //     source_type,
-  //     source_id,
-  //     data,
-  //     is_read
-  //   ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-  //   RETURNING id
-  // `;
+  static async createNewFollowerNotification(
+    receiverId: string,
+    followerId: string,
+    followerName: string
+  ): Promise<string> {
+    const query = `
+    INSERT INTO notifications (
+      user_id,
+      notification_type,
+      title,
+      message,
+      source_type,
+      source_id,
+      data,
+      is_read
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+    RETURNING id
+  `;
 
-  //   const values = [
-  //     receiverId,
-  //     "NEW_FOLLOWER",
-  //     "New Follower",
-  //     `${followerName} started following you`,
-  //     "USER",
-  //     followerId,
-  //     JSON.stringify({ userId: followerId }),
-  //     false,
-  //   ];
+    const values = [
+      receiverId,
+      "NEW_FOLLOWER",
+      "New Follower",
+      `${followerName} started following you`,
+      "USER",
+      followerId,
+      JSON.stringify({ userId: followerId, userName: followerName }),
+      false,
+    ];
 
-  //   const result = await pool.query(query, values);
-  //   return result.rows[0].id;
-  // }
+    try {
+      const result = await pool.query(query, values);
+      console.log("✅ Insert result:", result.rows[0]);
+      return result.rows[0].id;
+    } catch (error: any) {
+      console.error("❌ Database insert error:", error.message);
+      throw error;
+    }
+  }
 }
