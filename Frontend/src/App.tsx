@@ -19,6 +19,7 @@ import { toast } from 'react-toastify';
 import { NetworkPage } from './pages/NetworkPage';
 import * as networkApi from './api/networkAPI';
 import { Toaster } from "react-hot-toast";
+import { useNotificationCount } from './hooks/useNotificationCount'; 
 
 type ViewType =
     | 'dashboard'
@@ -101,7 +102,8 @@ export default function App() {
     const [posts, setPosts] = useState<PostComponentType[]>([]);
     const [cases] = useState<CaseItemComponentType[]>([]);
     const [pendingConnectionCount, setPendingConnectionCount] = useState(0);
-
+    const { unreadCount, refetch: refetchNotificationCount } = useNotificationCount(30000);
+    
     // Initialize auth state properly
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [authView, setAuthView] = useState<"register" | "login">("register");
@@ -254,6 +256,9 @@ export default function App() {
         if (newView !== 'profile') {
             setSelectedProfileUserId(null);
         }
+        if (newView !== 'notifications') {
+            setTimeout(() => refetchNotificationCount(), 1000);
+        }
 
         // Push to browser history for back button support
         if (pushToHistory) {
@@ -314,7 +319,7 @@ export default function App() {
             <Sidebar
                 currentPath={currentView === 'dashboard' ? '/' :  `/${currentView}`}
                 onNavigate={handleNavigation}
-                pendingConnectionCount={pendingConnectionCount}
+                notificationCount={unreadCount}
             />
 
             <div className="ml-64 flex-1">
