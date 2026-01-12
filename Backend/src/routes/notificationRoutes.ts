@@ -2,7 +2,9 @@ import { Router } from 'express';
 import { authenticate } from '../middleware/auth';
 import { getNotifications,markNotificationAsRead,markAllAsRead,searchNotifications,
  getNotificationStats, deleteNotification, bulkDeleteNotifications, 
- createNewFollowerNotification, createPostLikeNotification
+ createNewFollowerNotification, createPostLikeNotification,
+ createDiscussionUpvoteNotification,
+ createDiscussionReplyNotification
  } from '../controllers/notificationController';
 const router = Router();
 
@@ -19,5 +21,7 @@ router.delete('/:notificationId', deleteNotification);
 router.post('/bulk-delete', bulkDeleteNotifications);
 router.post('/new-follower', createNewFollowerNotification);
 router.post('/post-like', createPostLikeNotification);
+router.post('/discussion-reply', createDiscussionReplyNotification);     
+router.post('/discussion-upvote', createDiscussionUpvoteNotification); 
 
 export default router;

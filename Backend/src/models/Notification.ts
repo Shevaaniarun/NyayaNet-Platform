@@ -389,7 +389,6 @@ export class NotificationModel {
 
     try {
       const result = await pool.query(query, values);
-      console.log("✅ Insert result:", result.rows[0]);
       return result.rows[0].id;
     } catch (error: any) {
       console.error("❌ Database insert error:", error.message);
@@ -441,6 +440,145 @@ export class NotificationModel {
       }),
       false,
     ];
+    const result = await pool.query(query, values);
+    return result.rows[0].id;
+  }
+
+  static async createDiscussionReplyNotification(
+    discussionOwnerId: string,
+    replierId: string,
+    replierName: string,
+    discussionId: string,
+    discussionTitle: string,
+    replyPreview: string,
+    isReplyToComment: boolean = false,
+    parentCommentId?: string
+  ): Promise<string> {
+    if (discussionOwnerId === replierId) {
+      console.log(
+        "⚠️ User replied to their own discussion, skipping notification"
+      );
+      return "";
+    }
+
+    const query = `
+    INSERT INTO notifications (
+      user_id,
+      notification_type,
+      title,
+      message,
+      source_type,
+      source_id,
+      data,
+      is_read
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+    RETURNING id
+  `;
+
+    const truncatedTitle =
+      discussionTitle.length > 50
+        ? discussionTitle.substring(0, 50) + "..."
+        : discussionTitle;
+    const truncatedReply =
+      replyPreview.length > 100
+        ? replyPreview.substring(0, 100) + "..."
+        : replyPreview;
+
+    const message = isReplyToComment
+      ? `${replierName} replied to your comment on "${truncatedTitle}"`
+      : `${replierName} replied to your discussion:  "${truncatedTitle}"`;
+
+    const values = [
+      discussionOwnerId,
+      "DISCUSSION_REPLY",
+      "New Reply",
+      message,
+      "DISCUSSION",
+      discussionId,
+      JSON.stringify({
+        userId: replierId,
+        userName: replierName,
+        discussionId: discussionId,
+        discussionTitle: discussionTitle,
+        replyPreview: truncatedReply,
+        isReplyToComment: isReplyToComment,
+        parentCommentId: parentCommentId || null,
+      }),
+      false,
+    ];
+
+    console.log("📝 Creating discussion reply notification:", {
+      discussionOwnerId,
+      replierId,
+      discussionId,
+    });
+
+    const result = await pool.query(query, values);
+    return result.rows[0].id;
+  }
+
+  static async createDiscussionUpvoteNotification(
+    contentOwnerId: string,
+    upvoterId: string,
+    upvoterName: string,
+    discussionId: string,
+    discussionTitle: string,
+    replyId?: string,
+    isReply: boolean = false
+  ): Promise<string> {
+    if (contentOwnerId === upvoterId) {
+      console.log("⚠️ User upvoted their own content, skipping notification");
+      return "";
+    }
+
+    const query = `
+    INSERT INTO notifications (
+      user_id,
+      notification_type,
+      title,
+      message,
+      source_type,
+      source_id,
+      data,
+      is_read
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+    RETURNING id
+  `;
+
+    const truncatedTitle =
+      discussionTitle.length > 50
+        ? discussionTitle.substring(0, 50) + "..."
+        : discussionTitle;
+
+    const message = isReply
+      ? `${upvoterName} upvoted your reply in "${truncatedTitle}"`
+      : `${upvoterName} upvoted your discussion: "${truncatedTitle}"`;
+
+    const values = [
+      contentOwnerId,
+      "DISCUSSION_UPVOTE",
+      "New Upvote",
+      message,
+      isReply ? "DISCUSSION_REPLY" : "DISCUSSION",
+      isReply ? replyId : discussionId,
+      JSON.stringify({
+        userId: upvoterId,
+        userName: upvoterName,
+        discussionId: discussionId,
+        discussionTitle: discussionTitle,
+        replyId: replyId || null,
+        isReply: isReply,
+      }),
+      false,
+    ];
+
+    console.log("📝 Creating discussion upvote notification:", {
+      contentOwnerId,
+      upvoterId,
+      discussionId,
+      isReply,
+    });
+
     const result = await pool.query(query, values);
     return result.rows[0].id;
   }

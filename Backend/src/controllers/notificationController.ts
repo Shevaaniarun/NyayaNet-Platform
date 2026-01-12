@@ -312,3 +312,111 @@ export const createPostLikeNotification = async (req: AuthRequest, res: Response
     });
   }
 };
+
+export const createDiscussionReplyNotification = async (req: AuthRequest, res: Response) => {
+  try {
+    const { 
+      discussionOwnerId, 
+      replierId, 
+      replierName, 
+      discussionId, 
+      discussionTitle, 
+      replyPreview,
+      isReplyToComment,
+      parentCommentId
+    } = req.body;
+
+    if (!discussionOwnerId || ! replierId || !replierName || !discussionId || !discussionTitle || !replyPreview) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required fields'
+      });
+    }
+
+    if (discussionOwnerId === replierId) {
+      return res.status(200).json({
+        success: true,
+        message: 'No notification created for self-reply'
+      });
+    }
+
+    const notificationId = await NotificationModel.createDiscussionReplyNotification(
+      discussionOwnerId,
+      replierId,
+      replierName,
+      discussionId,
+      discussionTitle,
+      replyPreview,
+      isReplyToComment || false,
+      parentCommentId
+    );
+
+    return res.status(201).json({
+      success: true,
+      message:  'Discussion reply notification created',
+      data:  {
+        notificationId
+      }
+    });
+  } catch (error:  any) {
+    console.error('Create discussion reply notification error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to create notification',
+      error: error.message
+    });
+  }
+};
+
+export const createDiscussionUpvoteNotification = async (req: AuthRequest, res: Response) => {
+  try {
+    const { 
+      contentOwnerId, 
+      upvoterId, 
+      upvoterName, 
+      discussionId, 
+      discussionTitle,
+      replyId,
+      isReply
+    } = req.body;
+
+    if (!contentOwnerId || !upvoterId || !upvoterName || !discussionId || !discussionTitle) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required fields'
+      });
+    }
+
+    if (contentOwnerId === upvoterId) {
+      return res.status(200).json({
+        success: true,
+        message: 'No notification created for self-upvote'
+      });
+    }
+
+    const notificationId = await NotificationModel.createDiscussionUpvoteNotification(
+      contentOwnerId,
+      upvoterId,
+      upvoterName,
+      discussionId,
+      discussionTitle,
+      replyId,
+      isReply || false
+    );
+
+    return res.status(201).json({
+      success: true,
+      message: 'Discussion upvote notification created',
+      data: {
+        notificationId
+      }
+    });
+  } catch (error: any) {
+    console.error('Create discussion upvote notification error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to create notification',
+      error: error.message
+    });
+  }
+};
