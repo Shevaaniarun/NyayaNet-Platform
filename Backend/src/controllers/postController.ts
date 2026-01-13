@@ -270,10 +270,9 @@ export class PostController {
     static async getComments(req: Request, res: Response) {
         try {
             const { postId } = req.params;
-            const { page = '1', limit = '50' } = req.query;
 
             const userId = (req as AuthRequest).user?.id || (req as AuthRequest).user?.userId;
-            const comments = await PostModel.getComments(postId, userId, parseInt(page as string), parseInt(limit as string));
+            const comments = await PostModel.getComments(postId, userId);
 
             return res.json({
                 success: true,
