@@ -9,10 +9,11 @@ import { toast } from 'react-toastify';
 interface PostFilterType {
     page: number;
     limit: number;
-    sort: 'newest' | 'active' | 'liked' | 'relevance';
+    sort: 'newest' | 'active' | 'liked' | 'relevance' | 'most_commented' | 'most_liked';
     postType?: 'POST' | 'QUESTION' | 'ARTICLE' | 'ANNOUNCEMENT';
     tags?: string[];
     q?: string;
+    following?: boolean;
 }
 
 export function PostsPage() {
@@ -81,6 +82,7 @@ export function PostsPage() {
         tags?: string[];
         sort?: 'newest' | 'active' | 'liked' | 'relevance';
         q?: string;
+        following?: boolean;
     }) => {
         setFilters(prev => ({
             ...prev,
@@ -178,12 +180,12 @@ export function PostsPage() {
                     />
                     <StatCard
                         icon={Heart}
-                        title="Total Likes"
+                        title="Most Liked"
                         value={stats.totalLikes}
                     />
                     <StatCard
                         icon={MessageSquare}
-                        title="Total Comments"
+                        title="Most Commented"
                         value={stats.totalComments}
                     />
                     <StatCard

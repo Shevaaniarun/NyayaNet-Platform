@@ -1,4 +1,4 @@
-import { Search, Filter, TrendingUp, Clock, Heart, MessageCircle, X, FileText, HelpCircle, Megaphone } from 'lucide-react';
+import { Search, Filter, TrendingUp, Clock, Heart, MessageCircle, X, FileText, HelpCircle, Megaphone, Users } from 'lucide-react';
 import { useState } from 'react';
 
 interface PostFiltersProps {
@@ -7,6 +7,7 @@ interface PostFiltersProps {
         tags?: string[];
         sort?: 'newest' | 'active' | 'liked' | 'relevance';
         q?: string;
+        following?: boolean;
     }) => void;
 }
 
@@ -16,6 +17,7 @@ export function PostFilters({ onFilterChange }: PostFiltersProps) {
     const [selectedSort, setSelectedSort] = useState('newest');
     const [selectedTags, setSelectedTags] = useState<string[]>([]);
     const [tagInput, setTagInput] = useState('');
+    const [followingOnly, setFollowingOnly] = useState(false);
 
     const postTypes = [
         { value: '', label: 'All Types', icon: FileText },
@@ -27,8 +29,8 @@ export function PostFilters({ onFilterChange }: PostFiltersProps) {
 
     const sortOptions = [
         { value: 'newest', label: 'Newest', icon: Clock },
-        { value: 'active', label: 'Most Active', icon: TrendingUp },
-        { value: 'liked', label: 'Most Liked', icon: Heart },
+        { value: 'most_commented', label: 'Most Commented', icon: MessageCircle },
+        { value: 'most_liked', label: 'Most Liked', icon: Heart },
     ];
 
     const handleSearch = () => {
@@ -37,6 +39,7 @@ export function PostFilters({ onFilterChange }: PostFiltersProps) {
             postType: selectedPostType || undefined,
             sort: (searchQuery && selectedSort === 'newest' ? 'relevance' : selectedSort) as 'newest' | 'active' | 'liked' | 'relevance',
             tags: selectedTags.length > 0 ? selectedTags : undefined,
+            following: followingOnly || undefined,
         });
     };
 
@@ -45,7 +48,14 @@ export function PostFilters({ onFilterChange }: PostFiltersProps) {
         setSelectedPostType('');
         setSelectedSort('newest');
         setSelectedTags([]);
-        onFilterChange({});
+        setFollowingOnly(false);
+        onFilterChange({
+            q: undefined,
+            postType: undefined,
+            sort: 'newest',
+            tags: undefined,
+            following: undefined,
+        });
     };
 
     const handleAddTag = () => {
@@ -66,7 +76,7 @@ export function PostFilters({ onFilterChange }: PostFiltersProps) {
                     <Filter className="w-5 h-5" />
                     <span>Filter Posts</span>
                 </h3>
-                {(selectedPostType || selectedTags.length > 0 || searchQuery) && (
+                {(selectedPostType || selectedTags.length > 0 || searchQuery || selectedSort !== 'newest' || followingOnly) && (
                     <button
                         onClick={handleClearFilters}
                         className="text-constitution-gold hover:text-gavel-bronze transition-colors text-sm flex items-center space-x-1"
@@ -109,7 +119,17 @@ export function PostFilters({ onFilterChange }: PostFiltersProps) {
 
                 {/* Sort */}
                 <div>
-                    <label className="block text-ink-gray font-medium mb-2 text-sm">Sort By</label>
+                    <div className="flex items-center justify-between mb-2">
+                        <label className="block text-ink-gray font-medium text-sm">Sort By</label>
+                        {selectedSort !== 'newest' && (
+                            <button
+                                onClick={() => setSelectedSort('newest')}
+                                className="text-constitution-gold hover:text-gavel-bronze text-xs transition-colors"
+                            >
+                                Reset
+                            </button>
+                        )}
+                    </div>
                     <div className="grid grid-cols-4 gap-2">
                         {sortOptions.map((option) => {
                             const Icon = option.icon;
@@ -122,7 +142,7 @@ export function PostFilters({ onFilterChange }: PostFiltersProps) {
                                     title={option.label}
                                 >
                                     <Icon className="w-4 h-4 mb-1" />
-                                    <span className="text-xs hidden lg:block">{option.label.split(' ')[0]}</span>
+                                    <span className="text-xs hidden lg:block">{option.label}</span>
                                 </button>
                             );
                         })}
@@ -130,45 +150,69 @@ export function PostFilters({ onFilterChange }: PostFiltersProps) {
                 </div>
             </div>
 
-            {/* Tags */}
-            <div className="mt-6">
-                <label className="block text-ink-gray font-medium mb-2 text-sm">Tags</label>
-                <div className="flex items-center space-x-2">
-                    <input
-                        type="text"
-                        value={tagInput}
-                        onChange={(e) => setTagInput(e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddTag())}
-                        placeholder="Add tags..."
-                        className="flex-1 parchment-bg border border-constitution-gold/30 rounded-lg px-4 py-2 text-ink-gray font-body focus:outline-none focus:border-constitution-gold text-sm"
-                    />
-                    <button
-                        type="button"
-                        onClick={handleAddTag}
-                        className="px-4 py-2 bg-constitution-gold/10 border border-constitution-gold/30 rounded-lg text-constitution-gold hover:bg-constitution-gold/20 transition-colors"
-                    >
-                        Add
-                    </button>
-                </div>
-                {selectedTags.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mt-3">
-                        {selectedTags.map((tag) => (
-                            <span
-                                key={tag}
-                                className="inline-flex items-center px-3 py-1 bg-constitution-gold/10 border border-constitution-gold/30 rounded-full text-ink-gray/80 text-sm"
-                            >
-                                #{tag}
-                                <button
-                                    type="button"
-                                    onClick={() => handleRemoveTag(tag)}
-                                    className="ml-2 text-ink-gray/60 hover:text-constitution-gold"
-                                >
-                                    ×
-                                </button>
-                            </span>
-                        ))}
+            {/* Tags & Following */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                {/* Tags */}
+                <div>
+                    <label className="block text-ink-gray font-medium mb-2 text-sm">Tags</label>
+                    <div className="flex items-center space-x-2">
+                        <input
+                            type="text"
+                            value={tagInput}
+                            onChange={(e) => setTagInput(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddTag())}
+                            placeholder="Add tags..."
+                            className="flex-1 parchment-bg border border-constitution-gold/30 rounded-lg px-4 py-2 text-ink-gray font-body focus:outline-none focus:border-constitution-gold text-sm"
+                        />
+                        <button
+                            type="button"
+                            onClick={handleAddTag}
+                            className="px-4 py-2 bg-constitution-gold/10 border border-constitution-gold/30 rounded-lg text-constitution-gold hover:bg-constitution-gold/20 transition-colors"
+                        >
+                            Add
+                        </button>
                     </div>
-                )}
+                    {selectedTags.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mt-3">
+                            {selectedTags.map((tag) => (
+                                <span
+                                    key={tag}
+                                    className="inline-flex items-center px-3 py-1 bg-constitution-gold/10 border border-constitution-gold/30 rounded-full text-ink-gray/80 text-sm"
+                                >
+                                    #{tag}
+                                    <button
+                                        type="button"
+                                        onClick={() => handleRemoveTag(tag)}
+                                        className="ml-2 text-ink-gray/60 hover:text-constitution-gold"
+                                    >
+                                        ×
+                                    </button>
+                                </span>
+                            ))}
+                        </div>
+                    )}
+                </div>
+
+                {/* Following Toggle */}
+                <div className="flex items-center justify-end">
+                    <label className="flex items-center space-x-3 cursor-pointer">
+                        <div className="relative">
+                            <input
+                                type="checkbox"
+                                checked={followingOnly}
+                                onChange={(e) => setFollowingOnly(e.target.checked)}
+                                className="sr-only"
+                            />
+                            <div className={`w-12 h-6 rounded-full transition-colors ${followingOnly ? 'bg-constitution-gold' : 'bg-constitution-gold/20'}`}>
+                                <div className={`w-5 h-5 bg-parchment-cream rounded-full absolute top-0.5 transition-transform ${followingOnly ? 'transform translate-x-7' : 'translate-x-0.5'}`}></div>
+                            </div>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                            <Users className="w-4 h-4 text-constitution-gold" />
+                            <span className="text-ink-gray font-medium">Following Only</span>
+                        </div>
+                    </label>
+                </div>
             </div>
 
             {/* Apply Button */}

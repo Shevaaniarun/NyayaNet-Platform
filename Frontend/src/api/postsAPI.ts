@@ -171,8 +171,9 @@ export interface PostFilters {
     limit?: number;
     tags?: string[];
     postType?: 'POST' | 'QUESTION' | 'ARTICLE' | 'ANNOUNCEMENT';
-    sort?: 'newest' | 'active' | 'liked' | 'relevance';
+    sort?: 'newest' | 'active' | 'liked' | 'relevance' | 'most_commented' | 'most_liked';
     q?: string;
+    following?: boolean;
 }
 
 export async function getPosts(filters: PostFilters = {}): Promise<{ posts: Post[], pagination: any }> {
@@ -183,6 +184,7 @@ export async function getPosts(filters: PostFilters = {}): Promise<{ posts: Post
     if (filters.postType) params.append('postType', filters.postType);
     if (filters.sort) params.append('sort', filters.sort);
     if (filters.q) params.append('q', filters.q);
+    if (filters.following) params.append('following', 'true');
     if (filters.tags && filters.tags.length > 0) {
         filters.tags.forEach(tag => params.append('tags', tag));
     }
