@@ -125,3 +125,57 @@ export async function searchNotifications(params:   {
     const result = await response.json();
     return result.data. notifications;
 }
+
+export interface NotificationStats {
+  totalNotifications: number;
+  unreadCount: number;
+  readCount: number;
+  countByType: Record<string, number>;
+  countByDay: Array<{ date: string; count:  number }>;
+}
+
+export async function getNotificationStats(): Promise<NotificationStats> {
+  const response = await fetch(`${API_BASE_URL}/notifications/stats`, {
+    headers: createHeaders(true)
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Failed to fetch notification stats');
+  }
+
+  const result = await response.json();
+  return result. data;
+}
+
+export async function deleteNotification(notificationId: string): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/notifications/${notificationId}`, {
+    method: 'DELETE',
+    headers: createHeaders(true)
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Failed to delete notification');
+  }
+}
+
+export async function bulkDeleteNotifications(params: {
+  notificationIds?:  string[];
+  deleteAllRead?:  boolean;
+  deleteAllBefore?: string;
+}): Promise<{ deletedCount: number }> {
+  const response = await fetch(`${API_BASE_URL}/notifications/bulk-delete`, {
+    method: 'POST',
+    headers: createHeaders(true),
+    body: JSON.stringify(params)
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Failed to bulk delete notifications');
+  }
+
+  const result = await response.json();
+  return result.data;
+}

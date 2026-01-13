@@ -5,7 +5,7 @@ interface PostFiltersProps {
     onFilterChange: (filters: {
         postType?: string;
         tags?: string[];
-        sort?: 'newest' | 'popular' | 'liked' | 'discussed';
+        sort?: 'newest' | 'active' | 'liked' | 'relevance';
         q?: string;
     }) => void;
 }
@@ -27,16 +27,15 @@ export function PostFilters({ onFilterChange }: PostFiltersProps) {
 
     const sortOptions = [
         { value: 'newest', label: 'Newest', icon: Clock },
-        { value: 'popular', label: 'Most Viewed', icon: TrendingUp },
+        { value: 'active', label: 'Most Active', icon: TrendingUp },
         { value: 'liked', label: 'Most Liked', icon: Heart },
-        { value: 'discussed', label: 'Most Discussed', icon: MessageCircle },
     ];
 
     const handleSearch = () => {
         onFilterChange({
             q: searchQuery || undefined,
             postType: selectedPostType || undefined,
-            sort: selectedSort as 'newest' | 'popular' | 'liked' | 'discussed',
+            sort: (searchQuery && selectedSort === 'newest' ? 'relevance' : selectedSort) as 'newest' | 'active' | 'liked' | 'relevance',
             tags: selectedTags.length > 0 ? selectedTags : undefined,
         });
     };

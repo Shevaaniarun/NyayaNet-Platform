@@ -1,23 +1,6 @@
 import pool from '../config/database';
+import { Post, PostWithAuthor, CreatePostInput, PostFilters, PostMediaInput } from '../types/postTypes';
 import { UserBookmarkModel } from './UserBookmark';
-
-export interface PostMediaInput {
-  mediaType: 'IMAGE' | 'PDF' | 'DOCUMENT';
-  mediaUrl: string;
-  thumbnailUrl?: string;
-  fileName?: string;
-  fileSize?: number;
-  mimeType?: string;
-}
-
-export interface CreatePostInput {
-  content: string;
-  title?: string;
-  postType?: 'POST' | 'QUESTION' | 'ARTICLE' | 'ANNOUNCEMENT';
-  tags?: string[];
-  isPublic?: boolean;
-  media?: PostMediaInput[];
-}
 
 export interface PostMedia {
   id: string;
@@ -33,36 +16,20 @@ export interface CommentResponse {
   postId: string;
   userId: string;
   content: string;
+  parentCommentId: string | null;
+  isEdited: boolean;
+  commentCount: number;
   createdAt: string;
   author: {
     id: string;
     fullName: string;
     profilePhotoUrl: string | null;
   };
+  replies?: CommentResponse[];
 }
 
-export interface PostResponse {
-  id: string;
-  userId: string;
-  title: string | null;
-  content: string;
-  postType: string;
-  tags: string[];
-  isPublic: boolean;
-  viewCount: number;
-  likeCount: number;
-  commentCount: number;
-  createdAt: string;
-  updatedAt: string;
+export interface PostResponse extends Post {
   media?: PostMedia[];
-  isLiked?: boolean;
-  isSaved?: boolean;
-  author?: {
-    id: string;
-    fullName: string;
-    profilePhotoUrl: string | null;
-    designation: string | null;
-  };
 }
 
 export class PostModel {
@@ -76,7 +43,7 @@ export class PostModel {
       const result = await client.query(
         `INSERT INTO posts (user_id, title, content, post_type, tags, is_public, created_at, updated_at)
                  VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-                 RETURNING id, user_id, title, content, post_type, tags, is_public, view_count, like_count, comment_count, created_at, updated_at`,
+                 RETURNING id, user_id, title, content, post_type, tags, is_public, like_count, comment_count, created_at, updated_at`,
         [userId, title || null, content, postType, tags, isPublic]
       );
 
@@ -130,7 +97,8 @@ export class PostModel {
                     ) ORDER BY pm.display_order ASC
                 ) FILTER (WHERE pm.id IS NOT NULL),
                 '[]'::json
-            ) as media
+            ) as media,
+            (SELECT reaction_type FROM post_likes WHERE post_id = p.id AND user_id = $2) as reaction_type
              FROM posts p
              JOIN users u ON p.user_id = u.id
              LEFT JOIN post_media pm ON p.id = pm.post_id
@@ -142,45 +110,77 @@ export class PostModel {
     if (!result.rows[0]) return null;
 
     const row = result.rows[0];
-    return this.mapRowToResponse(row, true);
+    return this.mapRowToResponse(result.rows[0]);
   }
 
   static async update(id: string, userId: string, updates: Partial<CreatePostInput>): Promise<PostResponse | null> {
-    // First verify ownership
-    const existing = await pool.query('SELECT user_id FROM posts WHERE id = $1', [id]);
-    if (!existing.rows[0] || existing.rows[0].user_id !== userId) return null;
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
 
-    const fieldMappings: Record<string, string> = {
-      content: 'content',
-      title: 'title',
-      postType: 'post_type',
-      tags: 'tags',
-      isPublic: 'is_public'
-    };
+      // First verify ownership
+      const existing = await client.query('SELECT user_id FROM posts WHERE id = $1', [id]);
+      if (!existing.rows[0] || existing.rows[0].user_id !== userId) return null;
 
-    const updateFields: string[] = [];
-    const values: any[] = [];
-    let paramIndex = 1;
+      const fieldMappings: Record<string, string> = {
+        content: 'content',
+        title: 'title',
+        postType: 'post_type',
+        tags: 'tags',
+        isPublic: 'is_public'
+      };
 
-    Object.entries(updates).forEach(([key, value]) => {
-      if (fieldMappings[key] && value !== undefined) {
-        updateFields.push(`${fieldMappings[key]} = $${paramIndex}`);
-        values.push(value);
-        paramIndex++;
+      const updateFields: string[] = [];
+      const values: any[] = [];
+      let paramIndex = 1;
+
+      Object.entries(updates).forEach(([key, value]) => {
+        if (fieldMappings[key] && value !== undefined) {
+          updateFields.push(`${fieldMappings[key]} = $${paramIndex}`);
+          values.push(value);
+          paramIndex++;
+        }
+      });
+
+      if (updateFields.length > 0) {
+        updateFields.push('updated_at = CURRENT_TIMESTAMP');
+        values.push(id);
+        const updateQuery = `UPDATE posts SET ${updateFields.join(', ')} WHERE id = $${paramIndex}`;
+        await client.query(updateQuery, values);
       }
-    });
 
-    if (updateFields.length === 0) return this.findById(id, userId);
+      // Handle media updates if provided
+      if (updates.media !== undefined) {
+        // Simple strategy: Clear old media and insert new ones
+        await client.query('DELETE FROM post_media WHERE post_id = $1', [id]);
 
-    updateFields.push('updated_at = CURRENT_TIMESTAMP');
-    values.push(id);
+        if (updates.media.length > 0) {
+          const mediaValues: any[] = [];
+          const mediaPlaceholders: string[] = [];
+          let pIdx = 1;
 
-    await pool.query(
-      `UPDATE posts SET ${updateFields.join(', ')} WHERE id = $${paramIndex}`,
-      values
-    );
+          updates.media.forEach((m: PostMediaInput, index) => {
+            mediaValues.push(id, m.mediaType, m.mediaUrl, m.thumbnailUrl || null, m.fileName || null, m.fileSize || null, m.mimeType || null, index);
+            mediaPlaceholders.push(`($${pIdx}, $${pIdx + 1}, $${pIdx + 2}, $${pIdx + 3}, $${pIdx + 4}, $${pIdx + 5}, $${pIdx + 6}, $${pIdx + 7})`);
+            pIdx += 8;
+          });
 
-    return this.findById(id, userId);
+          await client.query(
+            `INSERT INTO post_media (post_id, media_type, media_url, thumbnail_url, file_name, file_size, mime_type, display_order)
+             VALUES ${mediaPlaceholders.join(', ')}`,
+            mediaValues
+          );
+        }
+      }
+
+      await client.query('COMMIT');
+      return this.findById(id, userId);
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
   }
 
   static async delete(id: string, userId: string): Promise<boolean> {
@@ -196,16 +196,18 @@ export class PostModel {
   }
 
   // Get posts with filters (similar to discussions)
-  static async findAll(filters: any, userId?: string): Promise<{ posts: PostResponse[], pagination: any }> {
+  static async findAll(filters: PostFilters = {}, userId?: string): Promise<{ posts: PostResponse[], pagination: any }> {
     const {
-      page = 1,
-      limit = 20,
-      tags,
+      page: rawPage = 1,
+      limit: rawLimit = 20,
       postType,
+      tags,
       sort = 'newest',
       q
     } = filters;
 
+    const page = parseInt(rawPage.toString()) || 1;
+    const limit = parseInt(rawLimit.toString()) || 20;
     const offset = (page - 1) * limit;
 
     // Build filter conditions
@@ -259,14 +261,28 @@ export class PostModel {
     // Build sort clause
     let sortClause = 'p.created_at DESC';
     switch (sort) {
-      case 'popular':
-        sortClause = 'p.view_count DESC';
+      case 'newest':
+        sortClause = 'p.created_at DESC';
+        break;
+      case 'active':
+        sortClause = 'p.comment_count DESC';
         break;
       case 'liked':
         sortClause = 'p.like_count DESC';
         break;
-      case 'discussed':
-        sortClause = 'p.comment_count DESC';
+      case 'relevance':
+        if (q) {
+          sortClause = `
+            CASE 
+              WHEN p.title ILIKE $1 THEN 1
+              WHEN p.content ILIKE $1 THEN 2
+              ELSE 3
+            END,
+            p.comment_count DESC
+          `;
+        } else {
+          sortClause = 'p.created_at DESC';
+        }
         break;
     }
 
@@ -293,7 +309,8 @@ export class PostModel {
                     ) ORDER BY pm.display_order ASC
                 ) FILTER (WHERE pm.id IS NOT NULL),
                 '[]'::json
-            ) as media
+            ) as media,
+            (SELECT reaction_type FROM post_likes WHERE post_id = p.id AND user_id = $${userIdx}) as reaction_type
              FROM posts p
              JOIN users u ON p.user_id = u.id
              LEFT JOIN post_media pm ON p.id = pm.post_id
@@ -305,36 +322,48 @@ export class PostModel {
 
     const result = await pool.query(query, finalParams);
 
+    const posts = result.rows.map(row => this.mapRowToResponse(row));
     return {
-      posts: result.rows.map((row: any) => this.mapRowToResponse(row, true)),
+      posts: posts,
       pagination: { total, page, limit, pages: Math.ceil(total / limit) }
     };
   }
 
   // Engagement Features
 
-  static async toggleLike(postId: string, userId: string): Promise<{ liked: boolean; count: number }> {
+  static async toggleLike(postId: string, userId: string, reactionType: string = 'LIKE'): Promise<{ liked: boolean; count: number; reactionType: string | null }> {
     const client = await pool.connect();
     try {
       await client.query('BEGIN');
 
       const check = await client.query(
-        'SELECT id FROM post_likes WHERE post_id = $1 AND user_id = $2',
+        'SELECT id, reaction_type FROM post_likes WHERE post_id = $1 AND user_id = $2',
         [postId, userId]
       );
 
       let liked = false;
-      // The trigger update_post_stats will handle the count
+      let finalReactionType: string | null = null;
+
       if (check.rows[0]) {
-        await client.query('DELETE FROM post_likes WHERE id = $1', [check.rows[0].id]);
-        await client.query('UPDATE posts SET like_count = GREATEST(0, like_count - 1) WHERE id = $1', [postId]);
+        if (check.rows[0].reaction_type === reactionType) {
+          // Remove reaction if clicking the same one
+          await client.query('DELETE FROM post_likes WHERE id = $1', [check.rows[0].id]);
+          await client.query('UPDATE posts SET like_count = GREATEST(0, like_count - 1) WHERE id = $1', [postId]);
+        } else {
+          // Change reaction type
+          await client.query('UPDATE post_likes SET reaction_type = $1 WHERE id = $2', [reactionType, check.rows[0].id]);
+          liked = true;
+          finalReactionType = reactionType;
+        }
       } else {
+        // Add new reaction
         await client.query(
-          'INSERT INTO post_likes (post_id, user_id) VALUES ($1, $2)',
-          [postId, userId]
+          'INSERT INTO post_likes (post_id, user_id, reaction_type) VALUES ($1, $2, $3)',
+          [postId, userId, reactionType]
         );
         await client.query('UPDATE posts SET like_count = like_count + 1 WHERE id = $1', [postId]);
         liked = true;
+        finalReactionType = reactionType;
       }
 
       const countResult = await client.query('SELECT like_count FROM posts WHERE id = $1', [postId]);
@@ -342,7 +371,8 @@ export class PostModel {
       await client.query('COMMIT');
       return {
         liked,
-        count: countResult.rows[0]?.like_count || 0
+        count: countResult.rows[0]?.like_count || 0,
+        reactionType: finalReactionType
       };
     } catch (error) {
       await client.query('ROLLBACK');
@@ -352,6 +382,7 @@ export class PostModel {
     }
   }
 
+
   static async toggleBookmark(postId: string, userId: string): Promise<{ saved: boolean; saveCount: number }> {
     const result = await UserBookmarkModel.toggleBookmark(userId, 'POST', postId);
     return {
@@ -360,27 +391,151 @@ export class PostModel {
     };
   }
 
-  static async addComment(postId: string, userId: string, content: string): Promise<CommentResponse> {
-    const result = await pool.query(
-      `INSERT INTO post_comments (post_id, user_id, content)
-             VALUES ($1, $2, $3)
-             RETURNING id, content, created_at, updated_at`,
-      [postId, userId, content]
-    );
+  static async addComment(postId: string, userId: string, content: string, parentCommentId: string | null = null): Promise<CommentResponse> {
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
 
-    // Manually increment comment count
-    await pool.query('UPDATE posts SET comment_count = comment_count + 1 WHERE id = $1', [postId]);
+      const result = await client.query(
+        `INSERT INTO post_comments (post_id, user_id, content, parent_comment_id)
+         VALUES ($1, $2, $3, $4)
+         RETURNING id, content, parent_comment_id, is_edited, comment_count, created_at`,
+        [postId, userId, content, parentCommentId]
+      );
+
+      const row = result.rows[0];
+
+      // Increment post comment count
+      await client.query('UPDATE posts SET comment_count = comment_count + 1 WHERE id = $1', [postId]);
+
+      // If it's a nested comment, increment parent comment count
+      if (parentCommentId) {
+        await client.query('UPDATE post_comments SET comment_count = comment_count + 1 WHERE id = $1', [parentCommentId]);
+      }
+
+      // Fetch user details
+      const userRes = await client.query('SELECT full_name, profile_photo_url FROM users WHERE id = $1', [userId]);
+      const user = userRes.rows[0];
+
+      await client.query('COMMIT');
+
+      return {
+        id: row.id,
+        postId,
+        userId,
+        content: row.content,
+        parentCommentId: row.parent_comment_id,
+        isEdited: row.is_edited,
+        commentCount: row.comment_count,
+        createdAt: row.created_at instanceof Date ? row.created_at.toISOString() : new Date(row.created_at).toISOString(),
+        author: {
+          id: userId,
+          fullName: user.full_name,
+          profilePhotoUrl: user.profile_photo_url
+        },
+        replies: []
+      };
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  static async getComments(postId: string, userId?: string, page = 1, limit = 100): Promise<CommentResponse[]> {
+    const query = `
+      WITH RECURSIVE comment_tree AS (
+        -- Base case: top-level comments
+        SELECT 
+          c.*,
+          u.full_name as author_name,
+          u.profile_photo_url as author_photo,
+          1 as depth,
+          ARRAY[c.created_at] as path
+        FROM post_comments c
+        LEFT JOIN users u ON c.user_id = u.id
+        WHERE c.post_id = $1 AND c.parent_comment_id IS NULL AND c.is_deleted = false
+        
+        UNION ALL
+        
+        -- Recursive case: nested comments
+        SELECT 
+          c.*,
+          u.full_name as author_name,
+          u.profile_photo_url as author_photo,
+          ct.depth + 1 as depth,
+          ct.path || c.created_at as path
+        FROM post_comments c
+        JOIN comment_tree ct ON c.parent_comment_id = ct.id
+        LEFT JOIN users u ON c.user_id = u.id
+        WHERE c.is_deleted = false AND ct.depth < 10
+      )
+      SELECT * FROM comment_tree
+      ORDER BY path;
+    `;
+
+    const result = await pool.query(query, [postId]);
+
+    // Build the tree structure in memory
+    const comments: any[] = result.rows.map(row => ({
+      id: row.id,
+      postId: row.post_id,
+      userId: row.user_id,
+      content: row.content,
+      parentCommentId: row.parent_comment_id,
+      isEdited: row.is_edited,
+      commentCount: row.comment_count,
+      createdAt: row.created_at instanceof Date ? row.created_at.toISOString() : new Date(row.created_at).toISOString(),
+      author: {
+        id: row.user_id,
+        fullName: row.author_name,
+        profilePhotoUrl: row.author_photo
+      },
+      replies: []
+    }));
+
+    const commentMap = new Map();
+    const rootComments: CommentResponse[] = [];
+
+    comments.forEach(comment => {
+      commentMap.set(comment.id, comment);
+    });
+
+    comments.forEach(comment => {
+      if (comment.parentCommentId && commentMap.has(comment.parentCommentId)) {
+        const parent = commentMap.get(comment.parentCommentId);
+        parent.replies.push(comment);
+      } else {
+        rootComments.push(comment);
+      }
+    });
+
+    return rootComments;
+  }
+
+  static async updateComment(id: string, userId: string, content: string): Promise<CommentResponse | null> {
+    const query = `
+      UPDATE post_comments 
+      SET content = $1, is_edited = true, updated_at = CURRENT_TIMESTAMP
+      WHERE id = $2 AND user_id = $3
+      RETURNING *;
+    `;
+    const result = await pool.query(query, [content, id, userId]);
+    if (!result.rows[0]) return null;
+
     const row = result.rows[0];
-
-    // Fetch user details for the response
     const userRes = await pool.query('SELECT full_name, profile_photo_url FROM users WHERE id = $1', [userId]);
     const user = userRes.rows[0];
 
     return {
       id: row.id,
-      postId,
-      userId,
+      postId: row.post_id,
+      userId: row.user_id,
       content: row.content,
+      parentCommentId: row.parent_comment_id,
+      isEdited: row.is_edited,
+      commentCount: row.comment_count,
       createdAt: row.created_at instanceof Date ? row.created_at.toISOString() : new Date(row.created_at).toISOString(),
       author: {
         id: userId,
@@ -390,34 +545,17 @@ export class PostModel {
     };
   }
 
-  static async getComments(postId: string, page = 1, limit = 50): Promise<CommentResponse[]> {
-    const offset = (page - 1) * limit;
-
+  static async deleteComment(id: string, userId: string): Promise<boolean> {
     const result = await pool.query(
-      `SELECT c.*, u.full_name, u.profile_photo_url
-             FROM post_comments c
-             JOIN users u ON c.user_id = u.id
-             WHERE c.post_id = $1
-             ORDER BY c.created_at ASC
-             LIMIT $2 OFFSET $3`,
-      [postId, limit, offset]
+      `UPDATE post_comments 
+       SET is_deleted = true, updated_at = CURRENT_TIMESTAMP
+       WHERE id = $1 AND user_id = $2`,
+      [id, userId]
     );
-
-    return result.rows.map(row => ({
-      id: row.id,
-      postId: row.post_id,
-      userId: row.user_id,
-      content: row.content,
-      createdAt: row.created_at instanceof Date ? row.created_at.toISOString() : new Date(row.created_at).toISOString(),
-      author: {
-        id: row.user_id,
-        fullName: row.full_name,
-        profilePhotoUrl: row.profile_photo_url
-      }
-    }));
+    return (result.rowCount ?? 0) > 0;
   }
 
-  private static mapRowToResponse(row: any, includeAuthor = false): PostResponse {
+  private static mapRowToResponse(row: any): PostResponse {
     const response: PostResponse = {
       id: row.id,
       userId: row.user_id,
@@ -426,24 +564,21 @@ export class PostModel {
       postType: row.post_type,
       tags: row.tags || [],
       isPublic: row.is_public,
-      viewCount: row.view_count || 0,
-      likeCount: row.like_count || 0,
-      commentCount: row.comment_count || 0,
-      createdAt: row.created_at instanceof Date ? row.created_at.toISOString() : new Date(row.created_at).toISOString(),
-      updatedAt: row.updated_at instanceof Date ? row.updated_at.toISOString() : new Date(row.updated_at).toISOString(),
-      media: Array.isArray(row.media) ? row.media : [],
-      isLiked: !!row.is_liked,
-      isSaved: !!row.is_saved
-    };
-
-    if (includeAuthor && row.full_name) {
-      response.author = {
+      likeCount: parseInt(row.like_count) || 0,
+      commentCount: parseInt(row.comment_count) || 0,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+      media: row.media,
+      isLiked: row.is_liked,
+      isSaved: row.is_saved,
+      reactionType: row.reaction_type,
+      author: row.full_name ? {
         id: row.user_id,
         fullName: row.full_name,
         profilePhotoUrl: row.profile_photo_url,
         designation: row.designation
-      };
-    }
+      } : undefined
+    };
 
     return response;
   }

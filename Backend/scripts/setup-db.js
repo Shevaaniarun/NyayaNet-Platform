@@ -34,7 +34,7 @@ process.env.PGPASSWORD = password;
 function runCommand(command, ignoreErrors = false) {
     console.log(`\n> ${command.substring(0, 100)}...`);
     try {
-        const result = execSync(command, { 
+        const result = execSync(command, {
             encoding: 'utf8',
             stdio: ['pipe', 'pipe', ignoreErrors ? 'pipe' : 'inherit'],
             timeout: 30000
@@ -53,10 +53,10 @@ function runCommand(command, ignoreErrors = false) {
 
 async function checkPostgresConnection() {
     console.log('\n1. Testing PostgreSQL connection...');
-    
+
     const testCmd = `psql -h ${host} -p ${port} -U ${user} -c "SELECT version();"`;
     const result = runCommand(testCmd, true);
-    
+
     if (!result) {
         console.error('\n❌ Cannot connect to PostgreSQL. Please check:');
         console.error('   • Is PostgreSQL installed?');
@@ -68,28 +68,28 @@ async function checkPostgresConnection() {
         console.error('   Ubuntu: sudo service postgresql start');
         return false;
     }
-    
+
     console.log('✅ PostgreSQL connection successful');
     return true;
 }
 
 async function createDatabase() {
     console.log('\n2. Creating database...');
-    
+
     // First check if database exists
     const checkDbCmd = `psql -h ${host} -p ${port} -U ${user} -lqt | cut -d \\| -f 1 | grep -w ${database}`;
     const dbExists = runCommand(checkDbCmd, true);
-    
+
     if (dbExists) {
         console.log(`⚠️  Database '${database}' already exists`);
-        const answer = process.argv.includes('--force') ? 'y' : 
+        const answer = process.argv.includes('--force') ? 'y' :
             await askQuestion(`Do you want to drop and recreate it? (y/N): `);
-        
+
         if (answer.toLowerCase() === 'y') {
             console.log('Dropping existing database...');
             const dropCmd = `psql -h ${host} -p ${port} -U ${user} -c "DROP DATABASE IF EXISTS ${database};"`;
             runCommand(dropCmd);
-            
+
             const createCmd = `psql -h ${host} -p ${port} -U ${user} -c "CREATE DATABASE ${database};"`;
             runCommand(createCmd);
         } else {
@@ -99,19 +99,19 @@ async function createDatabase() {
         const createCmd = `psql -h ${host} -p ${port} -U ${user} -c "CREATE DATABASE ${database};"`;
         runCommand(createCmd);
     }
-    
+
     return true;
 }
 
 async function runSchema() {
     console.log('\n3. Running schema...');
-    
-    const schemaPath = path.join(__dirname, 'schema.sql');
+
+    const schemaPath = path.join(__dirname, '..', 'database', 'schema.sql');
     if (!fs.existsSync(schemaPath)) {
         console.error(`❌ Schema file not found: ${schemaPath}`);
         return false;
     }
-    
+
     // Check if schema file is readable
     try {
         const stats = fs.statSync(schemaPath);
@@ -123,33 +123,33 @@ async function runSchema() {
         console.error(`❌ Cannot read schema file: ${error.message}`);
         return false;
     }
-    
+
     const schemaCmd = `psql -h ${host} -p ${port} -U ${user} -d ${database} -f "${schemaPath}"`;
     const result = runCommand(schemaCmd);
-    
+
     if (!result) {
         console.error('❌ Failed to run schema');
         return false;
     }
-    
+
     return true;
 }
 
 async function verifyDatabase() {
     console.log('\n4. Verifying database setup...');
-    
+
     const verifyCmds = [
         `psql -h ${host} -p ${port} -U ${user} -d ${database} -c "SELECT COUNT(*) as user_count FROM users;" -t`,
         `psql -h ${host} -p ${port} -U ${user} -d ${database} -c "\\dt" -t`
     ];
-    
+
     for (const cmd of verifyCmds) {
         const result = runCommand(cmd, true);
         if (result) {
             console.log(`   ${result.trim()}`);
         }
     }
-    
+
     return true;
 }
 
@@ -166,26 +166,26 @@ async function main() {
     console.log('='.repeat(60));
     console.log('NyayaNet Database Setup Tool');
     console.log('='.repeat(60));
-    
+
     try {
         // Check connection
         if (!await checkPostgresConnection()) {
             process.exit(1);
         }
-        
+
         // Create database
         if (!await createDatabase()) {
             process.exit(1);
         }
-        
+
         // Run schema
         if (!await runSchema()) {
             process.exit(1);
         }
-        
+
         // Verify
         await verifyDatabase();
-        
+
         console.log('\n' + '='.repeat(60));
         console.log('✅ Database setup complete!');
         console.log('\n📊 Next steps:');
@@ -195,7 +195,7 @@ async function main() {
         console.log('   Email:    admin@nyayanet.com');
         console.log('   Password: admin123');
         console.log('='.repeat(60));
-        
+
     } catch (error) {
         console.error('\n❌ Setup failed:', error.message);
         process.exit(1);

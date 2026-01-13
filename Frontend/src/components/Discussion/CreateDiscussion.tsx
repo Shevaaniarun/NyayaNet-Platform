@@ -13,7 +13,15 @@ interface CreateDiscussionProps {
   onCancel?: () => void;
 }
 
+/**
+ * CreateDiscussion renders as a fully independent component.
+ * - It does not redirect on mount.
+ * - It can be rendered on any route or as an active screen (e.g. from ProfilePage or Dashboard).
+ * - It has no coupling to dashboard, authentication, or navigation logic.
+ * - All form logic, submission, and cancellation is managed via props.
+ */
 export function CreateDiscussion({ onSubmit, onCancel }: CreateDiscussionProps) {
+  // No redirect or navigation logic here; renders independently.
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [discussionType, setDiscussionType] = useState<'GENERAL' | 'CASE_ANALYSIS' | 'LEGAL_QUERY' | 'OPINION_POLL'>('GENERAL');
@@ -78,6 +86,7 @@ export function CreateDiscussion({ onSubmit, onCancel }: CreateDiscussionProps) 
     });
   };
 
+  // No redirect or navigation logic here; renders independently.
   return (
     <div className="aged-paper rounded-lg p-8 relative max-w-4xl mx-auto">
       <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-constitution-gold to-transparent"></div>

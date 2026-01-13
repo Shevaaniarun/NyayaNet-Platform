@@ -9,14 +9,16 @@ interface ProfileStatsProps {
     onFollowingClick?: () => void;
     onPostsClick?: () => void;
     onDiscussionsClick?: () => void;
+    likesCount?: number;
 }
 
-export function ProfileStats({ followerCount, followingCount, postCount, discussionCount, onFollowersClick, onFollowingClick, onPostsClick, onDiscussionsClick }: ProfileStatsProps) {
+export function ProfileStats({ followerCount, followingCount, postCount, discussionCount, likesCount, onFollowersClick, onFollowingClick, onPostsClick, onDiscussionsClick }: ProfileStatsProps) {
     const stats = [
         { label: 'Followers', count: followerCount, onClick: onFollowersClick, clickable: !!onFollowersClick },
         { label: 'Following', count: followingCount, onClick: onFollowingClick, clickable: !!onFollowingClick },
         { label: 'Posts', count: postCount, onClick: onPostsClick, clickable: !!onPostsClick },
         { label: 'Discussions', count: discussionCount, onClick: onDiscussionsClick, clickable: !!onDiscussionsClick },
+        { label: 'Likes', count: likesCount || 0, onClick: undefined, clickable: false },
     ];
 
     const formatCount = (count: number): string => {

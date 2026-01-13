@@ -33,7 +33,7 @@ process.env.PGPASSWORD = password;
 function runCommand(command, ignoreErrors = false) {
     console.log(`\n> ${command.substring(0, 100)}...`);
     try {
-        const result = execSync(command, { 
+        const result = execSync(command, {
             encoding: 'utf8',
             stdio: ['pipe', 'pipe', ignoreErrors ? 'pipe' : 'inherit'],
             timeout: 60000
@@ -52,53 +52,53 @@ function runCommand(command, ignoreErrors = false) {
 
 async function checkDatabaseExists() {
     console.log('\n1. Checking database...');
-    
+
     const checkCmd = `psql -h ${host} -p ${port} -U ${user} -d ${database} -c "SELECT 1;"`;
     const result = runCommand(checkCmd, true);
-    
+
     if (!result) {
         console.error(`❌ Database '${database}' does not exist or cannot be accessed`);
         console.error('   Run setup first: npm run db:setup');
         return false;
     }
-    
+
     console.log('✅ Database connection successful');
     return true;
 }
 
 async function checkIfAlreadySeeded() {
     console.log('\n2. Checking for existing data...');
-    
+
     const checkCmd = `psql -h ${host} -p ${port} -U ${user} -d ${database} -c "SELECT COUNT(*) as user_count FROM users;" -t`;
     const result = runCommand(checkCmd, true);
-    
+
     if (result && parseInt(result.trim()) > 1) { // >1 because admin user is always there
         console.log('⚠️  Database already contains data');
-        
+
         if (process.argv.includes('--force')) {
             console.log('   Force flag detected, proceeding with reseed...');
             return false;
         }
-        
+
         const answer = await askQuestion('Do you want to reseed? This will delete all data. (y/N): ');
         if (answer.toLowerCase() !== 'y') {
             console.log('❌ Seeding cancelled');
             return true;
         }
     }
-    
+
     return false;
 }
 
 async function runSeed() {
     console.log('\n3. Running seed data...');
-    
-    const seedPath = path.join(__dirname, 'seed.sql');
+
+    const seedPath = path.join(__dirname, '..', 'database', 'seed.sql');
     if (!fs.existsSync(seedPath)) {
         console.error(`❌ Seed file not found: ${seedPath}`);
         return false;
     }
-    
+
     // Check if seed file is readable
     try {
         const stats = fs.statSync(seedPath);
@@ -110,21 +110,21 @@ async function runSeed() {
         console.error(`❌ Cannot read seed file: ${error.message}`);
         return false;
     }
-    
+
     const seedCmd = `psql -h ${host} -p ${port} -U ${user} -d ${database} -f "${seedPath}"`;
     const result = runCommand(seedCmd);
-    
+
     if (!result) {
         console.error('❌ Failed to run seed data');
         return false;
     }
-    
+
     return true;
 }
 
 async function verifySeed() {
     console.log('\n4. Verifying seeded data...');
-    
+
     const verifyQueries = [
         `SELECT '👥 Users: ' || COUNT(*) as count FROM users`,
         `SELECT '📝 Posts: ' || COUNT(*) as count FROM posts`,
@@ -132,7 +132,7 @@ async function verifySeed() {
         `SELECT '🤖 AI Sessions: ' || COUNT(*) as count FROM ai_sessions`,
         `SELECT '⚖️  Law Acts: ' || COUNT(*) as count FROM law_acts`
     ];
-    
+
     for (const query of verifyQueries) {
         const cmd = `psql -h ${host} -p ${port} -U ${user} -d ${database} -c "${query}" -t`;
         const result = runCommand(cmd, true);
@@ -140,7 +140,7 @@ async function verifySeed() {
             console.log(`   ${result.trim()}`);
         }
     }
-    
+
     // Show test user credentials
     console.log('\n🔑 Test User Credentials (Password: username123):');
     console.log('   student.law@example.com (student123)');
@@ -148,7 +148,7 @@ async function verifySeed() {
     console.log('   justice.mehta@example.com (justice123)');
     console.log('   lawyer.verma@example.com (lawyer123)');
     console.log('   legal.pro@example.com (legal123)');
-    
+
     return true;
 }
 
@@ -165,32 +165,32 @@ async function main() {
     console.log('='.repeat(60));
     console.log('NyayaNet Database Seeding Tool');
     console.log('='.repeat(60));
-    
+
     try {
         // Check if database exists
         if (!await checkDatabaseExists()) {
             process.exit(1);
         }
-        
+
         // Check if already seeded
         if (await checkIfAlreadySeeded()) {
             process.exit(0);
         }
-        
+
         // Run seed
         if (!await runSeed()) {
             process.exit(1);
         }
-        
+
         // Verify
         await verifySeed();
-        
+
         console.log('\n' + '='.repeat(60));
         console.log('✅ Database seeding complete!');
         console.log('\n🚀 You can now start the server:');
         console.log('   npm run dev');
         console.log('='.repeat(60));
-        
+
     } catch (error) {
         console.error('\n❌ Seeding failed:', error.message);
         process.exit(1);

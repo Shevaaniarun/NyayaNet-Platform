@@ -1,15 +1,15 @@
 import { Router } from 'express';
 import { PostController } from '../controllers/postController';
-import { authenticate } from '../middleware/auth';
+import { authenticate, optionalAuthenticate } from '../middleware/auth';
 import { upload } from '../utils/upload';
 
 const router = Router();
 
 // Routes
 router.post('/upload', authenticate, upload.array('files', 5), PostController.uploadFiles);
-router.get('/feed', PostController.getFeed);
-router.get('/all', PostController.getPosts); // New route for filtered posts
-router.get('/:postId', PostController.getPost);
+router.get('/feed', optionalAuthenticate, PostController.getFeed);
+router.get('/all', optionalAuthenticate, PostController.getPosts); // New route for filtered posts
+router.get('/:postId', optionalAuthenticate, PostController.getPost);
 router.get('/:postId/comments', PostController.getComments);
 
 // Protected routes (require authentication)
@@ -19,5 +19,7 @@ router.delete('/:postId', authenticate, PostController.deletePost);
 router.post('/:postId/like', authenticate, PostController.likePost);
 router.post('/:postId/save', authenticate, PostController.savePost);
 router.post('/:postId/comments', authenticate, PostController.createComment);
+router.put('/comments/:commentId', authenticate, PostController.updateComment);
+router.delete('/comments/:commentId', authenticate, PostController.deleteComment);
 
 export default router;

@@ -1,6 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Reenie+Beanie&display=swap');
 @import 'tailwindcss' source(none);
 @source '../**/*.{js,ts,jsx,tsx}';
+<<<<<<< HEAD
 /* Add to your tailwind.css or index.css */
 
 /* Custom utilities */
@@ -24,6 +25,8 @@
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 6;
 }
+=======
+>>>>>>> 9729640494d84ef376603e6025c4f05d509bbc18
 
 /* Smooth transitions */
 * {

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import {
   Heart,
   MessageSquare,
@@ -13,10 +13,22 @@ import {
   Loader2,
   FileText,
   ExternalLink,
-  Link
+  Link,
+  Eye,
+  Smile,
+  Zap,
+  Award,
+  ThumbsUp,
+  Lightbulb,
+  Info,
+  HelpCircle,
+  Edit2,
+  X,
+  Image as ImageIcon
 } from 'lucide-react';
-import { likePost, savePost, createComment, deletePost } from '../api/postsAPI';
+import { likePost, savePost, createComment, getComments, deletePost, updatePost, uploadFiles } from '../api/postsAPI';
 import { toast } from 'react-toastify';
+import { CommentCard } from './Post/CommentCard';
 
 export interface Post {
   id: string;
@@ -29,6 +41,7 @@ export interface Post {
     organization: string;
   };
   postType: string;
+  title?: string;
   content: string;
   createdAt: string;
   likeCount: number;
@@ -38,16 +51,21 @@ export interface Post {
     id: string;
     url: string;
     type: string;
+    mimeType?: string;
+    mediaUrl?: string;
+    mediaType?: string;
+    fileName?: string;
   }>;
   isLiked?: boolean;
   isSaved?: boolean;
+  reactionType?: string | null;
 }
 
 interface PostCardProps {
   post: Post;
   currentUserId?: string;
   onDelete?: (postId: string) => void;
-  onAuthorClick?: (userId: string) => void; // Added this prop
+  onAuthorClick?: (userId: string) => void;
 }
 
 export function PostCard({ post, currentUserId, onDelete, onAuthorClick }: PostCardProps) {
@@ -56,28 +74,52 @@ export function PostCard({ post, currentUserId, onDelete, onAuthorClick }: PostC
   const [isBookmarked, setIsBookmarked] = useState(post.isSaved || false);
   const [showComments, setShowComments] = useState(false);
   const [commentText, setCommentText] = useState('');
-  const [comments, setComments] = useState<Array<{ id: string; content: string; author: { fullName: string }; createdAt: string; userId: string }>>([]);
+  const [comments, setComments] = useState<any[]>([]);
   const [isLoadingComments, setIsLoadingComments] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  const [commentCount, setCommentCount] = useState(post.commentCount);
+  const [showReactionPicker, setShowReactionPicker] = useState(false);
+  const [currentReaction, setCurrentReaction] = useState<string | null>(post.reactionType || null);
+
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  const docInputRef = useRef<HTMLInputElement>(null);
+
   const isOwner = currentUserId === post.userId;
 
   // Get current user initials for comment input
-  const userStr = localStorage.getItem('user');
-  const user = userStr ? JSON.parse(userStr) : null;
+  const fetchUser = () => {
+    try {
+      const userStr = localStorage.getItem('user');
+      return userStr ? JSON.parse(userStr) : null;
+    } catch {
+      return null;
+    }
+  };
+
+  const user = fetchUser();
   const userInitials = user?.fullName
     ? user.fullName.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)
     : 'U';
 
-  const handleLike = async () => {
+  const API_BASE_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3000/api';
+  const ASSETS_BASE_URL = API_BASE_URL.replace('/api', '');
+
+  const handleLike = async (reactionType: string = 'LIKE') => {
     try {
-      const result = await likePost(post.id);
+      // If clicking the same reaction, it will be toggled off by the backend
+      const result = await likePost(post.id, reactionType);
       setIsLiked(result.liked);
       setLikeCount(result.count);
-      toast.success(result.liked ? 'Post liked' : 'Post unliked');
+      setCurrentReaction(result.liked ? result.reactionType : null);
+
+      const action = result.liked ? 'reacted' : 'removed reaction';
+      const typeLabel = reactionType.toLowerCase().replace('_', ' ');
+      toast.success(result.liked ? `Post marked as ${typeLabel}` : 'Reaction removed');
+      setShowReactionPicker(false);
     } catch (error: any) {
-      toast.error(error.message || 'Failed to like post');
+      toast.error(error.message || 'Failed to process reaction');
     }
   };
 
@@ -120,7 +162,6 @@ export function PostCard({ post, currentUserId, onDelete, onAuthorClick }: PostC
   const fetchComments = async () => {
     try {
       setIsLoadingComments(true);
-      const { getComments } = await import('../api/postsAPI');
       const data = await getComments(post.id);
       setComments(data as any);
     } catch (error) {
@@ -135,8 +176,9 @@ export function PostCard({ post, currentUserId, onDelete, onAuthorClick }: PostC
 
     try {
       const newComment = await createComment(post.id, commentText);
-      setComments([newComment as any, ...comments]);
+      setComments(prev => [newComment as any, ...prev]);
       setCommentText('');
+      setCommentCount(prev => prev + 1);
       toast.success('Comment added');
     } catch (error: any) {
       toast.error(error.message || 'Failed to add comment');
@@ -188,41 +230,68 @@ export function PostCard({ post, currentUserId, onDelete, onAuthorClick }: PostC
     }
   };
 
-  // Helper to render media
   const renderMedia = (media: any) => {
-    const isImage = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(media.mimeType) ||
-      media.url.match(/\.(jpg|jpeg|png|gif|webp)$/i);
+    const mediaUrl = media?.url || media?.mediaUrl || '';
+    const mimeType = media?.mimeType || media?.mediaType || media?.type || '';
+    const fileName = media?.fileName || '';
+
+    const isImage = mimeType.includes('image/') ||
+      (mediaUrl && mediaUrl.match(/\.(jpg|jpeg|png|gif|webp|svg|bmp|jfif)$/i));
+
+    let fullMediaUrl = mediaUrl;
+    if (mediaUrl && !mediaUrl.startsWith('http') && !mediaUrl.startsWith('data:')) {
+      fullMediaUrl = `${ASSETS_BASE_URL}${mediaUrl}`;
+    }
 
     if (isImage) {
       return (
         <div
           key={media.id}
-          className="rounded-lg overflow-hidden border border-constitution-gold/20 bg-parchment-cream aspect-video cursor-pointer hover:border-constitution-gold transition-colors"
-          onClick={() => window.open(`${ASSETS_BASE_URL}${media.url}`, '_blank')}
+          className="rounded-lg overflow-hidden border border-constitution-gold/20 bg-parchment-cream aspect-video cursor-pointer hover:border-constitution-gold transition-colors relative"
+          onClick={() => window.open(fullMediaUrl, '_blank')}
         >
           <img
-            src={`${ASSETS_BASE_URL}${media.url}`}
+            src={fullMediaUrl}
             alt="Post media"
             className="w-full h-full object-cover"
+            onError={(e) => {
+              (e.target as HTMLImageElement).style.display = 'none';
+              const parent = (e.target as HTMLImageElement).parentElement;
+              if (parent) {
+                parent.innerHTML = `
+                  <div class="w-full h-full flex flex-col items-center justify-center bg-gray-100">
+                    <div class="w-16 h-16 bg-constitution-gold/20 rounded-full flex items-center justify-center mb-3">
+                      <svg class="w-8 h-8 text-constitution-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                      </svg>
+                    </div>
+                    <p class="text-gray-500 text-sm">Image not available</p>
+                  </div>
+                `;
+              }
+            }}
           />
         </div>
       );
     }
 
-    // Document / PDF UI
     return (
       <div
         key={media.id}
         className="rounded-lg border border-constitution-gold/30 bg-constitution-gold/5 p-4 flex items-center justify-between group cursor-pointer hover:bg-constitution-gold/10 transition-colors"
-        onClick={() => window.open(`${ASSETS_BASE_URL}${media.url}`, '_blank')}
+        onClick={() => window.open(fullMediaUrl, '_blank')}
       >
         <div className="flex items-center space-x-3 overflow-hidden">
           <div className="w-10 h-10 rounded bg-constitution-gold/20 flex items-center justify-center flex-shrink-0">
             <FileText className="w-6 h-6 text-constitution-gold" />
           </div>
           <div className="overflow-hidden">
-            <p className="text-sm font-semibold text-ink-gray truncate">{media.fileName || 'Document'}</p>
-            <p className="text-xs text-ink-gray/60 uppercase">{media.mimeType?.split('/')[1] || 'File'}</p>
+            <p className="text-sm font-semibold text-ink-gray truncate">
+              {fileName || 'Document'}
+            </p>
+            <p className="text-xs text-ink-gray/60 uppercase">
+              {mimeType?.split('/')[1] || media?.type || 'File'}
+            </p>
           </div>
         </div>
         <div className="w-8 h-8 rounded-full flex items-center justify-center bg-constitution-gold text-justice-black opacity-0 group-hover:opacity-100 transition-opacity">
@@ -232,7 +301,6 @@ export function PostCard({ post, currentUserId, onDelete, onAuthorClick }: PostC
     );
   };
 
-  // Fix: Display Post Type Badge
   const getPostTypeLabel = (type: string) => {
     switch (type) {
       case 'QUESTION': return 'Question';
@@ -251,21 +319,17 @@ export function PostCard({ post, currentUserId, onDelete, onAuthorClick }: PostC
     }
   };
 
-  const API_BASE_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3000/api';
-  const ASSETS_BASE_URL = API_BASE_URL.replace('/api', '');
-
   return (
     <div className="relative mb-8">
-      {/* Aged Paper Container */}
       <div className="aged-paper rounded-lg p-6 relative overflow-hidden">
-        {/* Top Border Decoration */}
         <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-constitution-gold to-transparent"></div>
-
-        {/* Corner Accents */}
         <div className="absolute top-3 left-3 w-6 h-6 border-t border-l border-constitution-gold opacity-30"></div>
         <div className="absolute top-3 right-3 w-6 h-6 border-t border-r border-constitution-gold opacity-30"></div>
 
+<<<<<<< HEAD
         {/* Author Section */}
+=======
+>>>>>>> 9729640494d84ef376603e6025c4f05d509bbc18
         <div
           className={`flex items-center mb-6 pb-4 border-b border-constitution-gold/20 ${onAuthorClick ? 'cursor-pointer hover:bg-constitution-gold/5 rounded-lg p-2 transition-colors' : ''}`}
           onClick={handleAuthorClick}
@@ -273,12 +337,18 @@ export function PostCard({ post, currentUserId, onDelete, onAuthorClick }: PostC
           <div className="relative">
             <div className="w-12 h-12 rounded-full border-2 border-constitution-gold overflow-hidden bg-parchment-cream">
               <img
+<<<<<<< HEAD
                 src={post.author.profilePhotoUrl || 'https://placehold.co/150'}
+=======
+                src={post.author.profilePhotoUrl || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(post.author.fullName) + '&background=1a472a&color=fff'}
+>>>>>>> 9729640494d84ef376603e6025c4f05d509bbc18
                 alt={post.author.fullName}
                 className="w-full h-full object-cover"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(post.author.fullName)}&background=1a472a&color=fff`;
+                }}
               />
             </div>
-            {/* Role Badge */}
             <div className="absolute -bottom-1 -right-1">
               <div className="w-6 h-6 bg-constitution-gold rounded-full border-2 border-parchment-cream flex items-center justify-center">
                 <Scale className="w-3 h-3 text-justice-black" />
@@ -306,30 +376,25 @@ export function PostCard({ post, currentUserId, onDelete, onAuthorClick }: PostC
           </div>
         </div>
 
-        {/* Post Content */}
         <div className="mb-6">
-          {/* Post Type Indicator */}
           <div className={`inline-flex items-center px-3 py-1 mb-4 border rounded-full ${getPostTypeColor(post.postType)}`}>
             <span className="tracking-wide uppercase font-bold" style={{ fontSize: '0.7rem' }}>
               {getPostTypeLabel(post.postType)}
             </span>
           </div>
 
-          {/* Content */}
           <div className="constitution-texture p-6 rounded">
             <p className="text-ink-gray leading-relaxed font-body whitespace-pre-wrap">
               {post.content}
             </p>
           </div>
 
-          {/* Media Attachments */}
           {post.media && post.media.length > 0 && (
             <div className="mt-4 flex flex-col gap-3">
               {post.media.map((media) => renderMedia(media))}
             </div>
           )}
 
-          {/* Tags */}
           {post.tags && post.tags.length > 0 && (
             <div className="mt-4 flex flex-wrap gap-2">
               {post.tags.map((tag) => (
@@ -345,22 +410,63 @@ export function PostCard({ post, currentUserId, onDelete, onAuthorClick }: PostC
           )}
         </div>
 
-        {/* Interaction Bar */}
         <div className="flex items-center justify-between pt-4 border-t border-constitution-gold/20">
           <div className="flex space-x-6">
-            <button
-              onClick={handleLike}
-              className={`flex items-center space-x-2 transition-colors ${isLiked ? 'text-red-500' : 'text-ink-gray/70 hover:text-red-500'}`}
-            >
-              <Heart className={`w-5 h-5 ${isLiked ? 'fill-current' : ''}`} />
-              <span className="font-bold">{likeCount}</span>
-            </button>
+            <div className="relative">
+              <button
+                onClick={() => handleLike(currentReaction || 'LIKE')}
+                onMouseEnter={() => setShowReactionPicker(true)}
+                className={`flex items-center space-x-2 transition-colors ${isLiked ? 'text-constitution-gold' : 'text-ink-gray/70 hover:text-constitution-gold'}`}
+              >
+                {currentReaction === 'INSIGHTFUL' ? <Lightbulb className="w-5 h-5 fill-current" /> :
+                  currentReaction === 'INFORMATIVE' ? <Info className="w-5 h-5 fill-current" /> :
+                    currentReaction === 'NEED_CLARIFICATION' ? <HelpCircle className="w-5 h-5 fill-current" /> :
+                      <ThumbsUp className={`w-5 h-5 ${isLiked && (!currentReaction || currentReaction === 'LIKE') ? 'fill-current' : ''}`} />}
+                <span className="font-bold">{likeCount}</span>
+              </button>
+
+              {showReactionPicker && (
+                <div
+                  className="absolute bottom-full left-0 mb-2 p-2 bg-white rounded-full shadow-xl border border-constitution-gold/20 flex gap-2 z-50 animate-in fade-in slide-in-from-bottom-2"
+                  onMouseLeave={() => setShowReactionPicker(false)}
+                >
+                  <button
+                    onClick={() => handleLike('LIKE')}
+                    className={`p-2 rounded-full hover:bg-constitution-gold/10 transition-colors ${currentReaction === 'LIKE' ? 'bg-constitution-gold/20 text-constitution-gold' : 'text-ink-gray/60'}`}
+                    title="Like"
+                  >
+                    <ThumbsUp className="w-5 h-5" />
+                  </button>
+                  <button
+                    onClick={() => handleLike('INSIGHTFUL')}
+                    className={`p-2 rounded-full hover:bg-constitution-gold/10 transition-colors ${currentReaction === 'INSIGHTFUL' ? 'bg-constitution-gold/20 text-constitution-gold' : 'text-ink-gray/60'}`}
+                    title="Insightful"
+                  >
+                    <Lightbulb className="w-5 h-5" />
+                  </button>
+                  <button
+                    onClick={() => handleLike('INFORMATIVE')}
+                    className={`p-2 rounded-full hover:bg-constitution-gold/10 transition-colors ${currentReaction === 'INFORMATIVE' ? 'bg-constitution-gold/20 text-constitution-gold' : 'text-ink-gray/60'}`}
+                    title="Informative"
+                  >
+                    <Info className="w-5 h-5" />
+                  </button>
+                  <button
+                    onClick={() => handleLike('NEED_CLARIFICATION')}
+                    className={`p-2 rounded-full hover:bg-constitution-gold/10 transition-colors ${currentReaction === 'NEED_CLARIFICATION' ? 'bg-constitution-gold/20 text-constitution-gold' : 'text-ink-gray/60'}`}
+                    title="Need Clarification"
+                  >
+                    <HelpCircle className="w-5 h-5" />
+                  </button>
+                </div>
+              )}
+            </div>
             <button
               onClick={handleCommentToggle}
               className={`flex items-center space-x-2 transition-colors ${showComments ? 'text-constitution-gold' : 'text-ink-gray/70 hover:text-constitution-gold'}`}
             >
               <MessageSquare className="w-5 h-5" />
-              <span className="font-bold">{post.commentCount + comments.length}</span>
+              <span className="font-bold">{commentCount}</span>
             </button>
             <button
               onClick={handleShare}
@@ -385,7 +491,6 @@ export function PostCard({ post, currentUserId, onDelete, onAuthorClick }: PostC
               {isDeleting ? <Loader2 className="w-5 h-5 animate-spin" /> : <MoreVertical className="w-5 h-5" />}
             </button>
 
-            {/* Dropdown Menu */}
             {showMenu && (
               <>
                 <div
@@ -432,7 +537,6 @@ export function PostCard({ post, currentUserId, onDelete, onAuthorClick }: PostC
           </div>
         </div>
 
-        {/* Comments Section */}
         {showComments && (
           <div className="mt-4 pt-4 border-t border-constitution-gold/20">
             {isLoadingComments ? (
@@ -441,54 +545,46 @@ export function PostCard({ post, currentUserId, onDelete, onAuthorClick }: PostC
               </div>
             ) : (
               <>
-                {/* Existing Comments */}
-                <div className="space-y-3 mb-4 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
-                  {comments.map((comment) => (
-                    <div key={comment.id} className="flex gap-3">
-                      <div className="w-8 h-8 bg-constitution-gold/20 rounded-full flex items-center justify-center flex-shrink-0">
-                        <span className="text-xs font-bold text-constitution-gold">
-                          {comment.author?.fullName?.charAt(0) || 'U'}
-                        </span>
-                      </div>
-                      <div className="flex-1 bg-constitution-gold/5 rounded-lg p-3">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="font-medium text-sm text-ink-gray">
-                            {comment.author?.fullName || 'Anonymous'}
-                          </span>
-                          <span className="text-xs text-ink-gray/50">
-                            {new Date(comment.createdAt).toLocaleDateString()}
-                          </span>
-                        </div>
-                        <p className="text-sm text-ink-gray/80">{comment.content}</p>
-                      </div>
-                    </div>
+                <div className="space-y-4 mb-6">
+                  {comments.map((comment: any) => (
+                    <CommentCard
+                      key={comment.id}
+                      comment={comment}
+                      postId={post.id}
+                      currentUserId={currentUserId}
+                      onCommentUpdated={fetchComments}
+                      onCommentDeleted={fetchComments}
+                    />
                   ))}
                   {comments.length === 0 && (
-                    <p className="text-center text-ink-gray/40 text-sm py-2">No comments yet. Be the first to share your thoughts!</p>
+                    <p className="text-center text-ink-gray/40 text-sm py-4 italic">
+                      No legal insights shared yet. Be the first to analyze this post.
+                    </p>
                   )}
                 </div>
 
-                {/* Comment Input */}
-                <div className="flex gap-3 mt-4">
-                  <div className="w-8 h-8 bg-constitution-gold rounded-full flex items-center justify-center flex-shrink-0">
-                    <span className="text-xs font-bold text-justice-black">{userInitials}</span>
+                <div className="flex gap-4 items-start bg-constitution-gold/5 p-4 rounded-xl border border-constitution-gold/10">
+                  <div className="w-10 h-10 bg-constitution-gold rounded-full flex items-center justify-center flex-shrink-0 shadow-md">
+                    <span className="text-sm font-bold text-justice-black">{userInitials}</span>
                   </div>
-                  <div className="flex-1 flex gap-2">
-                    <input
-                      type="text"
+                  <div className="flex-1 flex flex-col gap-3">
+                    <textarea
                       value={commentText}
                       onChange={(e) => setCommentText(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && submitComment()}
                       placeholder="Share your legal perspective..."
-                      className="flex-1 px-4 py-2 bg-white border border-constitution-gold/30 rounded-lg text-sm text-ink-gray focus:outline-none focus:border-constitution-gold transition-colors"
+                      className="w-full px-4 py-3 bg-white border border-constitution-gold/20 rounded-xl text-sm text-ink-gray focus:outline-none focus:border-constitution-gold transition-all shadow-inner resize-none"
+                      rows={2}
                     />
-                    <button
-                      onClick={submitComment}
-                      disabled={!commentText.trim()}
-                      className="px-4 py-2 bg-constitution-gold text-justice-black rounded-lg font-bold disabled:opacity-50 hover:bg-constitution-gold/90 transition-colors"
-                    >
-                      <Send className="w-4 h-4" />
-                    </button>
+                    <div className="flex justify-end">
+                      <button
+                        onClick={submitComment}
+                        disabled={!commentText.trim()}
+                        className="px-6 py-2 bg-constitution-gold text-justice-black rounded-lg font-bold disabled:opacity-50 hover:bg-constitution-gold/90 transition-all flex items-center gap-2 shadow-lg"
+                      >
+                        <Send className="w-4 h-4" />
+                        <span>Insight</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
               </>
@@ -497,8 +593,7 @@ export function PostCard({ post, currentUserId, onDelete, onAuthorClick }: PostC
         )}
       </div>
 
-      {/* Bottom Decorative Border */}
-      <div className="absolute -bottom-4 left-6 right-6 h-0.5 bg-gradient-to-r from-transparent via-constitution-gold/30 to-transparent"></div>
+      <div className="absolute -bottom-4 left-6 right-6 h-0.5 bg-gradient-to-r from-transparent via-constitution-gold/30 to-transparent" />
     </div>
   );
 }

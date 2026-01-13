@@ -15,7 +15,6 @@ export interface Post {
   postType: 'POST' | 'QUESTION' | 'ARTICLE' | 'ANNOUNCEMENT';
   tags: string[];
   isPublic: boolean;
-  viewCount: number;
   likeCount: number;
   commentCount: number;
   createdAt: string;
@@ -23,6 +22,7 @@ export interface Post {
   media?: any[];
   isLiked?: boolean;
   isSaved?: boolean;
+  reactionType?: string | null;
   author?: {
     id: string;
     fullName: string;
@@ -48,11 +48,11 @@ export interface CreatePostInput {
 }
 
 export interface PostFilters {
-  page?: number;
-  limit?: number;
+  page?: number | string;
+  limit?: number | string;
   tags?: string[];
   postType?: 'POST' | 'QUESTION' | 'ARTICLE' | 'ANNOUNCEMENT';
-  sort?: 'newest' | 'popular' | 'liked' | 'discussed';
+  sort?: 'newest' | 'active' | 'liked' | 'relevance';
   q?: string;
 }
 

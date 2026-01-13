@@ -6,8 +6,9 @@ import { AIAssistant } from './components/AIAssistant';
 import { JusticeLoader } from './components/JusticeLoader';
 import { CreatePost } from './components/CreatePost';
 import { MobileNotice } from './components/MobileNotice';
-import { Sparkles, TrendingUp, Gavel, Users, Bell } from 'lucide-react';
+import { Sparkles, TrendingUp, Gavel, Construction, Users, Bell } from 'lucide-react';
 import { DiscussionsPage } from './pages/DiscussionPage';
+import { PostsPage } from './pages/PostsPage';
 import RegisterPage from "./pages/RegisterPage";
 import LoginPage from "./pages/LoginPage";
 import { ProfilePage } from './pages/ProfilePage';
@@ -17,17 +18,20 @@ import { getFeed, Post as ApiPost } from './api/postsAPI';
 import { toast } from 'react-toastify';
 import { NetworkPage } from './pages/NetworkPage';
 import * as networkApi from './api/networkAPI';
+//import { Toaster } from "react-hot-toast";
 
 type ViewType =
+    | 'dashboard'
     | 'feed'
     | 'cases'
+    | 'notes'
     | 'ai'
-    | 'dashboard'
     | 'discussions'
     | 'profile'
-    | 'notes'
     | 'notifications'
-    | 'connectionRequests';
+    | 'network'
+    | 'connectionRequests'
+    | 'createDiscussion';
 
 const getCurrentUser = () => {
     const userStr = localStorage.getItem('user');
@@ -68,8 +72,12 @@ const adaptPost = (apiPost: ApiPost): PostComponentType => ({
     isSaved: apiPost.isSaved,
     media: apiPost.media?.map(m => ({
         id: m.id,
-        url: m.mediaUrl,
-        type: m.mediaType
+        url: m.mediaUrl || '',  // Map mediaUrl to url
+        type: m.mediaType || '', // Map mediaType to type
+        mimeType: m.mediaType || '', // Add mimeType for compatibility
+        mediaUrl: m.mediaUrl || '', // Keep original for safety
+        mediaType: m.mediaType || '', // Keep original for safety
+        fileName: m.fileName || undefined
     }))
 });
 
@@ -103,6 +111,7 @@ export default function App() {
 
     const loadPendingConnectionCount = async () => {
         if (!isAuthenticated || !currentUser?.id) return;
+
         try {
             // const pendingRequests = await networkApi.getPendingConnectionRequests();
             // setPendingConnectionCount(pendingRequests.length || 0);
@@ -224,6 +233,8 @@ export default function App() {
             '/notifications': 'notifications',
             '/connection-requests': 'connectionRequests',
             '/connectionRequests': 'connectionRequests',
+            '/network': 'network',
+            '/create-discussion': 'createDiscussion',
         };
 
         const newView = viewMap[path] || 'dashboard';
@@ -260,9 +271,11 @@ export default function App() {
             'profile': '/profile',
             'notes': '/notes',
             'notifications': '/notifications',
-            'connectionRequests': '/connectionRequests'
+            'connectionRequests': '/connectionRequests',
+            'network': '/network',
+            'createDiscussion': '/create-discussion'
         };
-        handleNavigation(pathMap[view]);
+        handleNavigation(pathMap[view] || '/');
     };
 
     const handlePostAuthorClick = (userId: string) => {
@@ -270,6 +283,13 @@ export default function App() {
         navigateTo('profile');
     };
 
+    // Handler for navigating to a profile from discussions (reuse same logic as handlePostAuthorClick)
+    const handleDiscussionProfileClick = (userId: string) => {
+        setSelectedProfileUserId(userId);
+        navigateTo('profile');
+    };
+
+    // Handle refresh of connection count
     const handleRefreshConnectionCount = () => {
         loadPendingConnectionCount();
     };
@@ -493,10 +513,15 @@ export default function App() {
                 )}
 
                 {currentView === 'ai' && <AIAssistant />}
-                {currentView === 'discussions' && <DiscussionsPage initialFollowing={discussionsShowFollowing} />}
+                {currentView === 'discussions' && (
+                    <DiscussionsPage
+                        initialFollowing={discussionsShowFollowing}
+                        onNavigateToProfile={handleDiscussionProfileClick}
+                    />
+                )}
                 {currentView === 'notes' && <NotesPage />}
                 {currentView === 'notifications' && <NotificationsPage />}
-                {currentView === 'connectionRequests' && (
+                {(currentView === 'connectionRequests' || currentView === 'network') && (
                     <NetworkPage
                         onBack={() => navigateTo('dashboard')}
                         currentUserId={currentUser?.id}
@@ -504,6 +529,7 @@ export default function App() {
                     />
                 )}
 
+                {/* ProfilePage "+ New Discussion" button should switch to Discussions page */}
                 {currentView === 'profile' && (
                     <ProfilePage
                         // ProfilePage will show other's profile if selectedProfileUserId is set, otherwise current user's
@@ -511,7 +537,8 @@ export default function App() {
                         currentUserId={currentUser?.id || ''}
                         onBack={() => navigateTo('dashboard')}
                         onNavigateToFeed={() => navigateTo('feed')}
-                        onNavigateToDiscussion={(discussionId) => {
+                        onNavigateToDiscussion={() => {
+                            // Navigate to Discussions page
                             navigateTo('discussions');
                         }}
                         onNavigateToNetwork={(tab) => {
@@ -523,6 +550,25 @@ export default function App() {
                             navigateTo('discussions');
                         }}
                     />
+                )}
+
+                {/* Add CreateDiscussion page route */}
+                {currentView === 'createDiscussion' && (
+                    // TODO: Import and add your actual CreateDiscussion component below.
+                    // For now, a placeholder is provided.
+                    <div className="max-w-3xl mx-auto p-8">
+                        <div className="aged-paper rounded-lg p-8">
+                            <h2 className="text-3xl font-heading mb-4">Create New Discussion</h2>
+                            {/* Replace this div below with <CreateDiscussion /> or similar */}
+                            <p className="text-lg text-gray-400">Discussion creation form goes here.</p>
+                            <button
+                                className="mt-8 px-6 py-2 rounded-lg font-bold border border-constitution-gold text-constitution-gold hover:bg-constitution-gold/10"
+                                onClick={() => navigateTo('discussions')}
+                            >
+                                Back to Discussions
+                            </button>
+                        </div>
+                    </div>
                 )}
             </div>
         </div>
