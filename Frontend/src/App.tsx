@@ -144,7 +144,7 @@ export default function App() {
 
         const timer = setTimeout(() => {
             setIsLoading(false);
-        }, 1500); // Reduced from 4500ms for better UX
+        }, 2500); 
 
         return () => clearTimeout(timer);
     }, []);
@@ -515,6 +515,8 @@ export default function App() {
                         }}
                     />
                 )}
+
+                {currentView === 'notifications' && <NotificationsPage />}
 
                 {/* Add CreateDiscussion page route */}
                 {currentView === 'createDiscussion' && (

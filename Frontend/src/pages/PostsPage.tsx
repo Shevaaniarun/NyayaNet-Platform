@@ -171,30 +171,6 @@ export function PostsPage() {
                     </button>
                 </div>
 
-                {/* Stats */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-                    <StatCard
-                        icon={FileText}
-                        title="Total Posts"
-                        value={stats.total}
-                    />
-                    <StatCard
-                        icon={Heart}
-                        title="Most Liked"
-                        value={stats.totalLikes}
-                    />
-                    <StatCard
-                        icon={MessageSquare}
-                        title="Most Commented"
-                        value={stats.totalComments}
-                    />
-                    <StatCard
-                        icon={TrendingUp}
-                        title="Questions"
-                        value={stats.questions}
-                    />
-                </div>
-
                 {/* Filters */}
                 <div className="mb-8">
                     <PostFilters onFilterChange={handleFilterChange} />
