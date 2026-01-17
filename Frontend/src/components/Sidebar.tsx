@@ -1,6 +1,3 @@
-/**
- * Sidebar - Main Navigation for NyayaNet
- */
 
 import {
   Home,
@@ -19,34 +16,42 @@ import {
 } from 'lucide-react';
 
 interface NavItem {
-  path: string;
-  icon:  React.ElementType;
+  path:  string;
+  icon: React. ElementType;
   label: string;
   badge?: string | number | null;
-  symbol: string;
+  badgeType?: 'count' | 'new'; 
+  symbol:  string;
 }
-
-const navItems:  NavItem[] = [
-  { path: '/', icon: Home, label: 'Dashboard', badge:  null, symbol: '⚖️' },
-  { path:  '/feed', icon: Newspaper, label: 'Legal Feed', badge: null, symbol: '📜' },
-  { path: '/network', icon: Users, label:  'Colleagues', badge: '3', symbol: '👥' },
-  { path: '/notifications', icon: Bell, label: 'Notifications', badge: null, symbol: '🔔' }, 
-  { path: '/chat', icon: MessageSquare, label:  'Chambers', badge: '12', symbol: '💬' },
-  { path: '/cases', icon: Briefcase, label: 'Docket', badge: '5', symbol: '📁' },
-  { path: '/notes', icon: Notebook, label:  'Case Notes', badge: null, symbol: '📝' },
-  { path: '/ai', icon: Brain, label: 'Legal AI', badge: 'New', symbol: '🧠' },
-  { path: '/discussions', icon: MessageCircle, label: 'Debates', badge:  null, symbol: '💭' },
-  { path: '/profile', icon: User, label: 'Profile', badge: null, symbol: '👤' },
-  { path: '/library', icon:  BookOpen, label: 'Library', badge: null, symbol: '📚' },
-];
 
 interface SidebarProps {
-  currentPath?: string;
+  currentPath? :  string;
   onNavigate?: (path: string) => void;
-  pendingConnectionCount?: number;
+  notificationCount?:  number; 
 }
 
-export function Sidebar({ currentPath = '/', onNavigate, pendingConnectionCount = 0 }: SidebarProps) {
+export function Sidebar({ currentPath = '/', onNavigate, notificationCount = 0 }: SidebarProps) {
+
+  const navItems: NavItem[] = [
+    { path: '/', icon: Home, label: 'Dashboard', badge: null, symbol: '⚖️' },
+    { path:  '/feed', icon:  Newspaper, label: 'Legal Feed', badge: null, symbol:  '📜' },
+    { path: '/network', icon: Users, label: 'Colleagues', badge: '3', symbol: '👥' },
+    { 
+      path: '/notifications', 
+      icon: Bell, 
+      label: 'Notifications', 
+      badge:  notificationCount > 0 ? notificationCount :  null,
+      badgeType: 'count', 
+      symbol: '🔔' 
+    },
+    { path: '/chat', icon: MessageSquare, label: 'Chambers', badge: '12', symbol: '💬' },
+    { path: '/cases', icon:  Briefcase, label: 'Docket', badge: '5', symbol:  '📁' },
+    { path: '/notes', icon:  Notebook, label: 'Case Notes', badge:  null, symbol: '📝' },
+    { path: '/ai', icon: Brain, label: 'Legal AI', badge: 'New', badgeType: 'new', symbol: '🧠' },
+    { path:  '/discussions', icon: MessageCircle, label: 'Debates', badge: null, symbol: '💭' },
+    { path:  '/profile', icon: User, label: 'Profile', badge: null, symbol: '👤' },
+    { path: '/library', icon: BookOpen, label:  'Library', badge: null, symbol: '📚' },
+  ];
 
   const handleNavClick = (path: string) => {
     if (onNavigate) onNavigate(path);
@@ -73,17 +78,17 @@ export function Sidebar({ currentPath = '/', onNavigate, pendingConnectionCount 
       </div>
 
       <nav className="p-4 space-y-1 flex-1 overflow-y-auto">
-        {navItems.map((item) => {
+        {navItems. map((item) => {
           const isActive = currentPath === item.path;
-          const Icon = item.icon;
+          const Icon = item. icon;
 
           return (
             <button
               key={item.path}
-              onClick={() => handleNavClick(item. path)}
+              onClick={() => handleNavClick(item.path)}
               className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all relative overflow-hidden group ${
                 isActive
-                  ?  'bg-constitution-gold/10 text-judge-ivory border-l-2 border-constitution-gold'
+                  ? 'bg-constitution-gold/10 text-judge-ivory border-l-2 border-constitution-gold'
                   : 'text-constitution-gold/70 hover:bg-constitution-gold/5 hover:text-judge-ivory'
               }`}
             >
@@ -91,17 +96,19 @@ export function Sidebar({ currentPath = '/', onNavigate, pendingConnectionCount 
                 {item.symbol}
               </span>
 
-              <Icon className={`w-5 h-5 flex-shrink-0 ${isActive ?  'text-constitution-gold' : ''}`} />
+              <Icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-constitution-gold' :  ''}`} />
               <span className="font-medium tracking-wide flex-1 text-left">
                 {item.label}
               </span>
 
               {item.badge && (
-                <span className={`px-2 py-0.5 rounded-full font-bold text-xs ${
-                  isActive 
-                    ? 'bg-justice-black text-constitution-gold' 
-                    : 'bg-constitution-gold text-justice-black'
-                }`}>
+                <span 
+                  className={`px-2 py-0.5 rounded-full font-bold text-xs ${
+                    item. badgeType === 'count'
+                      ? 'bg-amber-700 text-white' 
+                      : 'bg-constitution-gold text-justice-black'
+                  }`}
+                >
                   {item.badge}
                 </span>
               )}

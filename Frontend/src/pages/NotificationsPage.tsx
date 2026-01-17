@@ -76,6 +76,7 @@ export default function NotificationsPage() {
                     prev.map(n => n.id === notification.id ? { ...n, isRead: true } : n)
                 );
                 setUnreadCount(prev => Math.max(0, prev - 1));
+                window.dispatchEvent(new CustomEvent('notificationRead'));
                 toast.success('Marked as read');
             } catch (error:  any) {
                 toast.error('Failed to mark as read');
@@ -104,6 +105,7 @@ export default function NotificationsPage() {
             await markAllAsRead();
             setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
             setUnreadCount(0);
+            window.dispatchEvent(new CustomEvent('notificationRead'));
             toast.success('All notifications marked as read');
         } catch (error: any) {
             toast.error(error.message || 'Failed to mark all as read');

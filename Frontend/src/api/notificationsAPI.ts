@@ -179,3 +179,96 @@ export async function bulkDeleteNotifications(params: {
   const result = await response.json();
   return result.data;
 }
+
+export async function createPostLikeNotification(params: {
+  postOwnerId: string;
+  likerId: string;
+  likerName: string;
+  postId: string;
+  postTitle:  string;
+}): Promise<{ notificationId: string }> {
+  const response = await fetch(`${API_BASE_URL}/notifications/post-like`, {
+    method: 'POST',
+    headers: createHeaders(true),
+    body: JSON.stringify(params)
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Failed to create post like notification');
+  }
+
+  const result = await response.json();
+  return result.data;
+}
+
+export async function createDiscussionReplyNotification(params: {
+  discussionOwnerId: string;
+  replierId: string;
+  replierName: string;
+  discussionId: string;
+  discussionTitle: string;
+  replyPreview: string;
+  isReplyToComment?:  boolean;
+  parentCommentId?: string;
+}): Promise<{ notificationId: string }> {
+  const response = await fetch(`${API_BASE_URL}/notifications/discussion-reply`, {
+    method: 'POST',
+    headers: createHeaders(true),
+    body: JSON.stringify(params)
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error. message || 'Failed to create discussion reply notification');
+  }
+
+  const result = await response.json();
+  return result. data;
+}
+
+export async function createDiscussionUpvoteNotification(params: {
+  contentOwnerId: string;
+  upvoterId: string;
+  upvoterName: string;
+  discussionId: string;
+  discussionTitle: string;
+  replyId?:  string;
+  isReply?:  boolean;
+}): Promise<{ notificationId: string }> {
+  const response = await fetch(`${API_BASE_URL}/notifications/discussion-upvote`, {
+    method: 'POST',
+    headers: createHeaders(true),
+    body: JSON.stringify(params)
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Failed to create discussion upvote notification');
+  }
+
+  const result = await response.json();
+  return result.data;
+}
+
+export async function createConnectionRequestNotification(params: {
+  receiverId: string;
+  requesterId: string;
+  requesterName: string;
+  requestMessage?:  string;
+  requestId:  string;
+}): Promise<{ notificationId: string }> {
+  const response = await fetch(`${API_BASE_URL}/notifications/connection-request`, {
+    method: 'POST',
+    headers:  createHeaders(true),
+    body: JSON.stringify(params)
+  });
+
+  if (!response.ok) {
+    const error = await response. json();
+    throw new Error(error.message || 'Failed to create connection request notification');
+  }
+
+  const result = await response.json();
+  return result.data;
+}

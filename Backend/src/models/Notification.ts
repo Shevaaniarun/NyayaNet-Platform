@@ -357,37 +357,285 @@ export class NotificationModel {
     return result.rowCount || 0;
   }
 
-  // static async createNewFollowerNotification(
-  //   receiverId: string,
-  //   followerId: string,
-  //   followerName: string
-  // ): Promise<string> {
-  //   const query = `
-  //   INSERT INTO notifications (
-  //     user_id,
-  //     notification_type,
-  //     title,
-  //     message,
-  //     source_type,
-  //     source_id,
-  //     data,
-  //     is_read
-  //   ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-  //   RETURNING id
-  // `;
+  static async createNewFollowerNotification(
+    receiverId: string,
+    followerId: string,
+    followerName: string
+  ): Promise<string> {
+    const query = `
+    INSERT INTO notifications (
+      user_id,
+      notification_type,
+      title,
+      message,
+      source_type,
+      source_id,
+      data,
+      is_read
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+    RETURNING id
+  `;
 
-  //   const values = [
-  //     receiverId,
-  //     "NEW_FOLLOWER",
-  //     "New Follower",
-  //     `${followerName} started following you`,
-  //     "USER",
-  //     followerId,
-  //     JSON.stringify({ userId: followerId }),
-  //     false,
-  //   ];
+    const values = [
+      receiverId,
+      "NEW_FOLLOWER",
+      "New Follower",
+      `${followerName} started following you`,
+      "USER",
+      followerId,
+      JSON.stringify({ userId: followerId, userName: followerName }),
+      false,
+    ];
 
-  //   const result = await pool.query(query, values);
-  //   return result.rows[0].id;
-  // }
+    try {
+      const result = await pool.query(query, values);
+      return result.rows[0].id;
+    } catch (error: any) {
+      console.error("❌ Database insert error:", error.message);
+      throw error;
+    }
+  }
+
+  static async createPostLikeNotification(
+    postOwnerId: string,
+    likerId: string,
+    likerName: string,
+    postId: string,
+    postTitle: string
+  ): Promise<string> {
+    if (postOwnerId === likerId) {
+      console.log("⚠️ User liked their own post, skipping notification");
+      return "";
+    }
+
+    const query = `
+    INSERT INTO notifications (
+      user_id,
+      notification_type,
+      title,
+      message,
+      source_type,
+      source_id,
+      data,
+      is_read
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+    RETURNING id
+  `;
+
+    const truncatedTitle =
+      postTitle.length > 50 ? postTitle.substring(0, 50) + "..." : postTitle;
+
+    const values = [
+      postOwnerId,
+      "POST_LIKE",
+      "New Like",
+      `${likerName} liked your post: "${truncatedTitle}"`,
+      "POST",
+      postId,
+      JSON.stringify({
+        userId: likerId,
+        userName: likerName,
+        postId: postId,
+        postTitle: postTitle,
+      }),
+      false,
+    ];
+    const result = await pool.query(query, values);
+    return result.rows[0].id;
+  }
+
+  static async createDiscussionReplyNotification(
+    discussionOwnerId: string,
+    replierId: string,
+    replierName: string,
+    discussionId: string,
+    discussionTitle: string,
+    replyPreview: string,
+    isReplyToComment: boolean = false,
+    parentCommentId?: string
+  ): Promise<string> {
+    if (discussionOwnerId === replierId) {
+      console.log(
+        "⚠️ User replied to their own discussion, skipping notification"
+      );
+      return "";
+    }
+
+    const query = `
+    INSERT INTO notifications (
+      user_id,
+      notification_type,
+      title,
+      message,
+      source_type,
+      source_id,
+      data,
+      is_read
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+    RETURNING id
+  `;
+
+    const truncatedTitle =
+      discussionTitle.length > 50
+        ? discussionTitle.substring(0, 50) + "..."
+        : discussionTitle;
+    const truncatedReply =
+      replyPreview.length > 100
+        ? replyPreview.substring(0, 100) + "..."
+        : replyPreview;
+
+    const message = isReplyToComment
+      ? `${replierName} replied to your comment on "${truncatedTitle}"`
+      : `${replierName} replied to your discussion:  "${truncatedTitle}"`;
+
+    const values = [
+      discussionOwnerId,
+      "DISCUSSION_REPLY",
+      "New Reply",
+      message,
+      "DISCUSSION",
+      discussionId,
+      JSON.stringify({
+        userId: replierId,
+        userName: replierName,
+        discussionId: discussionId,
+        discussionTitle: discussionTitle,
+        replyPreview: truncatedReply,
+        isReplyToComment: isReplyToComment,
+        parentCommentId: parentCommentId || null,
+      }),
+      false,
+    ];
+
+    console.log("📝 Creating discussion reply notification:", {
+      discussionOwnerId,
+      replierId,
+      discussionId,
+    });
+
+    const result = await pool.query(query, values);
+    return result.rows[0].id;
+  }
+
+  static async createDiscussionUpvoteNotification(
+    contentOwnerId: string,
+    upvoterId: string,
+    upvoterName: string,
+    discussionId: string,
+    discussionTitle: string,
+    replyId?: string,
+    isReply: boolean = false
+  ): Promise<string> {
+    if (contentOwnerId === upvoterId) {
+      console.log("⚠️ User upvoted their own content, skipping notification");
+      return "";
+    }
+
+    const query = `
+    INSERT INTO notifications (
+      user_id,
+      notification_type,
+      title,
+      message,
+      source_type,
+      source_id,
+      data,
+      is_read
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+    RETURNING id
+  `;
+
+    const truncatedTitle =
+      discussionTitle.length > 50
+        ? discussionTitle.substring(0, 50) + "..."
+        : discussionTitle;
+
+    const message = isReply
+      ? `${upvoterName} upvoted your reply in "${truncatedTitle}"`
+      : `${upvoterName} upvoted your discussion: "${truncatedTitle}"`;
+
+    const values = [
+      contentOwnerId,
+      "DISCUSSION_UPVOTE",
+      "New Upvote",
+      message,
+      isReply ? "DISCUSSION_REPLY" : "DISCUSSION",
+      isReply ? replyId : discussionId,
+      JSON.stringify({
+        userId: upvoterId,
+        userName: upvoterName,
+        discussionId: discussionId,
+        discussionTitle: discussionTitle,
+        replyId: replyId || null,
+        isReply: isReply,
+      }),
+      false,
+    ];
+
+    console.log("📝 Creating discussion upvote notification:", {
+      contentOwnerId,
+      upvoterId,
+      discussionId,
+      isReply,
+    });
+
+    const result = await pool.query(query, values);
+    return result.rows[0].id;
+  }
+
+  static async createConnectionRequestNotification(
+    receiverId: string,
+    requesterId: string,
+    requesterName: string,
+    requestMessage: string,
+    requestId: string
+  ): Promise<string> {
+    if (receiverId === requesterId) {
+      console.log("⚠️ Cannot send connection request to self");
+      return "";
+    }
+
+    const query = `
+    INSERT INTO notifications (
+      user_id,
+      notification_type,
+      title,
+      message,
+      source_type,
+      source_id,
+      data,
+      is_read
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+    RETURNING id
+  `;
+
+    const message = requestMessage
+      ? `${requesterName} sent you a connection request: "${requestMessage}"`
+      : `${requesterName} sent you a connection request`;
+
+    const values = [
+      receiverId,
+      "CONNECTION_REQUEST",
+      "New Connection Request",
+      message,
+      "USER",
+      requesterId,
+      JSON.stringify({
+        userId: requesterId,
+        userName: requesterName,
+        requestMessage: requestMessage,
+        requestId: requestId,
+      }),
+      false,
+    ];
+
+    console.log("📝 Creating connection request notification:", {
+      receiverId,
+      requesterId,
+      requestId,
+    });
+
+    const result = await pool.query(query, values);
+    return result.rows[0].id;
+  }
 }
