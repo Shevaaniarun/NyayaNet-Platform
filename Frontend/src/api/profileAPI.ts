@@ -257,6 +257,19 @@ export const getLikedDiscussions = async (page = 1, limit = 20) => {
   }
 };
 
+export const getFollowingDiscussions = async (page = 1, limit = 20) => {
+  try {
+    const response = await profileApi.get('/profile/following-discussions', {
+      params: { page, limit },
+    });
+    return response.data.data;
+  } catch (error: any) {
+    console.warn('Error fetching following discussions, returning empty array');
+    return { discussions: [], pagination: { total: 0, page, limit, pages: 0 } };
+  }
+};
+
+
 
 /* ============================
    FOLLOW/FOLLOWERS METHODS
@@ -301,6 +314,27 @@ export const unfollowUser = async (userId: string) => {
     throw error.response?.data || error;
   }
 };
+
+export const getFollowStatus = async (userId: string) => {
+  try {
+    const response = await networkApi.get(`/network/follow-status/${userId}`);
+    return response.data.data;
+  } catch (error: any) {
+    console.error('Error getting follow status:', error);
+    return { status: 'NONE' };
+  }
+};
+
+export const cancelFollowRequest = async (requestId: string) => {
+  try {
+    const response = await networkApi.post(`/network/requests/${requestId}/cancel`);
+    return response.data.data;
+  } catch (error: any) {
+    console.error('Error canceling follow request:', error);
+    throw error.response?.data || error;
+  }
+};
+
 
 export const getNetworkStats = async () => {
   try {

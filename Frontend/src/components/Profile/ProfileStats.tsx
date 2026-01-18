@@ -3,18 +3,21 @@ interface ProfileStatsProps {
     followingCount: number;
     postCount: number;
     discussionCount: number;
+    likesCount: number;
     onFollowersClick?: () => void;
     onFollowingClick?: () => void;
     onPostsClick?: () => void;
     onDiscussionsClick?: () => void;
+    onLikesClick?: () => void;
 }
 
-export function ProfileStats({ followerCount, followingCount, postCount, discussionCount, onFollowersClick, onFollowingClick, onPostsClick, onDiscussionsClick }: ProfileStatsProps) {
+export function ProfileStats({ followerCount, followingCount, postCount, discussionCount, likesCount, onFollowersClick, onFollowingClick, onPostsClick, onDiscussionsClick, onLikesClick }: ProfileStatsProps) {
     const stats = [
         { label: 'Followers', count: followerCount, onClick: onFollowersClick },
         { label: 'Following', count: followingCount, onClick: onFollowingClick },
         { label: 'Posts', count: postCount, onClick: onPostsClick },
         { label: 'Discussions', count: discussionCount, onClick: onDiscussionsClick },
+        { label: 'Likes', count: likesCount, onClick: onLikesClick },
     ];
 
     const formatCount = (count: number): string => {
@@ -25,7 +28,7 @@ export function ProfileStats({ followerCount, followingCount, postCount, discuss
 
     return (
         <div className="aged-paper rounded-lg p-6 border border-constitution-gold/20">
-            <div className="grid grid-cols-4 gap-4">
+            <div className="grid grid-cols-5 gap-4">
                 {stats.map((stat, index) => (
                     <button key={index} onClick={stat.onClick} className="text-center hover:bg-constitution-gold/5 rounded-lg p-3 transition-colors">
                         <p className="font-heading font-bold text-2xl text-ink-gray">{formatCount(stat.count)}</p>

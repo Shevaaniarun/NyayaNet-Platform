@@ -27,6 +27,8 @@ export const register = async (req: Request, res: Response) => {
       ...result,
     });
   } catch (error: any) {
+    console.error("Registration error:", error.message);
+    console.error("Stack trace:", error.stack);
     return res.status(400).json({
       message: error.message || "Registration failed",
     });

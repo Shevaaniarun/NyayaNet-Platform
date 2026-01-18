@@ -58,7 +58,7 @@ export function ProfilePage({
   const [uploadingCert, setUploadingCert] = useState<boolean>(false);
 
   // Follow states
-  const [followStatus, setFollowStatus] = useState<string>('NONE');
+  const [followStatus, setFollowStatus] = useState<'NONE' | 'PENDING' | 'CONNECTED' | 'REQUEST_SENT' | 'FOLLOWING' | 'MUTUAL' | 'FOLLOWED_BY'>('NONE');
   const [isLoadingFollow, setIsLoadingFollow] = useState<boolean>(false);
   const [requestId, setRequestId] = useState<string | null>(null);
 
@@ -119,9 +119,9 @@ export function ProfilePage({
 
   async function loadFollowersData() {
     if (!targetUserId) return;
-    
+
     try {
-      const followersData = await profileApi.getFollowers(targetUserId);
+      const followersData = await profileApi.getFollowers();
       setFollowers(Array.isArray(followersData) ? followersData : []);
     } catch (error) {
       console.error('Failed to load followers:', error);
@@ -131,9 +131,9 @@ export function ProfilePage({
 
   async function loadFollowingData() {
     if (!targetUserId) return;
-    
+
     try {
-      const followingData = await profileApi.getFollowing(targetUserId);
+      const followingData = await profileApi.getFollowing();
       setFollowing(Array.isArray(followingData) ? followingData : []);
     } catch (error) {
       console.error('Failed to load following:', error);
@@ -166,9 +166,9 @@ export function ProfilePage({
       stats.likes = typeof profileData.likes === "number"
         ? profileData.likes
         : (
-            (typeof profileData.likeCount === "number" && profileData.likeCount) ||
-            0
-          );
+          (typeof profileData.likeCount === "number" && profileData.likeCount) ||
+          0
+        );
     } catch (err: any) {
       const emptyProfile = {
         id: targetUserId ?? "",
@@ -226,14 +226,14 @@ export function ProfilePage({
 
     // Load followers and following data
     try {
-      const followersData = await profileApi.getFollowers(targetUserId!);
+      const followersData = await profileApi.getFollowers();
       setFollowers(Array.isArray(followersData) ? followersData : []);
     } catch (e) {
       setFollowers([]);
     }
 
     try {
-      const followingData = await profileApi.getFollowing(targetUserId!);
+      const followingData = await profileApi.getFollowing();
       setFollowing(Array.isArray(followingData) ? followingData : []);
     } catch (e) {
       setFollowing([]);
@@ -390,15 +390,15 @@ export function ProfilePage({
   // Handle follow/unfollow from tabs
   const handleFollowUser = async (userId: string) => {
     if (!currentUserId || userId === currentUserId || isOwnProfile) return;
-    
+
     try {
       await profileApi.followUser(userId);
-      
+
       // Update followers list if the user is in followers tab
-      setFollowers(prev => prev.map(user => 
+      setFollowers(prev => prev.map(user =>
         user.id === userId ? { ...user, isFollowingBack: true } : user
       ));
-      
+
       // Reload profile data to update counts
       await loadProfileData();
       alert('Successfully followed user!');
@@ -410,19 +410,19 @@ export function ProfilePage({
 
   const handleUnfollowUser = async (userId: string) => {
     if (!currentUserId || userId === currentUserId || isOwnProfile) return;
-    
+
     if (!window.confirm('Are you sure you want to unfollow this user?')) return;
-    
+
     try {
       await profileApi.unfollowUser(userId);
-      
+
       // Update both followers and following lists
-      setFollowers(prev => prev.map(user => 
+      setFollowers(prev => prev.map(user =>
         user.id === userId ? { ...user, isFollowingBack: false } : user
       ));
-      
+
       setFollowing(prev => prev.filter(user => user.id !== userId));
-      
+
       // Reload profile data to update counts
       await loadProfileData();
       alert('Successfully unfollowed user!');
@@ -521,7 +521,7 @@ export function ProfilePage({
             (p: any) =>
               (p.title && p.title.toLowerCase().includes(q)) ||
               (p.content && p.content.toLowerCase().includes(q))
-            )
+          )
           : []
       );
       setDiscussions((prev = []) =>
@@ -530,7 +530,7 @@ export function ProfilePage({
             (d: any) =>
               (d.title && d.title.toLowerCase().includes(q)) ||
               (d.description && d.description.toLowerCase().includes(q))
-            )
+          )
           : []
       );
     }
@@ -540,7 +540,7 @@ export function ProfilePage({
     if (!window.confirm("Are you sure you want to delete this certification?")) return;
     try {
       await profileApi.deleteCertification(certId);
-    } catch (err) {}
+    } catch (err) { }
     setCertifications((certs) => certs.filter((c) => c.id !== certId));
   };
 
@@ -575,9 +575,9 @@ export function ProfilePage({
       fileType,
       tags: newCert.tags
         ? newCert.tags
-            .split(",")
-            .map((t) => t.trim())
-            .filter((t) => t)
+          .split(",")
+          .map((t) => t.trim())
+          .filter((t) => t)
         : [],
     };
 
@@ -1017,7 +1017,7 @@ export function ProfilePage({
                       onChange={(e) =>
                         setNewCert({ ...newCert, issueDate: e.target.value })
                       }
-                    className="w-full px-4 py-2 bg-justice-black border border-constitution-gold/20 rounded-lg text-judge-ivory focus:outline-none focus:border-constitution-gold/50"
+                      className="w-full px-4 py-2 bg-justice-black border border-constitution-gold/20 rounded-lg text-judge-ivory focus:outline-none focus:border-constitution-gold/50"
                     />
                   </div>
 
@@ -1031,7 +1031,7 @@ export function ProfilePage({
                       onChange={(e) =>
                         setNewCert({ ...newCert, expiryDate: e.target.value })
                       }
-                    className="w-full px-4 py-2 bg-justice-black border border-constitution-gold/20 rounded-lg text-judge-ivory focus:outline-none focus:border-constitution-gold/50"
+                      className="w-full px-4 py-2 bg-justice-black border border-constitution-gold/20 rounded-lg text-judge-ivory focus:outline-none focus:border-constitution-gold/50"
                     />
                   </div>
                 </div>
