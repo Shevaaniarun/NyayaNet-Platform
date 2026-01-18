@@ -248,7 +248,6 @@ export function PostCard({ post, currentUserId, onDelete, onAuthorClick }: PostC
         <div
           key={media.id}
           className="rounded-lg overflow-hidden border border-constitution-gold/20 bg-parchment-cream aspect-video cursor-pointer hover:border-constitution-gold transition-colors relative"
-          onClick={() => window.open(fullMediaUrl, '_blank')}
         >
           <img
             src={fullMediaUrl}
@@ -328,7 +327,6 @@ export function PostCard({ post, currentUserId, onDelete, onAuthorClick }: PostC
 
         <div
           className={`flex items-center mb-6 pb-4 border-b border-constitution-gold/20 ${onAuthorClick ? 'cursor-pointer hover:bg-constitution-gold/5 rounded-lg p-2 transition-colors' : ''}`}
-          onClick={handleAuthorClick}
         >
           <div className="relative">
             <div className="w-12 h-12 rounded-full border-2 border-constitution-gold overflow-hidden bg-parchment-cream">
@@ -350,9 +348,16 @@ export function PostCard({ post, currentUserId, onDelete, onAuthorClick }: PostC
 
           <div className="ml-4 flex-1">
             <div className="flex items-center space-x-2">
-              <h3 className="font-heading font-semibold text-ink-gray">
+              <h3
+                className="font-heading font-semibold text-ink-gray hover:text-constitution-gold cursor-pointer"
+                onClick={(e) => {
+                  e.stopPropagation(); 
+                  onAuthorClick?.(post.userId);
+                }}
+              >
                 {post.author.fullName}
               </h3>
+
               <span className="text-constitution-gold">•</span>
               <span className="text-ink-gray/70" style={{ fontSize: '0.875rem' }}>{post.author.designation || 'Legal Professional'}</span>
             </div>

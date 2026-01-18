@@ -6,6 +6,11 @@ import { PostFilters } from '../components/Post/PostFilters';
 import { getPosts } from '../api/postsAPI';
 import { toast } from 'react-toastify';
 
+interface PostsPageProps {
+  onNavigateToProfile?: (userId: string) => void;
+}
+
+
 interface PostFilterType {
     page: number;
     limit: number;
@@ -16,7 +21,7 @@ interface PostFilterType {
     following?: boolean;
 }
 
-export function PostsPage() {
+export function PostsPage({ onNavigateToProfile }: PostsPageProps) {
     const [posts, setPosts] = useState<any[]>([]);
     const [showCreateForm, setShowCreateForm] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
@@ -180,10 +185,10 @@ export function PostsPage() {
                 <div className="space-y-6">
                     {posts.map((post) => (
                         <PostCard
-                            key={post.id}
-                            post={post}
-                            currentUserId={currentUserId}
-                            onDelete={handlePostDeleted}
+                        key={post.id}
+                        post={post}
+                        currentUserId={currentUserId}
+                        onAuthorClick={(userId) => onNavigateToProfile?.(userId)}
                         />
                     ))}
                 </div>

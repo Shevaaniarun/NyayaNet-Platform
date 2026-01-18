@@ -477,7 +477,9 @@ export default function App() {
                     </div>
                 )}
 
-                {currentView === 'feed' && <PostsPage />}
+                {currentView === 'feed' && (
+                <PostsPage onNavigateToProfile={handlePostAuthorClick} />
+                )}
 
                 {currentView === 'cases' && (
                     <div className="min-h-screen bg-justice-black p-8">
@@ -499,7 +501,7 @@ export default function App() {
                     />
                 )}
                 {currentView === 'notes' && <NotesPage />}
-                {currentView === 'notifications' && <NotificationsPage />}
+                
                 {(currentView === 'connectionRequests' || currentView === 'network') && (
                     <NetworkPage
                         onBack={() => setCurrentView('dashboard')}
