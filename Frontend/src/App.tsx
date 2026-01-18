@@ -503,10 +503,14 @@ export default function App() {
                 {currentView === 'notes' && <NotesPage />}
                 
                 {(currentView === 'connectionRequests' || currentView === 'network') && (
-                    <NetworkPage
-                        onBack={() => setCurrentView('dashboard')}
-                        currentUserId={currentUser?.id}
-                    />
+                <NetworkPage
+                    onBack={() => setCurrentView('dashboard')}
+                    currentUserId={currentUser?.id}
+                    onNavigateToProfile={(userId) => {
+                    setSelectedProfileUserId(userId);
+                    navigateTo('profile');
+                    }}
+                />
                 )}
 
                 {/* ProfilePage "+ New Discussion" button should switch to Discussions page */}

@@ -51,7 +51,7 @@ export function ReplyCard({
     };
 
     return (
-        <div className={`${depth > 0 ? 'ml-6 md:ml-10 mt-4 border-l-2 border-constitution-gold/10 pl-4 md:pl-6' : 'mt-8'}`}>
+        <div className={`${depth > 0 ? 'ml-6 md:ml-10 mt-4 border-l-2 border-constitution-gold/10 pl-4 md:pl-6' : 'mt-6'}`}>
             <div className="flex items-start gap-3">
                 <div className="relative flex-shrink-0">
                     <div className="w-10 h-10 rounded-full border border-constitution-gold/30 overflow-hidden bg-parchment-cream">
@@ -75,9 +75,11 @@ export function ReplyCard({
                 </div>
 
                 <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2 mb-1">
+                    <div className="flex items-center justify-between gap-2 mb-2">
                         <div className="flex items-center gap-2 flex-wrap">
-                            <span className="font-bold text-ink-gray text-sm">{reply.author.fullName}</span>
+                            <span className="font-bold text-ink-gray text-sm hover:text-constitution-gold transition-colors cursor-pointer">
+                                {reply.author.fullName}
+                            </span>
                             {reply.author.role && (
                                 <span className="text-[10px] uppercase font-bold text-constitution-gold/60 tracking-wider">
                                     {reply.author.role.replace('_', ' ')}
@@ -91,7 +93,7 @@ export function ReplyCard({
                         {canMarkBestAnswer && !reply.isBestAnswer && (
                             <button
                                 onClick={() => onMarkBestAnswer?.(reply.id)}
-                                className="text-[10px] font-bold uppercase tracking-widest text-constitution-gold hover:text-gavel-bronze transition-colors flex items-center gap-1"
+                                className="text-[10px] font-bold uppercase tracking-widest text-constitution-gold hover:text-gavel-bronze transition-colors flex items-center gap-1 px-2 py-1 bg-constitution-gold/5 rounded-full"
                             >
                                 <CheckCircle className="w-3 h-3" />
                                 Select as Best
@@ -99,49 +101,52 @@ export function ReplyCard({
                         )}
                     </div>
 
-                    <div className="constitution-texture p-4 rounded-xl border border-constitution-gold/5 shadow-sm">
+                    <div className="constitution-texture p-4 rounded-xl border border-constitution-gold/5 shadow-sm mb-3">
                         <p className="text-ink-gray text-sm leading-relaxed whitespace-pre-wrap">{reply.content}</p>
                     </div>
 
-                    <div className="flex items-center gap-4 mt-2">
+                    <div className="flex items-center gap-6">
                         <button
                             onClick={() => onUpvote?.(reply.id)}
-                            className={`flex items-center gap-1.5 transition-colors group ${reply.hasUpvoted ? 'text-constitution-gold' : 'text-ink-gray/40 hover:text-constitution-gold'
-                                }`}
+                            className={`flex items-center gap-1.5 transition-colors group px-3 py-1.5 rounded-lg ${
+                                reply.hasUpvoted 
+                                    ? 'bg-constitution-gold/20 text-constitution-gold border border-constitution-gold/30' 
+                                    : 'text-ink-gray/60 hover:text-constitution-gold hover:bg-constitution-gold/5'
+                            }`}
                         >
-                            <ArrowBigUp className={`w-3.5 h-3.5 ${reply.hasUpvoted ? 'fill-current' : ''}`} />
+                            <ArrowBigUp className={`w-4 h-4 ${reply.hasUpvoted ? 'fill-current' : ''}`} />
                             <span className="text-xs font-bold">{reply.upvoteCount}</span>
                         </button>
 
-                        {canReply && (
+                        {canReply && !reply.isBestAnswer && (
                             <button
                                 onClick={() => onReply?.(reply.id, reply.author.fullName || 'User')}
-                                className="flex items-center gap-1.5 text-ink-gray/40 hover:text-constitution-gold transition-colors"
+                                className="flex items-center gap-1.5 text-ink-gray/60 hover:text-constitution-gold hover:bg-constitution-gold/5 transition-colors px-3 py-1.5 rounded-lg"
                             >
-                                <Reply className="w-3.5 h-3.5" />
+                                <Reply className="w-4 h-4" />
                                 <span className="text-xs font-bold uppercase tracking-tight">Reply</span>
                             </button>
                         )}
 
-                        <button className="flex items-center gap-1.5 text-ink-gray/40 hover:text-seal-red transition-colors ml-auto">
-                            <Flag className="w-3.5 h-3.5" />
+                        {reply.replyCount > 0 && (
+                            <button
+                                onClick={() => setIsExpanded(!isExpanded)}
+                                className="flex items-center gap-1.5 text-constitution-gold hover:text-gavel-bronze transition-colors bg-constitution-gold/5 px-3 py-1.5 rounded-lg ml-auto"
+                            >
+                                <MessageCircle className="w-4 h-4" />
+                                <span className="text-xs font-bold">
+                                    {isExpanded ? 'Hide' : 'Show'} {reply.replyCount} {reply.replyCount === 1 ? 'Reply' : 'Replies'}
+                                </span>
+                            </button>
+                        )}
+
+                        <button className="flex items-center gap-1.5 text-ink-gray/40 hover:text-seal-red transition-colors ml-2">
+                            <Flag className="w-4 h-4" />
                         </button>
                     </div>
 
-                    {reply.replyCount > 0 && (
-                        <button
-                            onClick={() => setIsExpanded(!isExpanded)}
-                            className="mt-3 flex items-center gap-2 text-constitution-gold hover:text-gavel-bronze transition-colors bg-constitution-gold/5 px-3 py-1.5 rounded-full"
-                        >
-                            <MessageCircle className="w-3.5 h-3.5" />
-                            <span className="text-xs font-bold">
-                                {isExpanded ? 'Hide' : 'Show'} {reply.replyCount} {reply.replyCount === 1 ? 'Reply' : 'Replies'}
-                            </span>
-                        </button>
-                    )}
-
                     {isExpanded && reply.replies.length > 0 && (
-                        <div className="animate-in slide-in-from-top-2 duration-300">
+                        <div className="animate-in slide-in-from-top-2 duration-300 mt-4">
                             {reply.replies.map((nestedReply) => (
                                 <ReplyCard
                                     key={nestedReply.id}

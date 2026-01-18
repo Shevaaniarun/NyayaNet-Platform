@@ -22,6 +22,7 @@ import { JusticeLoader } from "../components/JusticeLoader";
 interface NetworkPageProps {
   onBack?: () => void;
   currentUserId?: string;
+  onNavigateToProfile?: (userId: string) => void;
 }
 
 type TabType = 'followers' | 'following' | 'requests' | 'pending';
@@ -32,6 +33,7 @@ interface UserCardProps {
   onAction: (userId: string, action: string, requestId?: string) => void;
   currentUserId?: string;
   requestId?: string;
+  onViewProfile?: (userId: string) => void;
 }
 
 const UserCard: React.FC<UserCardProps> = ({ 
@@ -39,7 +41,8 @@ const UserCard: React.FC<UserCardProps> = ({
   tabType, 
   onAction, 
   currentUserId,
-  requestId 
+  requestId,
+  onViewProfile 
 }) => {
   const [isLoading, setIsLoading] = useState(false);
   
@@ -49,6 +52,15 @@ const UserCard: React.FC<UserCardProps> = ({
       await onAction(user.id, action, requestId);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleViewProfile = () => {
+    if (onViewProfile) {
+      onViewProfile(user.id);
+    } else {
+      // Fallback to direct URL if no callback provided
+      window.location.href = `/profile/${user.id}`;
     }
   };
 
@@ -242,7 +254,7 @@ const UserCard: React.FC<UserCardProps> = ({
       <div className="flex flex-col items-end gap-2 ml-4">
         {getActionButton()}
         <button
-          onClick={() => window.location.href = `/profile/${user.id}`}
+          onClick={handleViewProfile}
           className="text-sm text-constitution-gold hover:underline flex items-center gap-1"
           type="button"
         >
@@ -254,7 +266,7 @@ const UserCard: React.FC<UserCardProps> = ({
   );
 };
 
-export function NetworkPage({ onBack, currentUserId }: NetworkPageProps) {
+export function NetworkPage({ onBack, currentUserId, onNavigateToProfile }: NetworkPageProps) {
   const [activeTab, setActiveTab] = useState<TabType>('followers');
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -424,6 +436,7 @@ export function NetworkPage({ onBack, currentUserId }: NetworkPageProps) {
             onAction={handleUserAction}
             currentUserId={currentUserId}
             requestId={user.requestId}
+            onViewProfile={onNavigateToProfile}
           />
         ))}
       </div>
@@ -450,6 +463,7 @@ export function NetworkPage({ onBack, currentUserId }: NetworkPageProps) {
             onAction={handleUserAction}
             currentUserId={currentUserId}
             requestId={request.id}
+            onViewProfile={onNavigateToProfile}
           />
         ))}
       </div>
@@ -496,6 +510,7 @@ export function NetworkPage({ onBack, currentUserId }: NetworkPageProps) {
               tabType={tabType}
               onAction={handleUserAction}
               currentUserId={currentUserId}
+              onViewProfile={onNavigateToProfile}
             />
           );
         })}
