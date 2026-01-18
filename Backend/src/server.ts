@@ -10,6 +10,9 @@ import uploadRoutes from './routes/uploadRoutes';
 import notificationRoutes from './routes/notificationRoutes';
 import noteRoutes from "./routes/noteRoutes";
 import networkRoutes from './routes/networkRoutes';
+import messagesRoutes from './routes/messagesRoutes';
+import { ChatbotController } from './controllers/chatbotController';
+import { authenticate } from './middleware/auth';
 
 dotenv.config();
 
@@ -62,6 +65,11 @@ app.use("/api", authRoutes);
 app.use("/api/notes", noteRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/network', networkRoutes);
+app.use('/api/messages', messagesRoutes);
+
+// Chatbot routes (inline to avoid module issues)
+app.post('/api/chatbot/chat', authenticate, ChatbotController.chat);
+app.get('/api/chatbot/history', authenticate, ChatbotController.getChatHistory);
 
 app.use((req, res) => res.status(404).json({ success: false, message: 'Route not found' }));
 

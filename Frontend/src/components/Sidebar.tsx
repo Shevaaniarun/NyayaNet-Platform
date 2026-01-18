@@ -34,6 +34,8 @@ const navItems:  NavItem[] = [
   { path: '/chat', icon: MessageSquare, label:  'Chambers', badge: '12', symbol: '💬' },
   { path: '/cases', icon: Briefcase, label: 'Docket', badge: '5', symbol: '📁' },
   { path: '/notes', icon: Notebook, label:  'Case Notes', badge: null, symbol: '📝' },
+  { path: '/chatbot', icon: Brain, label: 'AI Chatbot', badge: 'AI', symbol: '🤖' },
+  { path: '/chat-with-us', icon: MessageCircle, label: 'Chat With Us', badge: null, symbol: '👨‍⚖️' },
   { path: '/ai', icon: Brain, label: 'Legal AI', badge: 'New', symbol: '🧠' },
   { path: '/discussions', icon: MessageCircle, label: 'Debates', badge:  null, symbol: '💭' },
   { path: '/profile', icon: User, label: 'Profile', badge: null, symbol: '👤' },
