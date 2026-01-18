@@ -24,6 +24,22 @@ interface NavItem {
   symbol:  string;
 }
 
+const navItems:  NavItem[] = [
+  { path: '/', icon: Home, label: 'Dashboard', badge:  null, symbol: '⚖️' },
+  { path:  '/feed', icon: Newspaper, label: 'Legal Feed', badge: null, symbol: '📜' },
+  { path: '/network', icon: Users, label:  'Colleagues', badge: '3', symbol: '👥' },
+  { path: '/notifications', icon: Bell, label: 'Notifications', badge: null, symbol: '🔔' }, 
+  { path: '/chat', icon: MessageSquare, label:  'Chambers', badge: '12', symbol: '💬' },
+  { path: '/cases', icon: Briefcase, label: 'Docket', badge: '5', symbol: '📁' },
+  { path: '/notes', icon: Notebook, label:  'Case Notes', badge: null, symbol: '📝' },
+  { path: '/chatbot', icon: Brain, label: 'AI Chatbot', badge: 'AI', symbol: '🤖' },
+  { path: '/chat-with-us', icon: MessageCircle, label: 'Chat With Us', badge: null, symbol: '👨‍⚖️' },
+  { path: '/ai', icon: Brain, label: 'Legal AI', badge: 'New', symbol: '🧠' },
+  { path: '/discussions', icon: MessageCircle, label: 'Debates', badge:  null, symbol: '💭' },
+  { path: '/profile', icon: User, label: 'Profile', badge: null, symbol: '👤' },
+  { path: '/library', icon:  BookOpen, label: 'Library', badge: null, symbol: '📚' },
+];
+
 interface SidebarProps {
   currentPath? :  string;
   onNavigate?: (path: string) => void;
@@ -48,6 +64,8 @@ export function Sidebar({ currentPath = '/', onNavigate, notificationCount = 0 }
     { path: '/cases', icon:  Briefcase, label: 'Docket', badge: '5', symbol:  '📁' },
     { path: '/notes', icon:  Notebook, label: 'Case Notes', badge:  null, symbol: '📝' },
     { path: '/ai', icon: Brain, label: 'Legal AI', badge: 'New', badgeType: 'new', symbol: '🧠' },
+    { path: '/chatbot', icon: Brain, label: 'AI Chatbot', badge: 'AI', symbol: '🤖' },
+    { path: '/chat-with-us', icon: MessageCircle, label: 'Chat With Us', badge: null, symbol: '👨‍⚖️' },
     { path:  '/discussions', icon: MessageCircle, label: 'Debates', badge: null, symbol: '💭' },
     { path:  '/profile', icon: User, label: 'Profile', badge: null, symbol: '👤' },
     { path: '/library', icon: BookOpen, label:  'Library', badge: null, symbol: '📚' },

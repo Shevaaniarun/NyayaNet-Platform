@@ -12,8 +12,11 @@ import { PostsPage } from './pages/PostsPage';
 import RegisterPage from "./pages/RegisterPage";
 import LoginPage from "./pages/LoginPage";
 import { ProfilePage } from './pages/ProfilePage';
-import NotesPage from './pages/NotesPage';
-import NotificationsPage from './pages/NotificationsPage';
+import  NotesPage  from './pages/NotesPage';
+import NotificationsPage from './pages/NotificationsPage'; 
+import { ChatbotPage } from './pages/ChatbotPage';
+import ChatWithUsPage from './pages/ChatWithUsPage';
+import MessagesPage from './pages/MessagesPage';
 import { getFeed, Post as ApiPost } from './api/postsAPI';
 import { toast } from 'react-toastify';
 import { NetworkPage } from './pages/NetworkPage';
@@ -27,6 +30,9 @@ type ViewType =
     | 'cases'
     | 'notes'
     | 'ai'
+    | 'chatbot'
+    | 'chat-with-us'
+    | 'messages'
     | 'discussions'
     | 'profile'
     | 'notifications'
@@ -241,6 +247,8 @@ export default function App() {
             '/feed': 'feed',
             '/cases': 'cases',
             '/ai': 'ai',
+            '/chatbot': 'chatbot',
+            '/chat-with-us': 'chat-with-us',
             '/discussions': 'discussions',
             '/profile': 'profile',
             '/notes': 'notes',
@@ -249,6 +257,15 @@ export default function App() {
             '/connection-requests': 'connectionRequests',
             '/create-discussion': 'createDiscussion',
         };
+
+        // Handle messages with user ID
+        if (path.startsWith('/messages/')) {
+            setCurrentView('messages');
+            if (pushToHistory) {
+                window.history.pushState({ view: 'messages', path }, '', path);
+            }
+            return;
+        }
 
         const newView = viewMap[path] || 'dashboard';
         setCurrentView(newView);
@@ -495,6 +512,9 @@ export default function App() {
                 )}
 
                 {currentView === 'ai' && <AIAssistant />}
+                {currentView === 'chatbot' && <ChatbotPage />}
+                {currentView === 'chat-with-us' && <ChatWithUsPage onNavigate={handleNavigation} />}
+                {currentView === 'messages' && <MessagesPage onNavigate={handleNavigation} />}
                 {currentView === 'discussions' && (
                     <DiscussionsPage
                         onNavigateToProfile={handleDiscussionProfileClick}
