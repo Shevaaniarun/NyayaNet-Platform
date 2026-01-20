@@ -15,7 +15,8 @@ import {
   Book,
   User,
   Notebook,
-  Bell
+  Bell,
+  LogOut
 } from 'lucide-react';
 
 interface NavItem {
@@ -44,12 +45,24 @@ interface SidebarProps {
   currentPath?: string;
   onNavigate?: (path: string) => void;
   pendingConnectionCount?: number;
+  onLogout?: () => void;
 }
 
-export function Sidebar({ currentPath = '/', onNavigate, pendingConnectionCount = 0 }: SidebarProps) {
+export function Sidebar({ 
+  currentPath = '/', 
+  onNavigate, 
+  pendingConnectionCount = 0,
+  onLogout 
+}: SidebarProps) {
 
   const handleNavClick = (path: string) => {
     if (onNavigate) onNavigate(path);
+  };
+
+  const handleLogout = () => {
+    if (onLogout) {
+      onLogout();
+    }
   };
 
   return (
@@ -112,6 +125,21 @@ export function Sidebar({ currentPath = '/', onNavigate, pendingConnectionCount 
             </button>
           );
         })}
+        
+        {/* Logout Button */}
+        <button
+          onClick={handleLogout}
+          className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all relative overflow-hidden group text-red-500/70 hover:bg-red-500/5 hover:text-red-500 mt-4"
+        >
+          <span className="absolute right-4 opacity-5 group-hover:opacity-10 transition-opacity text-4xl">
+            🚪
+          </span>
+
+          <LogOut className="w-5 h-5 flex-shrink-0" />
+          <span className="font-medium tracking-wide flex-1 text-left">
+            Logout
+          </span>
+        </button>
       </nav>
 
       <div className="px-4 py-3">
