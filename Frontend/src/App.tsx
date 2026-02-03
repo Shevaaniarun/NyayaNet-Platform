@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { PostCard, Post as PostComponentType } from './components/Post/PostCard';
+import { PostCard, Post as PostComponentType } from './components/Post/PostCard';
 import { CaseCard, CaseItem as CaseItemComponentType } from './components/CaseCard';
 import { AIAssistant } from './components/AIAssistant';
 import { JusticeLoader } from './components/JusticeLoader';
+import { CreatePost } from './components/Post/CreatePost';
 import { CreatePost } from './components/Post/CreatePost';
 import { MobileNotice } from './components/MobileNotice';
 import { Sparkles, TrendingUp, Gavel, Construction, Users, Bell } from 'lucide-react';
@@ -14,6 +16,8 @@ import LoginPage from "./pages/LoginPage";
 import { ProfilePage } from './pages/ProfilePage';
 import NotesPage from './pages/NotesPage';
 import NotificationsPage from './pages/NotificationsPage';
+import NotesPage from './pages/NotesPage';
+import NotificationsPage from './pages/NotificationsPage';
 import { getFeed, Post as ApiPost } from './api/postsAPI';
 import { toast } from 'react-toastify';
 import { NetworkPage } from './pages/NetworkPage';
@@ -22,6 +26,7 @@ import LandingPage from "./pages/LandingPage";
 import DashboardPage from './pages/dashboard/DashboardPage';
 
 import { Toaster } from "react-hot-toast";
+import { useNotificationCount } from './hooks/useNotificationCount'; 
 import { useNotificationCount } from './hooks/useNotificationCount'; 
 
 type ViewType =
@@ -70,12 +75,15 @@ const adaptPost = (apiPost: ApiPost): PostComponentType => ({
     postType:  apiPost.postType || 'POST',
     title: apiPost.title || '', 
     content: apiPost.content,
+    title: apiPost.title || '', 
+    content: apiPost. content,
     createdAt:  new Date(apiPost.createdAt).toLocaleDateString(),
     likeCount: apiPost.likeCount || 0,
     commentCount: apiPost.commentCount || 0,
     tags: apiPost.tags || [],
     isLiked: apiPost.isLiked,
     isSaved: apiPost.isSaved,
+    media: apiPost.media?.map(m => ({
     media: apiPost.media?.map(m => ({
         id: m.id,
         url: m.mediaUrl || '',  // Map mediaUrl to url
@@ -88,6 +96,7 @@ const adaptPost = (apiPost: ApiPost): PostComponentType => ({
 });
 
 const mapCaseStatus = (status: string): CaseItemComponentType['caseStatus'] => {
+    const statusMap: Record<string, CaseItemComponentType['caseStatus']> = {
     const statusMap: Record<string, CaseItemComponentType['caseStatus']> = {
         'active': 'active',
         'closed': 'closed',
@@ -105,6 +114,8 @@ export default function App() {
     const [posts, setPosts] = useState<PostComponentType[]>([]);
     const [cases] = useState<CaseItemComponentType[]>([]);
     const [pendingConnectionCount, setPendingConnectionCount] = useState(0);
+    const { unreadCount, refetch: refetchNotificationCount } = useNotificationCount(30000);
+    
     const { unreadCount, refetch: refetchNotificationCount } = useNotificationCount(30000);
     
     // Initialize auth state properly
@@ -183,6 +194,7 @@ export default function App() {
 
         const timer = setTimeout(() => {
             setIsLoading(false);
+        }, 2500); 
         }, 1500);
 
         return () => clearTimeout(timer);
@@ -247,8 +259,10 @@ export default function App() {
             setIsLoadingPosts(true);
             const postsData = await getFeed(1, 10);
             setPosts(postsData.posts.map(adaptPost));
+            setPosts(postsData.posts.map(adaptPost));
         } catch (error) {
             console.error('Failed to refresh posts:', error);
+            toast.error('Failed to refresh posts');
             toast.error('Failed to refresh posts');
         } finally {
             setIsLoadingPosts(false);
@@ -288,6 +302,7 @@ export default function App() {
             '/profile': 'profile',
             '/notes': 'notes',
             '/notifications': 'notifications',
+            '/notifications': 'notifications',
             '/network': 'network',
             '/connection-requests': 'connectionRequests',
             '/create-discussion': 'createDiscussion',
@@ -300,6 +315,9 @@ export default function App() {
         // Clear profile user selection on navigation
         if (newView !== 'profile') {
             setSelectedProfileUserId(null);
+        }
+        if (newView !== 'notifications') {
+            setTimeout(() => refetchNotificationCount(), 1000);
         }
         if (newView !== 'notifications') {
             setTimeout(() => refetchNotificationCount(), 1000);
@@ -321,6 +339,8 @@ export default function App() {
             view === 'dashboard'
                 ? '/'
                 : view === 'createDiscussion'
+                    ? '/create-discussion'
+                    : `/${view}`;
                     ? '/create-discussion'
                     : `/${view}`;
         handleNavigation(path, true);
@@ -381,6 +401,7 @@ export default function App() {
             <MobileNotice />
             <Sidebar
                 currentPath={currentView === 'dashboard' ? '/' : `/${currentView}`}
+                currentPath={currentView === 'dashboard' ? '/' : `/${currentView}`}
                 onNavigate={handleNavigation}
                 pendingConnectionCount={pendingConnectionCount}
                 onLogout={handleLogout}
@@ -390,8 +411,166 @@ export default function App() {
             <div className="flex-1 ml-64 min-h-screen">
                 {currentView === 'dashboard' && <DashboardPage />}
                 
+                notificationCount={unreadCount}
+            />
+
+            <div className="ml-64 flex-1">
+                {currentView === 'dashboard' && (
+                    <div className="min-h-screen bg-justice-black p-8">
+                        <div className="mb-12">
+                            <div className="aged-paper rounded-2xl p-12 relative overflow-hidden">
+                                <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-constitution-gold via-gavel-bronze to-constitution-gold"></div>
+                                <div className="relative z-10">
+                                    <div className="flex justify-between items-start mb-4">
+                                        <div>
+                                            <h1 className="font-heading font-bold text-ink-gray mb-4 text-5xl">
+                                                Welcome to NyayaNet
+                                            </h1>
+                                            <p className="text-ink-gray/70 max-w-3xl leading-relaxed mb-6 text-xl">
+                                                India's premier legal professional networking and AI-powered assistance platform.
+                                            </p>
+                                        </div>
+                                        {pendingConnectionCount > 0 && (
+                                            <button
+                                                onClick={() => navigateTo('connectionRequests')}
+                                                className="flex items-center gap-2 px-4 py-2 bg-constitution-gold/10 border border-constitution-gold/30 text-constitution-gold rounded-lg hover:bg-constitution-gold/20 transition-colors"
+                                            >
+                                                <Bell className="w-5 h-5" />
+                                                <span>Connection Requests</span>
+                                                <span className="bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                                                    {pendingConnectionCount}
+                                                </span>
+                                            </button>
+                                        )}
+                                    </div>
+                                    <div className="flex space-x-4">
+                                        <button
+                                            onClick={() => navigateTo('ai')}
+                                            className="px-8 py-4 bg-constitution-gold text-justice-black rounded-lg font-bold hover:bg-constitution-gold/90 transition-colors flex items-center space-x-2"
+                                        >
+                                            <Sparkles className="w-5 h-5" /><span>Try Legal AI</span>
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                setSelectedProfileUserId(null); // Ensure own profile
+                                                navigateTo('profile');
+                                            }}
+                                            className="px-8 py-4 border-2 border-constitution-gold text-constitution-gold rounded-lg font-bold hover:bg-constitution-gold/5 transition-colors flex items-center space-x-2"
+                                        >
+                                            <Users className="w-5 h-5" /><span>View Profile</span>
+                                        </button>
+                                        {pendingConnectionCount > 0 && (
+                                            <button
+                                                onClick={() => navigateTo('connectionRequests')}
+                                                className="px-8 py-4 bg-red-500/10 border-2 border-red-500 text-red-500 rounded-lg font-bold hover:bg-red-500/20 transition-colors flex items-center space-x-2"
+                                            >
+                                                <Bell className="w-5 h-5" />
+                                                <span>View Requests ({pendingConnectionCount})</span>
+                                            </button>
+                                        )}
+                                        <button
+                                            onClick={handleLogout}
+                                            className="px-8 py-4 border-2 border-red-500 text-red-500 rounded-lg font-bold hover:bg-red-500/5 transition-colors flex items-center space-x-2"
+                                        >
+                                            <span>Logout</span>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div className="absolute bottom-4 right-4 opacity-5 text-8xl">⚖️</div>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
+                            <div className="aged-paper rounded-lg p-6 border border-constitution-gold/20 hover:border-constitution-gold/40 transition-colors cursor-pointer"
+                                onClick={() => navigateTo('cases')}>
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-ink-gray/60 mb-1 text-sm">Active Cases</p>
+                                        <p className="font-heading font-bold text-ink-gray text-2xl">5</p>
+                                    </div>
+                                    <div className="w-12 h-12 bg-constitution-gold/10 rounded-full flex items-center justify-center">
+                                        <Gavel className="w-6 h-6 text-constitution-gold" />
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="aged-paper rounded-lg p-6 border border-constitution-gold/20 hover:border-constitution-gold/40 transition-colors cursor-pointer"
+                                onClick={() => navigateTo('connectionRequests')}>
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-ink-gray/60 mb-1 text-sm">Connections</p>
+                                        <p className="font-heading font-bold text-ink-gray text-2xl">248</p>
+                                    </div>
+                                    <div className="w-12 h-12 bg-constitution-gold/10 rounded-full flex items-center justify-center">
+                                        <TrendingUp className="w-6 h-6 text-constitution-gold" />
+                                    </div>
+                                </div>
+                                {pendingConnectionCount > 0 && (
+                                    <div className="mt-2 flex items-center gap-1 text-sm">
+                                        <span className="text-constitution-gold font-medium">
+                                            {pendingConnectionCount} pending request{pendingConnectionCount !== 1 ? 's' : ''}
+                                        </span>
+                                    </div>
+                                )}
+                            </div>
+                            <div className="aged-paper rounded-lg p-6 border border-constitution-gold/20 hover:border-constitution-gold/40 transition-colors cursor-pointer"
+                                onClick={() => navigateTo('ai')}>
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-ink-gray/60 mb-1 text-sm">AI Analyses</p>
+                                        <p className="font-heading font-bold text-ink-gray text-2xl">12</p>
+                                    </div>
+                                    <div className="w-12 h-12 bg-constitution-gold/10 rounded-full flex items-center justify-center">
+                                        <Sparkles className="w-6 h-6 text-constitution-gold" />
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="aged-paper rounded-lg p-6 border border-constitution-gold/20 hover:border-constitution-gold/40 transition-colors cursor-pointer"
+                                onClick={() => {
+                                    setSelectedProfileUserId(null);
+                                    navigateTo('profile');
+                                }}>
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-ink-gray/60 mb-1 text-sm">Your Posts</p>
+                                        <p className="font-heading font-bold text-ink-gray text-2xl">7</p>
+                                    </div>
+                                    <div className="w-12 h-12 bg-constitution-gold/10 rounded-full flex items-center justify-center">
+                                        <Users className="w-6 h-6 text-constitution-gold" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <h2 className="font-heading font-bold text-judge-ivory mb-6">Recent Legal Updates</h2>
+                            <div className="space-y-6">
+                                {isLoadingPosts ? (
+                                    <div className="flex justify-center p-8">
+                                        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-justice-blue"></div>
+                                    </div>
+                                ) : posts.length > 0 ? (
+                                    posts.map((post) => (
+                                        <PostCard
+                                            key={post.id}
+                                            post={post}
+                                            currentUserId={currentUser?.id}
+                                            onDelete={(id) => setPosts(prev => prev.filter(p => p.id !== id))}
+                                            onAuthorClick={handlePostAuthorClick}
+                                        />
+                                    ))
+                                ) : (
+                                    <div className="text-center py-12 text-gray-400">
+                                        <p>No posts found. Be the first to post something!</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 {currentView === 'feed' && (
                     <PostsPage onNavigateToProfile={handlePostAuthorClick} />
+                <PostsPage onNavigateToProfile={handlePostAuthorClick} />
                 )}
 
                 {currentView === 'cases' && (
@@ -415,6 +594,7 @@ export default function App() {
                 )}
                 {currentView === 'notes' && <NotesPage />}
                 
+                
                 {(currentView === 'connectionRequests' || currentView === 'network') && (
                     <NetworkPage
                         onBack={() => setCurrentView('dashboard')}
@@ -424,6 +604,14 @@ export default function App() {
                             navigateTo('profile');
                         }}
                     />
+                <NetworkPage
+                    onBack={() => setCurrentView('dashboard')}
+                    currentUserId={currentUser?.id}
+                    onNavigateToProfile={(userId) => {
+                    setSelectedProfileUserId(userId);
+                    navigateTo('profile');
+                    }}
+                />
                 )}
 
                 {/* ProfilePage "+ New Discussion" button should switch to Discussions page */}
@@ -438,6 +626,8 @@ export default function App() {
                         }}
                     />
                 )}
+
+                {currentView === 'notifications' && <NotificationsPage />}
 
                 {currentView === 'notifications' && <NotificationsPage />}
 

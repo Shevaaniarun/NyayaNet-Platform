@@ -1,3 +1,4 @@
+import React from 'react';
 import {
   Home,
   Newspaper,
@@ -5,7 +6,6 @@ import {
   MessageSquare,
   Briefcase,
   Brain,
-  MessageCircle,
   BookOpen,
   Scale,
   Book,
@@ -29,18 +29,17 @@ interface SidebarProps {
   onNavigate?: (path: string) => void;
   pendingConnectionCount?: number;
   notificationCount?: number;
-  onLogout?: () => void; // Add onLogout prop
+  onLogout?: () => void;
 }
 
-export function Sidebar({ 
-  currentPath = '/', 
-  onNavigate, 
-  pendingConnectionCount = 0, 
+export function Sidebar({
+  currentPath = '/',
+  onNavigate,
+  pendingConnectionCount = 0,
   notificationCount = 0,
-  onLogout 
+  onLogout
 }: SidebarProps) {
 
-  // Define navItems array
   const navItems: NavItem[] = [
     { path: '/', icon: Home, label: 'Dashboard', symbol: '🏛️' },
     { path: '/feed', icon: Newspaper, label: 'Feed', symbol: '📰' },
@@ -49,22 +48,8 @@ export function Sidebar({
     { path: '/cases', icon: Briefcase, label: 'Cases', symbol: '⚖️' },
     { path: '/notes', icon: Notebook, label: 'Notes', symbol: '📝' },
     { path: '/ai', icon: Brain, label: 'AI Assistant', symbol: '🤖' },
-    { 
-      path: '/notifications', 
-      icon: Bell, 
-      label: 'Notifications', 
-      symbol: '🔔',
-      badge: notificationCount > 0 ? notificationCount : null,
-      badgeType: 'count'
-    },
-    { 
-      path: '/network', 
-      icon: Users, 
-      label: 'Network', 
-      symbol: '🤝',
-      badge: pendingConnectionCount > 0 ? pendingConnectionCount : null,
-      badgeType: pendingConnectionCount > 0 ? 'count' : undefined
-    },
+    { path: '/notifications', icon: Bell, label: 'Notifications', symbol: '🔔', badge: notificationCount > 0 ? notificationCount : null, badgeType: 'count' },
+    { path: '/network', icon: Users, label: 'Network', symbol: '🤝', badge: pendingConnectionCount > 0 ? pendingConnectionCount : null, badgeType: pendingConnectionCount > 0 ? 'count' : undefined }
   ];
 
   const handleNavClick = (path: string) => {
@@ -73,7 +58,6 @@ export function Sidebar({
 
   return (
     <aside className="w-64 bg-justice-black border-r border-constitution-gold/20 h-screen fixed left-0 top-0 flex flex-col">
-      
       <div className="p-6 border-b border-constitution-gold/20">
         <div className="flex items-center space-x-3">
           <div className="relative">
@@ -84,9 +68,7 @@ export function Sidebar({
           </div>
           <div>
             <h1 className="font-heading tracking-wide text-judge-ivory">NyayaNet</h1>
-            <p className="text-constitution-gold tracking-wider text-xs">
-              LEGAL INTELLIGENCE PLATFORM
-            </p>
+            <p className="text-constitution-gold tracking-wider text-xs">LEGAL INTELLIGENCE PLATFORM</p>
           </div>
         </div>
       </div>
@@ -106,47 +88,31 @@ export function Sidebar({
                   : 'text-constitution-gold/70 hover:bg-constitution-gold/5 hover:text-judge-ivory'
               }`}
             >
-              <span className="absolute right-4 opacity-5 group-hover:opacity-10 transition-opacity text-4xl">
-                {item.symbol}
-              </span>
+              <span className="absolute right-4 opacity-5 group-hover:opacity-10 transition-opacity text-4xl">{item.symbol}</span>
 
               <Icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-constitution-gold' : ''}`} />
-              <span className="font-medium tracking-wide flex-1 text-left">
-                {item.label}
-              </span>
+              <span className="font-medium tracking-wide flex-1 text-left">{item.label}</span>
 
               {item.badge && (
-                <span 
-                  className={`px-2 py-0.5 rounded-full font-bold text-xs ${
-                    item.badgeType === 'count'
-                      ? 'bg-amber-700 text-white' 
-                      : 'bg-constitution-gold text-justice-black'
-                  }`}
-                >
+                <span className={`px-2 py-0.5 rounded-full font-bold text-xs ${item.badgeType === 'count' ? 'bg-amber-700 text-white' : 'bg-constitution-gold text-justice-black'}`}>
                   {item.badge}
                 </span>
               )}
 
-              {isActive && (
-                <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-1 h-6 bg-constitution-gold rounded-l"></div>
-              )}
+              {isActive && <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-1 h-6 bg-constitution-gold rounded-l"></div>}
             </button>
           );
         })}
-        
+
         {/* Logout Button */}
         <button
-          onClick={onLogout} // Use the onLogout prop directly
+          onClick={onLogout}
           className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all relative overflow-hidden group text-red-500/70 hover:bg-red-500/5 hover:text-red-500 mt-4"
         >
-          <span className="absolute right-4 opacity-5 group-hover:opacity-10 transition-opacity text-4xl">
-            🚪
-          </span>
+          <span className="absolute right-4 opacity-5 group-hover:opacity-10 transition-opacity text-4xl">🚪</span>
 
           <LogOut className="w-5 h-5 flex-shrink-0" />
-          <span className="font-medium tracking-wide flex-1 text-left">
-            Logout
-          </span>
+          <span className="font-medium tracking-wide flex-1 text-left">Logout</span>
         </button>
       </nav>
 
@@ -160,9 +126,7 @@ export function Sidebar({
             <Book className="w-6 h-6 text-constitution-gold" />
           </div>
           <p className="text-constitution-gold/60 text-xs">Constitution of India</p>
-          <p className="text-constitution-gold/40 text-xs">
-            Article 14 · Equality Before Law
-          </p>
+          <p className="text-constitution-gold/40 text-xs">Article 14 · Equality Before Law</p>
         </div>
       </div>
     </aside>
