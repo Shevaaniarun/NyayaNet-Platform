@@ -58,7 +58,7 @@ export interface Comment {
 export interface Post {
     id: string;
     userId: string;
-    title: string | null;
+    title: string;
     content: string;
     postType: string;
     tags: string[];
@@ -171,8 +171,9 @@ export interface PostFilters {
     limit?: number;
     tags?: string[];
     postType?: 'POST' | 'QUESTION' | 'ARTICLE' | 'ANNOUNCEMENT';
-    sort?: 'newest' | 'active' | 'liked' | 'relevance';
+    sort?: 'newest' | 'active' | 'liked' | 'relevance' | 'most_commented' | 'most_liked';
     q?: string;
+    following?: boolean;
 }
 
 export async function getPosts(filters: PostFilters = {}): Promise<{ posts: Post[], pagination: any }> {
@@ -183,6 +184,7 @@ export async function getPosts(filters: PostFilters = {}): Promise<{ posts: Post
     if (filters.postType) params.append('postType', filters.postType);
     if (filters.sort) params.append('sort', filters.sort);
     if (filters.q) params.append('q', filters.q);
+    if (filters.following) params.append('following', 'true');
     if (filters.tags && filters.tags.length > 0) {
         filters.tags.forEach(tag => params.append('tags', tag));
     }
@@ -196,10 +198,10 @@ export async function getPosts(filters: PostFilters = {}): Promise<{ posts: Post
     return result.data;
 }
 
-export async function likePost(postId: string, reactionType: string = 'LIKE'): Promise<{ liked: boolean; count: number; reactionType: string | null }> {
+export async function likePost(postId: string, reactionType:  string = 'LIKE'): Promise<{ liked: boolean; count: number; reactionType: string | null }> {
     const response = await fetch(`${API_BASE_URL}/posts/${postId}/like`, {
         method: 'POST',
-        headers: createHeaders(true),
+        headers:  createHeaders(true),
         body: JSON.stringify({ reactionType })
     });
 
@@ -254,7 +256,7 @@ export async function deleteComment(commentId: string): Promise<void> {
 
 export async function getComments(postId: string, page = 1, limit = 50): Promise<Comment[]> {
     const params = new URLSearchParams({ page: page.toString(), limit: limit.toString() });
-    const response = await fetch(`${API_BASE_URL}/posts/${postId}/comments?${params}`, {
+    const response = await fetch(`${API_BASE_URL}/posts/${postId}/comments`, {
         headers: createHeaders()
     });
 

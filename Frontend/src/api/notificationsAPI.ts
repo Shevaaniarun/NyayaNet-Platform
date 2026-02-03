@@ -125,3 +125,150 @@ export async function searchNotifications(params:   {
     const result = await response.json();
     return result.data. notifications;
 }
+
+export interface NotificationStats {
+  totalNotifications: number;
+  unreadCount: number;
+  readCount: number;
+  countByType: Record<string, number>;
+  countByDay: Array<{ date: string; count:  number }>;
+}
+
+export async function getNotificationStats(): Promise<NotificationStats> {
+  const response = await fetch(`${API_BASE_URL}/notifications/stats`, {
+    headers: createHeaders(true)
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Failed to fetch notification stats');
+  }
+
+  const result = await response.json();
+  return result. data;
+}
+
+export async function deleteNotification(notificationId: string): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/notifications/${notificationId}`, {
+    method: 'DELETE',
+    headers: createHeaders(true)
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Failed to delete notification');
+  }
+}
+
+export async function bulkDeleteNotifications(params: {
+  notificationIds?:  string[];
+  deleteAllRead?:  boolean;
+  deleteAllBefore?: string;
+}): Promise<{ deletedCount: number }> {
+  const response = await fetch(`${API_BASE_URL}/notifications/bulk-delete`, {
+    method: 'POST',
+    headers: createHeaders(true),
+    body: JSON.stringify(params)
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Failed to bulk delete notifications');
+  }
+
+  const result = await response.json();
+  return result.data;
+}
+
+export async function createPostLikeNotification(params: {
+  postOwnerId: string;
+  likerId: string;
+  likerName: string;
+  postId: string;
+  postTitle:  string;
+}): Promise<{ notificationId: string }> {
+  const response = await fetch(`${API_BASE_URL}/notifications/post-like`, {
+    method: 'POST',
+    headers: createHeaders(true),
+    body: JSON.stringify(params)
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Failed to create post like notification');
+  }
+
+  const result = await response.json();
+  return result.data;
+}
+
+export async function createDiscussionReplyNotification(params: {
+  discussionOwnerId: string;
+  replierId: string;
+  replierName: string;
+  discussionId: string;
+  discussionTitle: string;
+  replyPreview: string;
+  isReplyToComment?:  boolean;
+  parentCommentId?: string;
+}): Promise<{ notificationId: string }> {
+  const response = await fetch(`${API_BASE_URL}/notifications/discussion-reply`, {
+    method: 'POST',
+    headers: createHeaders(true),
+    body: JSON.stringify(params)
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error. message || 'Failed to create discussion reply notification');
+  }
+
+  const result = await response.json();
+  return result. data;
+}
+
+export async function createDiscussionUpvoteNotification(params: {
+  contentOwnerId: string;
+  upvoterId: string;
+  upvoterName: string;
+  discussionId: string;
+  discussionTitle: string;
+  replyId?:  string;
+  isReply?:  boolean;
+}): Promise<{ notificationId: string }> {
+  const response = await fetch(`${API_BASE_URL}/notifications/discussion-upvote`, {
+    method: 'POST',
+    headers: createHeaders(true),
+    body: JSON.stringify(params)
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Failed to create discussion upvote notification');
+  }
+
+  const result = await response.json();
+  return result.data;
+}
+
+export async function createConnectionRequestNotification(params: {
+  receiverId: string;
+  requesterId: string;
+  requesterName: string;
+  requestMessage?:  string;
+  requestId:  string;
+}): Promise<{ notificationId: string }> {
+  const response = await fetch(`${API_BASE_URL}/notifications/connection-request`, {
+    method: 'POST',
+    headers:  createHeaders(true),
+    body: JSON.stringify(params)
+  });
+
+  if (!response.ok) {
+    const error = await response. json();
+    throw new Error(error.message || 'Failed to create connection request notification');
+  }
+
+  const result = await response.json();
+  return result.data;
+}

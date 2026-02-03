@@ -26,9 +26,9 @@ import {
   X,
   Image as ImageIcon
 } from 'lucide-react';
-import { likePost, savePost, createComment, getComments, deletePost, updatePost, uploadFiles } from '../api/postsAPI';
+import { likePost, savePost, createComment, getComments, deletePost, updatePost, uploadFiles } from '../../api/postsAPI';
 import { toast } from 'react-toastify';
-import { CommentCard } from './Post/CommentCard';
+import { CommentCard } from './CommentCard';
 
 export interface Post {
   id: string;
@@ -41,7 +41,7 @@ export interface Post {
     organization: string;
   };
   postType: string;
-  title?: string;
+  title: string;
   content: string;
   createdAt: string;
   likeCount: number;
@@ -248,7 +248,6 @@ export function PostCard({ post, currentUserId, onDelete, onAuthorClick }: PostC
         <div
           key={media.id}
           className="rounded-lg overflow-hidden border border-constitution-gold/20 bg-parchment-cream aspect-video cursor-pointer hover:border-constitution-gold transition-colors relative"
-          onClick={() => window.open(fullMediaUrl, '_blank')}
         >
           <img
             src={fullMediaUrl}
@@ -328,7 +327,6 @@ export function PostCard({ post, currentUserId, onDelete, onAuthorClick }: PostC
 
         <div
           className={`flex items-center mb-6 pb-4 border-b border-constitution-gold/20 ${onAuthorClick ? 'cursor-pointer hover:bg-constitution-gold/5 rounded-lg p-2 transition-colors' : ''}`}
-          onClick={handleAuthorClick}
         >
           <div className="relative">
             <div className="w-12 h-12 rounded-full border-2 border-constitution-gold overflow-hidden bg-parchment-cream">
@@ -350,9 +348,16 @@ export function PostCard({ post, currentUserId, onDelete, onAuthorClick }: PostC
 
           <div className="ml-4 flex-1">
             <div className="flex items-center space-x-2">
-              <h3 className="font-heading font-semibold text-ink-gray">
+              <h3
+                className="font-heading font-semibold text-ink-gray hover:text-constitution-gold cursor-pointer"
+                onClick={(e) => {
+                  e.stopPropagation(); 
+                  onAuthorClick?.(post.userId);
+                }}
+              >
                 {post.author.fullName}
               </h3>
+
               <span className="text-constitution-gold">•</span>
               <span className="text-ink-gray/70" style={{ fontSize: '0.875rem' }}>{post.author.designation || 'Legal Professional'}</span>
             </div>
@@ -374,6 +379,23 @@ export function PostCard({ post, currentUserId, onDelete, onAuthorClick }: PostC
               {getPostTypeLabel(post.postType)}
             </span>
           </div>
+          {post.title && post.title.trim() && (
+  <div className="mb-8 text-center">
+    {/* Clean, professional headline - center aligned */}
+    <h2 className="text-3xl md:text-4xl font-heading font-bold text-justice-black mb-6 leading-tight mx-auto max-w-4xl">
+      {post.title}
+    </h2>
+    
+    {/* Simple but elegant separator - center aligned */}
+    <div className="flex items-center justify-center mb-4">
+      <div className="h-0.5 w-16 bg-justice-black/10"></div>
+      <div className="mx-4">
+        <Scale className="w-5 h-5 text-constitution-gold" />
+      </div>
+      <div className="h-0.5 w-16 bg-justice-black/10"></div>
+    </div>
+  </div>
+)}
 
           <div className="constitution-texture p-6 rounded">
             <p className="text-ink-gray leading-relaxed font-body whitespace-pre-wrap">

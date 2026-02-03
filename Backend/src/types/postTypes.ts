@@ -52,7 +52,8 @@ export interface PostFilters {
   limit?: number | string;
   tags?: string[];
   postType?: 'POST' | 'QUESTION' | 'ARTICLE' | 'ANNOUNCEMENT';
-  sort?: 'newest' | 'active' | 'liked' | 'relevance';
+  sort?: 'newest' | 'active' | 'liked' | 'relevance' | 'most_commented' | 'most_liked';
   q?: string;
+  following?: boolean;
 }
 

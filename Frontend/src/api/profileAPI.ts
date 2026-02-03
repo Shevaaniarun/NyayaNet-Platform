@@ -20,6 +20,23 @@ profileApi.interceptors.request.use((config) => {
   return config;
 });
 
+
+const networkApi = axios.create({
+  baseURL: API_BASE_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Add auth token to requests
+networkApi.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
 /* ============================
    PROFILE METHODS
 ============================ */
@@ -237,5 +254,60 @@ export const getLikedDiscussions = async (page = 1, limit = 20) => {
   } catch (error: any) {
     console.warn('Error fetching liked discussions, returning empty array');
     return { discussions: [], pagination: { total: 0, page, limit, pages: 0 } };
+  }
+};
+
+
+/* ============================
+   FOLLOW/FOLLOWERS METHODS
+============================ */
+
+export const getFollowers = async () => {
+  try {
+    const response = await networkApi.get('/network/followers');
+    return response.data.data;
+  } catch (error: any) {
+    console.error('Error getting followers:', error);
+    throw error.response?.data || error;
+  }
+};
+
+export const getFollowing = async () => {
+  try {
+    const response = await networkApi.get('/network/following');
+    return response.data.data;
+  } catch (error: any) {
+    console.error('Error getting following:', error);
+    throw error.response?.data || error;
+  }
+};
+
+export const followUser = async (userId: string) => {
+  try {
+    const response = await networkApi.post('/network/follow', { userId });
+    return response.data.data;
+  } catch (error: any) {
+    console.error('Error following user:', error);
+    throw error.response?.data || error;
+  }
+};
+
+export const unfollowUser = async (userId: string) => {
+  try {
+    const response = await networkApi.post('/network/unfollow', { userId });
+    return response.data.data;
+  } catch (error: any) {
+    console.error('Error unfollowing user:', error);
+    throw error.response?.data || error;
+  }
+};
+
+export const getNetworkStats = async () => {
+  try {
+    const response = await networkApi.get('/network/stats');
+    return response.data.data;
+  } catch (error: any) {
+    console.error('Error getting network stats:', error);
+    throw error.response?.data || error;
   }
 };

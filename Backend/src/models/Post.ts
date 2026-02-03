@@ -18,7 +18,6 @@ export interface CommentResponse {
   content: string;
   parentCommentId: string | null;
   isEdited: boolean;
-  commentCount: number;
   createdAt: string;
   author: {
     id: string;
@@ -251,6 +250,16 @@ export class PostModel {
       pIdx++;
     }
 
+    // Filter by following
+    if (filters.following && userId) {
+      baseConditions.push(`EXISTS(
+        SELECT 1 FROM user_follows uf 
+        WHERE uf.following_id = p.user_id AND uf.follower_id = $${pIdx}
+      )`);
+      commonParams.push(userId);
+      pIdx++;
+    }
+
     const whereClause = baseConditions.length > 0 ? `WHERE ${baseConditions.join(' AND ')}` : '';
 
     // Get total count
@@ -265,9 +274,11 @@ export class PostModel {
         sortClause = 'p.created_at DESC';
         break;
       case 'active':
+      case 'most_commented':
         sortClause = 'p.comment_count DESC';
         break;
       case 'liked':
+      case 'most_liked':
         sortClause = 'p.like_count DESC';
         break;
       case 'relevance':
@@ -398,8 +409,8 @@ export class PostModel {
 
       const result = await client.query(
         `INSERT INTO post_comments (post_id, user_id, content, parent_comment_id)
-         VALUES ($1, $2, $3, $4)
-         RETURNING id, content, parent_comment_id, is_edited, comment_count, created_at`,
+             VALUES ($1, $2, $3, $4)
+             RETURNING id, content, parent_comment_id, is_edited, created_at`,
         [postId, userId, content, parentCommentId]
       );
 
@@ -409,9 +420,9 @@ export class PostModel {
       await client.query('UPDATE posts SET comment_count = comment_count + 1 WHERE id = $1', [postId]);
 
       // If it's a nested comment, increment parent comment count
-      if (parentCommentId) {
-        await client.query('UPDATE post_comments SET comment_count = comment_count + 1 WHERE id = $1', [parentCommentId]);
-      }
+      /*if (parentCommentId) {
+          await client.query('UPDATE post_comments SET comment_count = comment_count + 1 WHERE id = $1', [parentCommentId]);
+      }*/
 
       // Fetch user details
       const userRes = await client.query('SELECT full_name, profile_photo_url FROM users WHERE id = $1', [userId]);
@@ -426,7 +437,6 @@ export class PostModel {
         content: row.content,
         parentCommentId: row.parent_comment_id,
         isEdited: row.is_edited,
-        commentCount: row.comment_count,
         createdAt: row.created_at instanceof Date ? row.created_at.toISOString() : new Date(row.created_at).toISOString(),
         author: {
           id: userId,
@@ -437,6 +447,7 @@ export class PostModel {
       };
     } catch (error) {
       await client.query('ROLLBACK');
+      console.error('Error in addComment:', error);
       throw error;
     } finally {
       client.release();
@@ -448,20 +459,34 @@ export class PostModel {
       WITH RECURSIVE comment_tree AS (
         -- Base case: top-level comments
         SELECT 
-          c.*,
+          c.id,
+          c.post_id,
+          c.user_id,
+          c.content,
+          c.parent_comment_id,
+          c.is_edited,
+          c.created_at,
+          c.updated_at,
           u.full_name as author_name,
           u.profile_photo_url as author_photo,
           1 as depth,
           ARRAY[c.created_at] as path
         FROM post_comments c
         LEFT JOIN users u ON c.user_id = u.id
-        WHERE c.post_id = $1 AND c.parent_comment_id IS NULL AND c.is_deleted = false
+        WHERE c.post_id = $1 AND c.parent_comment_id IS NULL 
         
         UNION ALL
         
         -- Recursive case: nested comments
         SELECT 
-          c.*,
+          c.id,
+          c.post_id,
+          c.user_id,
+          c.content,
+          c.parent_comment_id,
+          c.is_edited,
+          c.created_at,
+          c.updated_at,
           u.full_name as author_name,
           u.profile_photo_url as author_photo,
           ct.depth + 1 as depth,
@@ -469,49 +494,53 @@ export class PostModel {
         FROM post_comments c
         JOIN comment_tree ct ON c.parent_comment_id = ct.id
         LEFT JOIN users u ON c.user_id = u.id
-        WHERE c.is_deleted = false AND ct.depth < 10
+        AND ct.depth < 10
       )
       SELECT * FROM comment_tree
       ORDER BY path;
     `;
 
-    const result = await pool.query(query, [postId]);
+    try {
+      const result = await pool.query(query, [postId]);
 
-    // Build the tree structure in memory
-    const comments: any[] = result.rows.map(row => ({
-      id: row.id,
-      postId: row.post_id,
-      userId: row.user_id,
-      content: row.content,
-      parentCommentId: row.parent_comment_id,
-      isEdited: row.is_edited,
-      commentCount: row.comment_count,
-      createdAt: row.created_at instanceof Date ? row.created_at.toISOString() : new Date(row.created_at).toISOString(),
-      author: {
-        id: row.user_id,
-        fullName: row.author_name,
-        profilePhotoUrl: row.author_photo
-      },
-      replies: []
-    }));
+      // Build the tree structure in memory
+      const comments: any[] = result.rows.map(row => ({
+        id: row.id,
+        postId: row.post_id,
+        userId: row.user_id,
+        content: row.content,
+        parentCommentId: row.parent_comment_id,
+        isEdited: row.is_edited,
+        createdAt: row.created_at instanceof Date ? row.created_at.toISOString() : new Date(row.created_at).toISOString(),
+        author: {
+          id: row.user_id,
+          fullName: row.author_name,
+          profilePhotoUrl: row.author_photo
+        },
+        replies: []
+      }));
 
-    const commentMap = new Map();
-    const rootComments: CommentResponse[] = [];
+      const commentMap = new Map();
+      const rootComments: CommentResponse[] = [];
 
-    comments.forEach(comment => {
-      commentMap.set(comment.id, comment);
-    });
+      comments.forEach(comment => {
+        commentMap.set(comment.id, comment);
+      });
 
-    comments.forEach(comment => {
-      if (comment.parentCommentId && commentMap.has(comment.parentCommentId)) {
-        const parent = commentMap.get(comment.parentCommentId);
-        parent.replies.push(comment);
-      } else {
-        rootComments.push(comment);
-      }
-    });
+      comments.forEach(comment => {
+        if (comment.parentCommentId && commentMap.has(comment.parentCommentId)) {
+          const parent = commentMap.get(comment.parentCommentId);
+          parent.replies.push(comment);
+        } else {
+          rootComments.push(comment);
+        }
+      });
 
-    return rootComments;
+      return rootComments;
+    } catch (error) {
+      console.error('Error in getComments:', error);
+      throw error;
+    }
   }
 
   static async updateComment(id: string, userId: string, content: string): Promise<CommentResponse | null> {
@@ -535,7 +564,6 @@ export class PostModel {
       content: row.content,
       parentCommentId: row.parent_comment_id,
       isEdited: row.is_edited,
-      commentCount: row.comment_count,
       createdAt: row.created_at instanceof Date ? row.created_at.toISOString() : new Date(row.created_at).toISOString(),
       author: {
         id: userId,
@@ -546,13 +574,37 @@ export class PostModel {
   }
 
   static async deleteComment(id: string, userId: string): Promise<boolean> {
-    const result = await pool.query(
-      `UPDATE post_comments 
-       SET is_deleted = true, updated_at = CURRENT_TIMESTAMP
-       WHERE id = $1 AND user_id = $2`,
-      [id, userId]
-    );
-    return (result.rowCount ?? 0) > 0;
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      // Get the post_id before deleting
+      const findRes = await client.query('SELECT post_id FROM post_comments WHERE id = $1 AND user_id = $2', [id, userId]);
+      if (findRes.rowCount === 0) {
+        await client.query('ROLLBACK');
+        return false;
+      }
+      const postId = findRes.rows[0].post_id;
+
+      // Delete the comment
+      const deleteRes = await client.query('DELETE FROM post_comments WHERE id = $1 AND user_id = $2', [id, userId]);
+
+      if ((deleteRes.rowCount ?? 0) > 0) {
+        // Decrement post comment count
+        await client.query('UPDATE posts SET comment_count = GREATEST(0, comment_count - 1) WHERE id = $1', [postId]);
+        await client.query('COMMIT');
+        return true;
+      }
+
+      await client.query('ROLLBACK');
+      return false;
+    } catch (error) {
+      await client.query('ROLLBACK');
+      console.error('Error in deleteComment:', error);
+      throw error;
+    } finally {
+      client.release();
+    }
   }
 
   private static mapRowToResponse(row: any): PostResponse {

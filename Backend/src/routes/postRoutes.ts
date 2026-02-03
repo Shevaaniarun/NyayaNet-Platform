@@ -10,7 +10,7 @@ router.post('/upload', authenticate, upload.array('files', 5), PostController.up
 router.get('/feed', optionalAuthenticate, PostController.getFeed);
 router.get('/all', optionalAuthenticate, PostController.getPosts); // New route for filtered posts
 router.get('/:postId', optionalAuthenticate, PostController.getPost);
-router.get('/:postId/comments', PostController.getComments);
+
 
 // Protected routes (require authentication)
 router.post('/', authenticate, PostController.createPost);
@@ -21,5 +21,6 @@ router.post('/:postId/save', authenticate, PostController.savePost);
 router.post('/:postId/comments', authenticate, PostController.createComment);
 router.put('/comments/:commentId', authenticate, PostController.updateComment);
 router.delete('/comments/:commentId', authenticate, PostController.deleteComment);
+router.get('/:postId/comments', PostController.getComments);
 
 export default router;

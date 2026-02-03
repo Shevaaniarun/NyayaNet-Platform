@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import './DashboardPage.css';
 
 // Import dashboard components
@@ -8,7 +8,126 @@ import ActivityTimeline from '../../components/dashboard/ActivityTimeline';
 import ContributionBreakdown from '../../components/dashboard/ContributionBreakdown';
 import BadgesGrid from '../../components/dashboard/BadgesGrid';
 
+// Import API functions
+import {
+  getDashboardOverview,
+  getContributionHeatmap,
+  getContributionBreakdown,
+  getUserBadges
+} from "../../api/dashboardAPI";
+
+// For activity feed
+import { getFeed } from '../../api/postsAPI';
+
 const DashboardPage: React.FC = () => {
+  // State for dashboard data
+  const [overview, setOverview] = useState<any>(null);
+  const [heatmap, setHeatmap] = useState<any[]>([]);
+  const [activities, setActivities] = useState<any[]>([]);
+  const [breakdown, setBreakdown] = useState<any>(null);
+  const [badges, setBadges] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch all dashboard data on component mount
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      setIsLoading(true);
+      setError(null);
+      
+      try {
+        const currentYear = new Date().getFullYear();
+        
+        // Fetch all data in parallel
+        const [overviewData, heatmapData, breakdownData, badgesData] = 
+          await Promise.all([
+            getDashboardOverview(),
+            getContributionHeatmap(currentYear),
+            getContributionBreakdown(),
+            getUserBadges()
+          ]);
+        
+        // For activities, use the feed API
+        let activitiesData: any[] = []; // Explicitly type as any[]
+        try {
+          const feedData = await getFeed(1, 10);
+          activitiesData = feedData.posts || [];
+        } catch (feedError) {
+          console.warn('Could not fetch activities from feed:', feedError);
+          // Fallback: use heatmap data or empty array
+          activitiesData = [];
+        }
+        
+        // Compute active days from heatmap (count of days with contributions > 0)
+        const normalizedHeatmap = Array.isArray(heatmapData) ? heatmapData : [];
+        const activeDaysCount = normalizedHeatmap.reduce((acc, d) => {
+          const c = Number((d as any).count ?? (d as any).contributionCount ?? 0);
+          return acc + (c > 0 ? 1 : 0);
+        }, 0);
+
+        // Set state with fetched data directly
+        setOverview(overviewData || null);
+        setHeatmap(normalizedHeatmap);
+        setActivities(Array.isArray(activitiesData) ? activitiesData : []);
+  setBreakdown(breakdownData || null);
+  setBadges(Array.isArray(badgesData) ? badgesData : []);
+  // Also update a small local state for active days if needed later
+  // (we'll pass activeDaysCount directly into the heatmap component below)
+        
+      } catch (err) {
+        console.error('Failed to fetch dashboard data:', err);
+        setError('Failed to load dashboard data. Please try again.');
+        
+        // Set fallback data to prevent UI breakage
+        setOverview({
+          totalScore: 0,
+          currentStreak: 0,
+          longestStreak: 0,
+          lastActiveDate: new Date().toISOString().split('T')[0]
+        });
+        setHeatmap([]);
+        setActivities([]);
+        setBreakdown({
+          posts: 0,
+          discussions: 0,
+          replies: 0,
+          bestAnswers: 0,
+          aiQueries: 0,
+          lawBookmarks: 0
+        });
+        setBadges([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchDashboardData();
+  }, []);
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-justice-black flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-constitution-gold mx-auto mb-4"></div>
+          <p className="text-judge-ivory">Loading dashboard data...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error && !overview) {
+    return (
+      <div className="min-h-screen bg-justice-black flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-red-500 text-lg mb-2">⚠️</div>
+          <p className="text-judge-ivory">{error}</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-justice-black p-8">
       {/* Page Header */}
@@ -27,7 +146,12 @@ const DashboardPage: React.FC = () => {
             Your contribution metrics and activity statistics
           </p>
         </div>
-        <HeaderStats />
+        <HeaderStats data={overview || {
+          totalScore: 0,
+          currentStreak: 0,
+          longestStreak: 0,
+          lastActiveDate: new Date().toISOString().split('T')[0]
+        }} />
       </section>
 
       {/* Second Section: Heatmap */}
@@ -38,7 +162,27 @@ const DashboardPage: React.FC = () => {
             Daily contribution heatmap showing your consistency over time
           </p>
         </div>
-        <ContributionHeatmap />
+        {/* Pass summary stats from overview and compute active days from heatmap */}
+        {(() => {
+          const activeDays = (heatmap || []).reduce((acc, d) => {
+            const c = Number((d as any).count ?? (d as any).contributionCount ?? 0);
+            return acc + (c > 0 ? 1 : 0);
+          }, 0);
+
+          const totalSubmissions = overview?.totalContributions ?? overview?.total_contributions ?? 0;
+          const maxStreak = overview?.longestStreak ?? overview?.longest_streak ?? 0;
+          const currentStreak = overview?.currentStreak ?? overview?.current_streak ?? 0;
+
+          return (
+            <ContributionHeatmap
+              data={heatmap || []}
+              totalSubmissions={totalSubmissions}
+              totalActiveDays={activeDays}
+              maxStreak={maxStreak}
+              currentStreak={currentStreak}
+            />
+          );
+        })()}
       </section>
 
       {/* Middle Section: Two-column layout */}
@@ -52,7 +196,7 @@ const DashboardPage: React.FC = () => {
                 Your latest contributions and interactions
               </p>
             </div>
-            <ActivityTimeline />
+            <ActivityTimeline items={activities || []} />
           </div>
 
           {/* Right Column: Contribution Breakdown */}
@@ -63,7 +207,14 @@ const DashboardPage: React.FC = () => {
                 Distribution of your contribution types
               </p>
             </div>
-            <ContributionBreakdown />
+            <ContributionBreakdown data={breakdown || {
+              posts: 0,
+              discussions: 0,
+              replies: 0,
+              bestAnswers: 0,
+              aiQueries: 0,
+              lawBookmarks: 0
+            }} />
           </div>
         </div>
       </section>
@@ -76,7 +227,7 @@ const DashboardPage: React.FC = () => {
             Professional recognition for your contributions and milestones
           </p>
         </div>
-        <BadgesGrid />
+        <BadgesGrid badges={badges || []} />
       </section>
 
       {/* Footer Note */}

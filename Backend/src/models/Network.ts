@@ -312,44 +312,46 @@ export class NetworkModel {
   }
 
   static async getFollowing(userId: string) {
-    try {
-      const result = await pool.query(
-        `SELECT u.id, u.full_name, u.email, u.role, u.designation, 
-                u.organization, u.profile_photo_url, u.location, 
-                u.experience_years, u.bio,
-                CASE 
-                  WHEN EXISTS (
-                    SELECT 1 FROM user_follows uf2 
-                    WHERE uf2.follower_id = u.id AND uf2.following_id = $1 AND uf2.status = 'ACCEPTED'
-                  ) THEN true
-                  ELSE false
-                END as is_followed_by
-         FROM users u
-         JOIN user_follows uf ON u.id = uf.following_id
-         WHERE uf.follower_id = $1 AND uf.status = 'ACCEPTED'
-         ORDER BY u.full_name`,
-        [userId]
-      );
+  try {
+    const result = await pool.query(
+      `SELECT u.id, u.full_name, u.email, u.role, u.designation, 
+              u.organization, u.profile_photo_url, u.location, 
+              u.experience_years, u.bio, u.follower_count, u.following_count,
+              CASE 
+                WHEN EXISTS (
+                  SELECT 1 FROM user_follows uf2 
+                  WHERE uf2.follower_id = u.id AND uf2.following_id = $1 AND uf2.status = 'ACCEPTED'
+                ) THEN true
+                ELSE false
+              END as is_followed_by
+       FROM users u
+       JOIN user_follows uf ON u.id = uf.following_id
+       WHERE uf.follower_id = $1 AND uf.status = 'ACCEPTED'
+       ORDER BY u.full_name`,
+      [userId]
+    );
 
-      return result.rows.map(row => ({
-        id: row.id,
-        fullName: row.full_name,
-        email: row.email,
-        role: row.role,
-        designation: row.designation,
-        organization: row.organization,
-        profilePhotoUrl: row.profile_photo_url,
-        location: row.location,
-        experienceYears: row.experience_years,
-        bio: row.bio,
-        isFollowedBy: row.is_followed_by,
-        connectionType: row.is_followed_by ? 'mutual' : 'following'
-      }));
-    } catch (error) {
-      console.error('Error in getFollowing:', error);
-      throw error;
-    }
+    return result.rows.map(row => ({
+      id: row.id,
+      fullName: row.full_name,
+      email: row.email,
+      role: row.role,
+      designation: row.designation,
+      organization: row.organization,
+      profilePhotoUrl: row.profile_photo_url,
+      location: row.location,
+      experienceYears: row.experience_years,
+      bio: row.bio,
+      followerCount: row.follower_count,  // Added
+      followingCount: row.following_count,  // Added
+      isFollowedBy: row.is_followed_by,
+      connectionType: row.is_followed_by ? 'mutual' : 'following'
+    }));
+  } catch (error) {
+    console.error('Error in getFollowing:', error);
+    throw error;
   }
+}
 
   static async searchUsers(currentUserId: string, query: string, page = 1, limit = 20) {
     const offset = (page - 1) * limit;

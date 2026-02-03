@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Sidebar } from './components/Sidebar';
-import { PostCard, Post as PostComponentType } from './components/PostCard';
+import { PostCard, Post as PostComponentType } from './components/Post/PostCard';
 import { CaseCard, CaseItem as CaseItemComponentType } from './components/CaseCard';
 import { AIAssistant } from './components/AIAssistant';
 import { JusticeLoader } from './components/JusticeLoader';
-import { CreatePost } from './components/CreatePost';
+import { CreatePost } from './components/Post/CreatePost';
 import { MobileNotice } from './components/MobileNotice';
 import { Sparkles, TrendingUp, Gavel, Construction, Users, Bell } from 'lucide-react';
 import { DiscussionsPage } from './pages/DiscussionPage';
@@ -12,15 +12,17 @@ import { PostsPage } from './pages/PostsPage';
 import RegisterPage from "./pages/RegisterPage";
 import LoginPage from "./pages/LoginPage";
 import { ProfilePage } from './pages/ProfilePage';
-import  NotesPage  from './pages/NotesPage';
-import NotificationsPage from './pages/NotificationsPage'; 
+import NotesPage from './pages/NotesPage';
+import NotificationsPage from './pages/NotificationsPage';
 import { getFeed, Post as ApiPost } from './api/postsAPI';
 import { toast } from 'react-toastify';
 import { NetworkPage } from './pages/NetworkPage';
 import * as networkApi from './api/networkAPI';
 import LandingPage from "./pages/LandingPage";
-import DashboardPage from "./pages/dashboard/DashboardPage"; // Added import
+import DashboardPage from './pages/dashboard/DashboardPage';
 
+import { Toaster } from "react-hot-toast";
+import { useNotificationCount } from './hooks/useNotificationCount'; 
 
 type ViewType =
     | 'dashboard'
@@ -61,20 +63,20 @@ const adaptPost = (apiPost: ApiPost): PostComponentType => ({
     author: {
         fullName: apiPost.author?.fullName || 'Unknown User',
         profilePhotoUrl: apiPost.author?.profilePhotoUrl || '',
-        // Use default values since API doesn't provide role and organization
         role: 'Legal Professional', // Default value
         designation: apiPost.author?.designation || '',
         organization: apiPost.author?.organization || '' // Default value
     },
     postType:  apiPost.postType || 'POST',
-    content: apiPost. content,
+    title: apiPost.title || '', 
+    content: apiPost.content,
     createdAt:  new Date(apiPost.createdAt).toLocaleDateString(),
-    likeCount: apiPost. likeCount || 0,
+    likeCount: apiPost.likeCount || 0,
     commentCount: apiPost.commentCount || 0,
     tags: apiPost.tags || [],
     isLiked: apiPost.isLiked,
     isSaved: apiPost.isSaved,
-    media: apiPost.media?. map(m => ({
+    media: apiPost.media?.map(m => ({
         id: m.id,
         url: m.mediaUrl || '',  // Map mediaUrl to url
         type: m.mediaType || '', // Map mediaType to type
@@ -86,7 +88,7 @@ const adaptPost = (apiPost: ApiPost): PostComponentType => ({
 });
 
 const mapCaseStatus = (status: string): CaseItemComponentType['caseStatus'] => {
-    const statusMap:  Record<string, CaseItemComponentType['caseStatus']> = {
+    const statusMap: Record<string, CaseItemComponentType['caseStatus']> = {
         'active': 'active',
         'closed': 'closed',
         'hearing_scheduled': 'hearing_scheduled',
@@ -103,7 +105,8 @@ export default function App() {
     const [posts, setPosts] = useState<PostComponentType[]>([]);
     const [cases] = useState<CaseItemComponentType[]>([]);
     const [pendingConnectionCount, setPendingConnectionCount] = useState(0);
-
+    const { unreadCount, refetch: refetchNotificationCount } = useNotificationCount(30000);
+    
     // Initialize auth state properly
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [authView, setAuthView] = useState<"register" | "login">("register");
@@ -243,10 +246,10 @@ export default function App() {
         try {
             setIsLoadingPosts(true);
             const postsData = await getFeed(1, 10);
-            setPosts(postsData. posts. map(adaptPost));
+            setPosts(postsData.posts.map(adaptPost));
         } catch (error) {
             console.error('Failed to refresh posts:', error);
-            toast. error('Failed to refresh posts');
+            toast.error('Failed to refresh posts');
         } finally {
             setIsLoadingPosts(false);
         }
@@ -284,7 +287,7 @@ export default function App() {
             '/discussions': 'discussions',
             '/profile': 'profile',
             '/notes': 'notes',
-            '/notifications': 'notifications', 
+            '/notifications': 'notifications',
             '/network': 'network',
             '/connection-requests': 'connectionRequests',
             '/create-discussion': 'createDiscussion',
@@ -297,6 +300,9 @@ export default function App() {
         // Clear profile user selection on navigation
         if (newView !== 'profile') {
             setSelectedProfileUserId(null);
+        }
+        if (newView !== 'notifications') {
+            setTimeout(() => refetchNotificationCount(), 1000);
         }
 
         // Push to browser history for back button support
@@ -315,8 +321,8 @@ export default function App() {
             view === 'dashboard'
                 ? '/'
                 : view === 'createDiscussion'
-                ? '/create-discussion'
-                : `/${view}`;
+                    ? '/create-discussion'
+                    : `/${view}`;
         handleNavigation(path, true);
     };
 
@@ -374,40 +380,18 @@ export default function App() {
         <div className="flex min-h-screen bg-justice-black">
             <MobileNotice />
             <Sidebar
-                currentPath={currentView === 'dashboard' ? '/' :  `/${currentView}`}
+                currentPath={currentView === 'dashboard' ? '/' : `/${currentView}`}
                 onNavigate={handleNavigation}
                 pendingConnectionCount={pendingConnectionCount}
                 onLogout={handleLogout}
+                notificationCount={unreadCount}
             />
 
-            <div className="ml-64 flex-1">
-                {currentView === 'dashboard' && <DashboardPage />} {/* Changed to DashboardPage */}
-
+            <div className="flex-1 ml-64 min-h-screen">
+                {currentView === 'dashboard' && <DashboardPage />}
+                
                 {currentView === 'feed' && (
-                    <div className="flex-1 p-6 overflow-y-auto">
-                        <div className="max-w-3xl mx-auto space-y-6">
-                            <CreatePost onPostCreated={refreshPosts} />
-                            {isLoadingPosts ? (
-                                <div className="flex justify-center p-8">
-                                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-justice-blue"></div>
-                                </div>
-                            ) : posts.length > 0 ? (
-                                posts.map((post) => (
-                                    <PostCard
-                                        key={post.id}
-                                        post={post}
-                                        currentUserId={currentUser?.id}
-                                        onDelete={(id) => setPosts(prev => prev.filter(p => p.id !== id))}
-                                        onAuthorClick={handlePostAuthorClick}
-                                    />
-                                ))
-                            ) : (
-                                <div className="text-center py-12 text-gray-400">
-                                    <p>No posts found. Be the first to post something!</p>
-                                </div>
-                            )}
-                        </div>
-                    </div>
+                    <PostsPage onNavigateToProfile={handlePostAuthorClick} />
                 )}
 
                 {currentView === 'cases' && (
@@ -430,36 +414,38 @@ export default function App() {
                     />
                 )}
                 {currentView === 'notes' && <NotesPage />}
+                
                 {(currentView === 'connectionRequests' || currentView === 'network') && (
                     <NetworkPage
                         onBack={() => setCurrentView('dashboard')}
                         currentUserId={currentUser?.id}
+                        onNavigateToProfile={(userId) => {
+                            setSelectedProfileUserId(userId);
+                            navigateTo('profile');
+                        }}
                     />
                 )}
 
                 {/* ProfilePage "+ New Discussion" button should switch to Discussions page */}
                 {currentView === 'profile' && (
                     <ProfilePage
-                        // ProfilePage will show other's profile if selectedProfileUserId is set, otherwise current user's
                         userId={selectedProfileUserId || undefined}
                         currentUserId={currentUser?.id || ''}
                         onBack={() => navigateTo('dashboard')}
                         onNavigateToFeed={() => navigateTo('feed')}
                         onNavigateToDiscussion={() => {
-                            // Navigate to Discussions page
                             navigateTo('discussions');
                         }}
                     />
                 )}
 
+                {currentView === 'notifications' && <NotificationsPage />}
+
                 {/* Add CreateDiscussion page route */}
                 {currentView === 'createDiscussion' && (
-                    // TODO: Import and add your actual CreateDiscussion component below.
-                    // For now, a placeholder is provided.
                     <div className="max-w-3xl mx-auto p-8">
                         <div className="aged-paper rounded-lg p-8">
                             <h2 className="text-3xl font-heading mb-4">Create New Discussion</h2>
-                            {/* Replace this div below with <CreateDiscussion /> or similar */}
                             <p className="text-lg text-gray-400">Discussion creation form goes here.</p>
                             <button
                                 className="mt-8 px-6 py-2 rounded-lg font-bold border border-constitution-gold text-constitution-gold hover:bg-constitution-gold/10"

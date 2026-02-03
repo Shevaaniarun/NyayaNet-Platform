@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import './ContributionBreakdown.css';
 import { FileText, MessageCircle, Reply, Trophy, Bot, Bookmark, BarChart3 } from 'lucide-react';
 
@@ -12,6 +12,12 @@ interface ContributionBreakdownData {
   lawBookmarks: number;
 }
 
+interface Props {
+  data?: ContributionBreakdownData | null;
+  loading?: boolean;
+  error?: string | null;
+}
+
 interface StatCardConfig {
   key: keyof ContributionBreakdownData;
   label: string;
@@ -20,16 +26,23 @@ interface StatCardConfig {
   color: string;
 }
 
-const ContributionBreakdown: React.FC = () => {
-  // Mock data
-  const mockBreakdown: ContributionBreakdownData = {
-    posts: 12,
-    discussions: 8,
-    replies: 96,
-    bestAnswers: 7,
-    aiQueries: 41,
-    lawBookmarks: 19
+const ContributionBreakdown: React.FC<Props> = ({ 
+  data = null, 
+  loading = false, 
+  error = null 
+}) => {
+  // Default data structure to prevent undefined values
+  const defaultData: ContributionBreakdownData = {
+    posts: 0,
+    discussions: 0,
+    replies: 0,
+    bestAnswers: 0,
+    aiQueries: 0,
+    lawBookmarks: 0
   };
+
+  // Use provided data or default
+  const safeData = data || defaultData;
 
   // Stat card configuration with Lucide icons
   const statCardsConfig: StatCardConfig[] = [
@@ -101,52 +114,21 @@ const ContributionBreakdown: React.FC = () => {
     }
   ];
 
-  const [breakdown, setBreakdown] = useState<ContributionBreakdownData | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-
   // Calculate total contributions
-  const totalContributions = breakdown ? Object.values(breakdown).reduce((sum, val) => sum + val, 0) : 0;
+  const totalContributions = Object.values(safeData).reduce((sum, val) => sum + (val || 0), 0);
 
-  // Fetch breakdown data
-  useEffect(() => {
-    const fetchBreakdownData = async () => {
-      try {
-        setLoading(true);
-        
-        // TODO: Replace with actual API call
-        // const response = await fetch('/dashboard/contributions/breakdown');
-        // const result = await response.json();
-        
-        // Simulate API delay
-        await new Promise(resolve => setTimeout(resolve, 300));
-        
-        // Use mock data for now
-        setBreakdown(mockBreakdown);
-        setError(null);
-      } catch (err) {
-        console.error('Failed to fetch breakdown data:', err);
-        setError('Unable to load contribution breakdown');
-        
-        // Set null for error state
-        setBreakdown(null);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchBreakdownData();
-  }, []);
-
-  // Format large numbers
-  const formatNumber = (num: number): string => {
-    if (num >= 1000000) {
-      return `${(num / 1000000).toFixed(1)}M`;
+  // Format large numbers - FIXED: Ensure we have a valid number
+  const formatNumber = (num: number | undefined): string => {
+    // Handle undefined or null values
+    const safeNum = num || 0;
+    
+    if (safeNum >= 1000000) {
+      return `${(safeNum / 1000000).toFixed(1)}M`;
     }
-    if (num >= 1000) {
-      return `${(num / 1000).toFixed(1)}K`;
+    if (safeNum >= 1000) {
+      return `${(safeNum / 1000).toFixed(1)}K`;
     }
-    return num.toString();
+    return safeNum.toString();
   };
 
   // Render loading state
@@ -179,7 +161,7 @@ const ContributionBreakdown: React.FC = () => {
   }
 
   // Render empty state (new user or error)
-  const isEmpty = !breakdown || totalContributions === 0;
+  const isEmpty = !data || totalContributions === 0;
 
   return (
     <div className="aged-paper rounded-xl p-6 border border-constitution-gold/20">
@@ -249,7 +231,7 @@ const ContributionBreakdown: React.FC = () => {
       ) : (
         <div className="stats-grid">
           {statCardsConfig.map((config) => {
-            const value = breakdown![config.key];
+            const value = safeData[config.key];
             const percentage = totalContributions > 0 
               ? Math.round((value / totalContributions) * 100) 
               : 0;

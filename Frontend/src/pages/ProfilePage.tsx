@@ -1,4 +1,3 @@
-
 "use client";
 import React, { useState, useEffect } from "react";
 import { ProfileHeader } from "../components/Profile/ProfileHeader";
@@ -8,7 +7,6 @@ import { ProfileTabs } from "../components/Profile/ProfileTabs";
 import { JusticeLoader } from "../components/JusticeLoader";
 import { Search, Award, Plus, ArrowLeft, X, UserPlus, UserCheck, Clock } from "lucide-react";
 import * as profileApi from "../api/profileAPI";
-import * as networkApi from "../api/networkAPI";
 
 interface ProfilePageProps {
   userId?: string;
@@ -40,6 +38,8 @@ export function ProfilePage({
   const [bookmarks, setBookmarks] = useState<any[]>([]);
   const [likedPosts, setLikedPosts] = useState<any[]>([]);
   const [likedDiscussions, setLikedDiscussions] = useState<any[]>([]);
+  const [followers, setFollowers] = useState<any[]>([]);
+  const [following, setFollowing] = useState<any[]>([]);
   const [showEditModal, setShowEditModal] = useState<boolean>(false);
   const [showAddCertModal, setShowAddCertModal] = useState<boolean>(false);
   const [editForm, setEditForm] = useState<any>({});
@@ -84,8 +84,8 @@ export function ProfilePage({
     likes: 0
   });
 
-  // --- Tabs state for conditional new post/new discussion button ---
-  const [activeTab, setActiveTab] = useState<"posts" | "discussions" | "bookmarks" | "likedPosts" | "likedDiscussions">("posts");
+  // Active tab state
+  const [activeTab, setActiveTab] = useState<"posts" | "discussions" | "bookmarks" | "likedPosts" | "likedDiscussions" | "followers" | "following">("posts");
 
   useEffect(() => {
     if (targetUserId) {
@@ -105,7 +105,7 @@ export function ProfilePage({
 
     setIsLoadingFollow(true);
     try {
-      const status = await networkApi.getFollowStatus(targetUserId);
+      const status = await profileApi.getFollowStatus(targetUserId);
       setFollowStatus(status.status);
       setRequestId(status.requestId || null);
     } catch (error) {
@@ -114,6 +114,30 @@ export function ProfilePage({
       setRequestId(null);
     } finally {
       setIsLoadingFollow(false);
+    }
+  }
+
+  async function loadFollowersData() {
+    if (!targetUserId) return;
+    
+    try {
+      const followersData = await profileApi.getFollowers(targetUserId);
+      setFollowers(Array.isArray(followersData) ? followersData : []);
+    } catch (error) {
+      console.error('Failed to load followers:', error);
+      setFollowers([]);
+    }
+  }
+
+  async function loadFollowingData() {
+    if (!targetUserId) return;
+    
+    try {
+      const followingData = await profileApi.getFollowing(targetUserId);
+      setFollowing(Array.isArray(followingData) ? followingData : []);
+    } catch (error) {
+      console.error('Failed to load following:', error);
+      setFollowing([]);
     }
   }
 
@@ -200,6 +224,21 @@ export function ProfilePage({
       setDiscussions([]);
     }
 
+    // Load followers and following data
+    try {
+      const followersData = await profileApi.getFollowers(targetUserId!);
+      setFollowers(Array.isArray(followersData) ? followersData : []);
+    } catch (e) {
+      setFollowers([]);
+    }
+
+    try {
+      const followingData = await profileApi.getFollowing(targetUserId!);
+      setFollowing(Array.isArray(followingData) ? followingData : []);
+    } catch (e) {
+      setFollowing([]);
+    }
+
     if (isOwnProfile) {
       try {
         const bookmarksData = await profileApi.getBookmarks();
@@ -238,8 +277,8 @@ export function ProfilePage({
     try {
       switch (action) {
         case 'follow':
-          const followResult = await networkApi.sendFollowRequest(targetUserId);
-          setFollowStatus('PENDING');
+          const followResult = await profileApi.followUser(targetUserId);
+          setFollowStatus('FOLLOWING');
           if (followResult.requestId) {
             setRequestId(followResult.requestId);
           }
@@ -247,7 +286,7 @@ export function ProfilePage({
 
         case 'unfollow':
           if (window.confirm('Are you sure you want to unfollow this user?')) {
-            await networkApi.unfollowUser(targetUserId);
+            await profileApi.unfollowUser(targetUserId);
             setFollowStatus('NONE');
             setRequestId(null);
             if (profile) {
@@ -261,14 +300,16 @@ export function ProfilePage({
 
         case 'cancel_request':
           if (requestId) {
-            await networkApi.cancelFollowRequest(requestId);
+            await profileApi.cancelFollowRequest(requestId);
           }
           setFollowStatus('NONE');
           setRequestId(null);
           break;
       }
 
+      // Refresh data
       await loadProfileData();
+      await loadFollowStatus();
     } catch (error: any) {
       console.error(`Follow action failed:`, error);
       alert(error.message || `Failed to ${action}`);
@@ -295,6 +336,7 @@ export function ProfilePage({
 
     switch (followStatus) {
       case 'FOLLOWING':
+      case 'MUTUAL':
         return (
           <button
             onClick={() => handleFollowAction('unfollow')}
@@ -315,18 +357,6 @@ export function ProfilePage({
           >
             <UserPlus className="w-4 h-4" />
             Follow Back
-          </button>
-        );
-
-      case 'MUTUAL':
-        return (
-          <button
-            onClick={() => handleFollowAction('unfollow')}
-            className="px-4 py-2 border border-constitution-gold/30 text-constitution-gold rounded-lg font-medium hover:bg-constitution-gold/5 flex items-center gap-2"
-            type="button"
-          >
-            <UserCheck className="w-4 h-4" />
-            Unfollow
           </button>
         );
 
@@ -354,6 +384,60 @@ export function ProfilePage({
             Follow
           </button>
         );
+    }
+  };
+
+  // Handle follow/unfollow from tabs
+  const handleFollowUser = async (userId: string) => {
+    if (!currentUserId || userId === currentUserId || isOwnProfile) return;
+    
+    try {
+      await profileApi.followUser(userId);
+      
+      // Update followers list if the user is in followers tab
+      setFollowers(prev => prev.map(user => 
+        user.id === userId ? { ...user, isFollowingBack: true } : user
+      ));
+      
+      // Reload profile data to update counts
+      await loadProfileData();
+      alert('Successfully followed user!');
+    } catch (error: any) {
+      console.error('Failed to follow user:', error);
+      alert(error.message || 'Failed to follow user');
+    }
+  };
+
+  const handleUnfollowUser = async (userId: string) => {
+    if (!currentUserId || userId === currentUserId || isOwnProfile) return;
+    
+    if (!window.confirm('Are you sure you want to unfollow this user?')) return;
+    
+    try {
+      await profileApi.unfollowUser(userId);
+      
+      // Update both followers and following lists
+      setFollowers(prev => prev.map(user => 
+        user.id === userId ? { ...user, isFollowingBack: false } : user
+      ));
+      
+      setFollowing(prev => prev.filter(user => user.id !== userId));
+      
+      // Reload profile data to update counts
+      await loadProfileData();
+      alert('Successfully unfollowed user!');
+    } catch (error: any) {
+      console.error('Failed to unfollow user:', error);
+      alert(error.message || 'Failed to unfollow user');
+    }
+  };
+
+  const handleUserClick = (userId: string) => {
+    // Navigate to user's profile
+    if (onNavigateToDiscussion) {
+      // This will navigate to the discussion page, we need a different approach
+      // For now, just reload the page with the new user's profile
+      window.location.href = `/profile/${userId}`;
     }
   };
 
@@ -649,7 +733,7 @@ export function ProfilePage({
           )}
         </div>
 
-        {/* --------- TAB HEADER BUTTONS INSIDE ProfileTabs --------- */}
+        {/* --------- ProfileTabs with followers/following --------- */}
         <div className="mt-6">
           <ProfileTabs
             posts={posts}
@@ -657,9 +741,13 @@ export function ProfilePage({
             bookmarks={bookmarks}
             likedPosts={likedPosts}
             likedDiscussions={likedDiscussions}
+            followers={followers}
+            following={following}
             isOwnProfile={isOwnProfile}
-            onCreatePost={() => {}} // do nothing, event up to parent if used
-            // + New Discussion: upward-only event uses App-level navigation
+            onCreatePost={() => {
+              // Handle post creation
+              if (onNavigateToFeed) onNavigateToFeed();
+            }}
             onCreateDiscussion={handleCreateDiscussion}
             onPostClick={(postId) => {
               if (onNavigateToFeed) onNavigateToFeed();
@@ -667,9 +755,9 @@ export function ProfilePage({
             onDiscussionClick={(discussionId) => {
               if (onNavigateToDiscussion) onNavigateToDiscussion(discussionId);
             }}
-            onDiscussionTitleClick={handleDiscussionOwnerClick}
-            activeTab={activeTab}
-            setActiveTab={setActiveTab}
+            onUserClick={handleUserClick}
+            onFollow={handleFollowUser}
+            onUnfollow={handleUnfollowUser}
           />
         </div>
       </div>
@@ -1029,4 +1117,3 @@ export function ProfilePage({
     </div>
   );
 }
-

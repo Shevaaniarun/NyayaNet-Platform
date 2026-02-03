@@ -1,189 +1,95 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import './ActivityTimeline.css';
-import { FileText, MessageCircle, Brain, Bot, Bookmark, BarChart3 } from 'lucide-react';
+import { FileText, MessageCircle, Brain, Bot, Bookmark, BarChart3, Newspaper, HelpCircle, Megaphone, BookOpen } from 'lucide-react';
 
-// Types
+// Types based on your actual data structure
 interface ActivityItem {
   id: string;
-  type: ActivityType;
-  entityType: string;
-  entityId: string;
-  points: number;
+  userId: string;
+  title: string;
+  content: string;
+  postType: 'POST' | 'ARTICLE' | 'QUESTION' | 'ANNOUNCEMENT' | string;
   createdAt: string; // ISO
+  // Add other fields that might exist
+  points?: number;
+  entityType?: string;
+  entityId?: string;
 }
 
-type ActivityType = 
-  | 'POST_CREATED'
-  | 'REPLY_CREATED'
-  | 'BEST_ANSWER'
-  | 'AI_QUERY'
-  | 'LAW_BOOKMARK';
+interface Props {
+  items?: ActivityItem[];
+  loading?: boolean;
+  error?: string | null;
+  hasMore?: boolean;
+  onLoadMore?: () => void;
+}
 
 // Activity type configuration
 interface ActivityConfig {
   icon: React.ReactNode;
-  text: string;
+  text: (title: string) => string; // Function to generate text with title
   color: string;
+  defaultPoints: number;
 }
 
-const ActivityTimeline: React.FC = () => {
-  const [activities, setActivities] = useState<ActivityItem[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-  const [hasMore, setHasMore] = useState<boolean>(true);
-  const [page, setPage] = useState<number>(1);
-
-  // Activity configuration with Lucide icons
-  const activityConfig: Record<ActivityType, ActivityConfig> = {
-    POST_CREATED: {
-      icon: <FileText
-        size={20}
-        strokeWidth={2}
-        className="text-constitution-gold"
-      />,
-      text: 'You created a post',
-      color: 'var(--activity-post, #2563eb)'
+const ActivityTimeline: React.FC<Props> = ({ 
+  items = [], 
+  loading = false, 
+  error = null,
+  hasMore = false,
+  onLoadMore
+}) => {
+  // Activity configuration based on postType
+  const activityConfig: Record<string, ActivityConfig> = {
+    POST: {
+      icon: <FileText size={20} strokeWidth={2} className="text-constitution-gold" />,
+      text: (title) => `Posted: "${title}"`,
+      color: 'var(--activity-post, #2563eb)',
+      defaultPoints: 10
     },
-    REPLY_CREATED: {
-      icon: <MessageCircle
-        size={20}
-        strokeWidth={2}
-        className="text-constitution-gold"
-      />,
-      text: 'You replied to a discussion',
-      color: 'var(--activity-reply, #10b981)'
+    ARTICLE: {
+      icon: <Newspaper size={20} strokeWidth={2} className="text-constitution-gold" />,
+      text: (title) => `Published article: "${title}"`,
+      color: 'var(--activity-article, #10b981)',
+      defaultPoints: 15
     },
-    BEST_ANSWER: {
-      icon: <Brain
-        size={20}
-        strokeWidth={2}
-        className="text-constitution-gold"
-      />,
-      text: 'Your reply was marked as Best Answer',
-      color: 'var(--activity-best-answer, #f59e0b)'
+    QUESTION: {
+      icon: <HelpCircle size={20} strokeWidth={2} className="text-constitution-gold" />,
+      text: (title) => `Asked question: "${title}"`,
+      color: 'var(--activity-question, #f59e0b)',
+      defaultPoints: 5
     },
-    AI_QUERY: {
-      icon: <Bot
-        size={20}
-        strokeWidth={2}
-        className="text-constitution-gold"
-      />,
-      text: 'You used Legal AI',
-      color: 'var(--activity-ai, #8b5cf6)'
+    ANNOUNCEMENT: {
+      icon: <Megaphone size={20} strokeWidth={2} className="text-constitution-gold" />,
+      text: (title) => `Made announcement: "${title}"`,
+      color: 'var(--activity-announcement, #8b5cf6)',
+      defaultPoints: 12
     },
-    LAW_BOOKMARK: {
-      icon: <Bookmark
-        size={20}
-        strokeWidth={2}
-        className="text-constitution-gold"
-      />,
-      text: 'You bookmarked a law section',
-      color: 'var(--activity-bookmark, #ec4899)'
+    // Fallback for any other types
+    DEFAULT: {
+      icon: <BookOpen size={20} strokeWidth={2} className="text-constitution-gold" />,
+      text: (title) => `Created: "${title}"`,
+      color: 'var(--activity-default, #6b7280)',
+      defaultPoints: 8
     }
   };
 
-  // Generate mock activities
-  const generateMockActivities = (count: number): ActivityItem[] => {
-    const types: ActivityType[] = ['POST_CREATED', 'REPLY_CREATED', 'BEST_ANSWER', 'AI_QUERY', 'LAW_BOOKMARK'];
-    const mockActivities: ActivityItem[] = [];
-    
-    const now = new Date();
-    
-    for (let i = 0; i < count; i++) {
-      const type = types[Math.floor(Math.random() * types.length)];
-      const hoursAgo = Math.floor(Math.random() * 48);
-      const date = new Date(now);
-      date.setHours(date.getHours() - hoursAgo);
-      
-      // Assign points based on activity type
-      let points = 0;
-      switch (type) {
-        case 'POST_CREATED':
-          points = Math.floor(Math.random() * 10) + 5;
-          break;
-        case 'REPLY_CREATED':
-          points = Math.floor(Math.random() * 8) + 3;
-          break;
-        case 'BEST_ANSWER':
-          points = Math.floor(Math.random() * 15) + 15;
-          break;
-        case 'AI_QUERY':
-          points = Math.floor(Math.random() * 5) + 1;
-          break;
-        case 'LAW_BOOKMARK':
-          points = Math.floor(Math.random() * 3) + 1;
-          break;
-      }
-      
-      mockActivities.push({
-        id: `activity-${i}-${Date.now()}`,
-        type,
-        entityType: 'DISCUSSION',
-        entityId: `entity-${Math.random().toString(36).substr(2, 9)}`,
-        points,
-        createdAt: date.toISOString()
-      });
-    }
-    
-    // Sort by date (newest first)
-    return mockActivities.sort((a, b) => 
-      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    );
-  };
-
-  // Fetch activities
-  const fetchActivities = async (pageNum: number, isLoadMore: boolean = false) => {
-    try {
-      setLoading(true);
-      
-      // TODO: Replace with actual API call
-      // const response = await fetch(`/dashboard/activity-feed?page=${pageNum}`);
-      // const result = await response.json();
-      
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
-      // Generate mock data
-      const mockData = generateMockActivities(pageNum === 1 ? 8 : 4);
-      
-      if (isLoadMore) {
-        setActivities(prev => [...prev, ...mockData]);
-      } else {
-        setActivities(mockData);
-      }
-      
-      // Simulate pagination limit
-      setHasMore(pageNum < 3);
-      setError(null);
-    } catch (err) {
-      console.error('Failed to fetch activities:', err);
-      setError('Failed to load activity history');
-      
-      // Set empty state for error
-      if (!isLoadMore) {
-        setActivities([]);
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Initial fetch
-  useEffect(() => {
-    fetchActivities(1);
-  }, []);
-
-  // Handle load more
-  const handleLoadMore = () => {
-    const nextPage = page + 1;
-    setPage(nextPage);
-    fetchActivities(nextPage, true);
+  // Safe config getter function
+  const getActivityConfig = (postType: string): ActivityConfig => {
+    const normalizedType = postType?.toUpperCase() || 'DEFAULT';
+    return activityConfig[normalizedType] || activityConfig.DEFAULT;
   };
 
   // Format timestamp
   const formatTimestamp = (isoString: string): string => {
     try {
       const date = new Date(isoString);
+      
+      // Check if date is valid
+      if (isNaN(date.getTime())) {
+        return 'Recently';
+      }
+      
       const now = new Date();
       const diffMs = now.getTime() - date.getTime();
       const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
@@ -192,7 +98,7 @@ const ActivityTimeline: React.FC = () => {
       if (diffHours < 24) {
         if (diffHours < 1) {
           const diffMins = Math.floor(diffMs / (1000 * 60));
-          return `${diffMins} minute${diffMins !== 1 ? 's' : ''} ago`;
+          return diffMins < 1 ? 'Just now' : `${diffMins} minute${diffMins !== 1 ? 's' : ''} ago`;
         }
         return `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
       }
@@ -206,13 +112,21 @@ const ActivityTimeline: React.FC = () => {
         minute: '2-digit'
       });
     } catch (err) {
+      console.error('Error formatting timestamp:', err);
       return 'Recently';
     }
   };
 
   // Format points display
-  const formatPoints = (points: number): string => {
-    return `+${points} point${points !== 1 ? 's' : ''}`;
+  const formatPoints = (points: number | undefined, defaultPoints: number): string => {
+    const actualPoints = points || defaultPoints;
+    return `+${actualPoints} point${actualPoints !== 1 ? 's' : ''}`;
+  };
+
+  // Truncate content for display
+  const truncateContent = (content: string, maxLength: number = 80): string => {
+    if (content.length <= maxLength) return content;
+    return content.substring(0, maxLength) + '...';
   };
 
   return (
@@ -231,7 +145,7 @@ const ActivityTimeline: React.FC = () => {
       )}
 
       <div className="timeline-wrapper">
-        {loading && activities.length === 0 ? (
+        {loading && items.length === 0 ? (
           <div className="timeline-loading">
             {[...Array(3)].map((_, index) => (
               <div key={index} className="activity-item loading">
@@ -243,7 +157,7 @@ const ActivityTimeline: React.FC = () => {
               </div>
             ))}
           </div>
-        ) : activities.length === 0 ? (
+        ) : items.length === 0 ? (
           <div className="empty-state">
             <div className="empty-state-icon">
               <BarChart3
@@ -254,14 +168,15 @@ const ActivityTimeline: React.FC = () => {
             </div>
             <h3 className="empty-state-title">No activity yet</h3>
             <p className="empty-state-description">
-              Start contributing by creating posts, replying to discussions, or using Legal AI.
+              Start contributing by creating posts, articles, or asking questions.
             </p>
           </div>
         ) : (
           <>
             <div className="timeline">
-              {activities.map((activity) => {
-                const config = activityConfig[activity.type];
+              {items.map((activity) => {
+                // Safely get config based on postType
+                const config = getActivityConfig(activity.postType);
                 
                 return (
                   <div key={activity.id} className="activity-item">
@@ -276,18 +191,28 @@ const ActivityTimeline: React.FC = () => {
                     
                     <div className="activity-content">
                       <div className="activity-text-row">
-                        <span className="activity-text">{config.text}</span>
+                        <span className="activity-text">
+                          {config.text(activity.title)}
+                        </span>
                         <span 
                           className="activity-points"
                           style={{ color: config.color }}
                         >
-                          {formatPoints(activity.points)}
+                          {formatPoints(activity.points, config.defaultPoints)}
                         </span>
+                      </div>
+                      
+                      {/* Show truncated content */}
+                      <div className="activity-content-preview">
+                        {truncateContent(activity.content)}
                       </div>
                       
                       <div className="activity-meta">
                         <span className="activity-timestamp">
                           {formatTimestamp(activity.createdAt)}
+                        </span>
+                        <span className="activity-type-badge" style={{ backgroundColor: `${config.color}20`, color: config.color }}>
+                          {activity.postType || 'POST'}
                         </span>
                       </div>
                     </div>
@@ -300,7 +225,7 @@ const ActivityTimeline: React.FC = () => {
               <div className="load-more-container">
                 <button 
                   className="load-more-btn"
-                  onClick={handleLoadMore}
+                  onClick={onLoadMore}
                   disabled={loading}
                 >
                   {loading ? 'Loading...' : 'Load More Activities'}
@@ -308,7 +233,7 @@ const ActivityTimeline: React.FC = () => {
               </div>
             )}
             
-            {loading && activities.length > 0 && (
+            {loading && items.length > 0 && (
               <div className="loading-more">
                 <div className="loading-spinner-small"></div>
                 <span>Loading more activities...</span>

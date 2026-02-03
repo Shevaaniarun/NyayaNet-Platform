@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { FileText, MessageSquare, Bookmark, Plus, Heart } from 'lucide-react';
+import { FileText, MessageSquare, Bookmark, Plus, Heart, Users, UserCheck } from 'lucide-react';
 
 interface ProfileTabsProps {
     posts: any[];
@@ -7,10 +7,16 @@ interface ProfileTabsProps {
     bookmarks: any[];
     likedPosts: any[];
     likedDiscussions: any[];
+    followers: any[]; // Add this
+    following: any[]; // Add this
     isOwnProfile: boolean;
     onCreatePost?: () => void;
+    onCreateDiscussion?: () => void;
     onPostClick?: (postId: string) => void;
     onDiscussionClick?: (discussionId: string) => void;
+    onUserClick?: (userId: string) => void; // Add this for user clicks
+    onFollow?: (userId: string) => void; // Add this for follow actions
+    onUnfollow?: (userId: string) => void; // Add this for unfollow actions
 }
 
 type TabId =
@@ -18,7 +24,9 @@ type TabId =
     | 'discussions'
     | 'bookmarks'
     | 'likedPosts'
-    | 'likedDiscussions';
+    | 'likedDiscussions'
+    | 'followers'  // Add this
+    | 'following'; // Add this
 
 export function ProfileTabs({
     posts,
@@ -26,10 +34,16 @@ export function ProfileTabs({
     bookmarks,
     likedPosts,
     likedDiscussions,
+    followers, // Add this
+    following, // Add this
     isOwnProfile,
     onCreatePost,
+    onCreateDiscussion,
     onPostClick,
-    onDiscussionClick
+    onDiscussionClick,
+    onUserClick, // Add this
+    onFollow,    // Add this
+    onUnfollow   // Add this
 }: ProfileTabsProps) {
 
     const [activeTab, setActiveTab] = useState<TabId>('posts');
@@ -37,6 +51,8 @@ export function ProfileTabs({
     const tabs = [
         { id: 'posts' as const, label: 'Posts', icon: FileText, count: posts.length },
         { id: 'discussions' as const, label: 'Discussions', icon: MessageSquare, count: discussions.length },
+        { id: 'followers' as const, label: 'Followers', icon: Users, count: followers.length },
+        { id: 'following' as const, label: 'Following', icon: UserCheck, count: following.length },
         ...(isOwnProfile ? [
             { id: 'bookmarks' as const, label: 'Bookmarks', icon: Bookmark, count: bookmarks.length },
             { id: 'likedPosts' as const, label: 'Liked Posts', icon: Heart, count: likedPosts.length },
@@ -46,9 +62,10 @@ export function ProfileTabs({
 
     const handlePostClick = (id: string) => onPostClick?.(id);
     const handleDiscussionClick = (id: string) => onDiscussionClick?.(id);
+    const handleUserClick = (userId: string) => onUserClick?.(userId);
 
     const handleNewDiscussion = () => {
-        window.location.href = '/discussions/create';
+        onCreateDiscussion?.();
     };
 
     /* ---------------- Cards ---------------- */
@@ -110,6 +127,74 @@ export function ProfileTabs({
         </div>
     );
 
+    const renderUserCard = (user: any, isFollowerTab: boolean) => (
+        <div
+            key={user.id}
+            className="p-4 bg-justice-black/20 rounded-lg border border-constitution-gold/10 hover:border-constitution-gold/30 transition"
+        >
+            <div className="flex items-center justify-between">
+                <div 
+                    className="flex items-center gap-3 cursor-pointer flex-1"
+                    onClick={() => handleUserClick(user.id)}
+                >
+                    <div className="w-12 h-12 rounded-full overflow-hidden bg-constitution-gold/20 flex items-center justify-center">
+                        {user.profilePhotoUrl ? (
+                            <img src={user.profilePhotoUrl} alt={user.fullName} className="w-full h-full object-cover" />
+                        ) : (
+                            <span className="text-lg font-heading text-constitution-gold">
+                                {user.fullName?.charAt(0) || 'U'}
+                            </span>
+                        )}
+                    </div>
+                    <div className="flex-1">
+                        <h3 className="font-medium text-ink-gray">{user.fullName}</h3>
+                        <p className="text-sm text-ink-gray/60">{user.designation || user.role}</p>
+                        {user.organization && (
+                            <p className="text-xs text-ink-gray/50">{user.organization}</p>
+                        )}
+                    </div>
+                </div>
+                
+                {/* Action buttons for non-own profile */}
+                {!isOwnProfile && isFollowerTab && user.isFollowingBack === false && (
+                    <button
+                        onClick={() => onFollow?.(user.id)}
+                        className="px-3 py-1.5 bg-constitution-gold text-justice-black rounded-lg text-sm hover:bg-constitution-gold/90 transition-colors"
+                    >
+                        Follow Back
+                    </button>
+                )}
+                
+                {isFollowerTab && user.isFollowingBack === true && (
+                    <button
+                        onClick={() => onUnfollow?.(user.id)}
+                        className="px-3 py-1.5 border border-constitution-gold/30 text-constitution-gold rounded-lg text-sm hover:bg-constitution-gold/5 transition-colors"
+                    >
+                        Unfollow
+                    </button>
+                )}
+                
+                {!isFollowerTab && ( // In Following tab
+                    <button
+                        onClick={() => onUnfollow?.(user.id)}
+                        className="px-3 py-1.5 border border-constitution-gold/30 text-constitution-gold rounded-lg text-sm hover:bg-constitution-gold/5 transition-colors"
+                    >
+                        Unfollow
+                    </button>
+                )}
+            </div>
+            
+            {/* Connection info */}
+            <div className="mt-3 flex gap-4 text-xs text-ink-gray/50">
+                <span>Followers: {user.followerCount || 0}</span>
+                <span>Following: {user.followingCount || 0}</span>
+                {isFollowerTab && user.isFollowingBack && (
+                    <span className="text-constitution-gold">Mutual</span>
+                )}
+            </div>
+        </div>
+    );
+
     const emptyState = (Icon: any, text: string) => (
         <div className="text-center py-12">
             <Icon className="w-12 h-12 text-ink-gray/30 mx-auto mb-4" />
@@ -144,7 +229,7 @@ export function ProfileTabs({
 
                 {isOwnProfile && (
                     <>
-                        {activeTab === 'posts' && (
+                        {activeTab === 'posts' && onCreatePost && (
                             <button
                                 onClick={onCreatePost}
                                 className="ml-auto mr-4 my-2 px-4 py-2 bg-constitution-gold text-justice-black rounded-lg font-medium hover:bg-constitution-gold/90 flex items-center gap-2"
@@ -153,7 +238,7 @@ export function ProfileTabs({
                             </button>
                         )}
 
-                        {activeTab === 'discussions' && (
+                        {activeTab === 'discussions' && onCreateDiscussion && (
                             <button
                                 onClick={handleNewDiscussion}
                                 className="ml-auto mr-4 my-2 px-4 py-2 bg-constitution-gold text-justice-black rounded-lg font-medium hover:bg-constitution-gold/90 flex items-center gap-2"
@@ -167,7 +252,6 @@ export function ProfileTabs({
 
             {/* Content */}
             <div className="p-6">
-
                 {activeTab === 'posts' &&
                     (posts.length
                         ? <div className="space-y-4">{posts.map(p => renderPostCard(p))}</div>
@@ -177,6 +261,16 @@ export function ProfileTabs({
                     (discussions.length
                         ? <div className="space-y-4">{discussions.map(d => renderDiscussionCard(d))}</div>
                         : emptyState(MessageSquare, 'No discussions yet'))}
+
+                {activeTab === 'followers' &&
+                    (followers.length
+                        ? <div className="space-y-4">{followers.map(user => renderUserCard(user, true))}</div>
+                        : emptyState(Users, 'No followers yet'))}
+
+                {activeTab === 'following' &&
+                    (following.length
+                        ? <div className="space-y-4">{following.map(user => renderUserCard(user, false))}</div>
+                        : emptyState(UserCheck, 'Not following anyone yet'))}
 
                 {activeTab === 'bookmarks' && isOwnProfile &&
                     (bookmarks.length

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useRef } from 'react';
 import { Flame, Trophy, Calendar } from 'lucide-react';
 
 interface DashboardOverview {
@@ -8,13 +8,17 @@ interface DashboardOverview {
   lastActiveDate: string;
 }
 
+interface Props {
+  data?: DashboardOverview | null;
+}
+
 // Count up animation hook
 const useCountUp = (end: number, duration: number = 600) => {
-  const [count, setCount] = useState(0);
+  const [count, setCount] = React.useState(0);
   const startTimeRef = useRef<number | null>(null);
   const animationFrameRef = useRef<number>();
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (end === 0) {
       setCount(0);
       return;
@@ -58,7 +62,7 @@ const LevelProgressRing: React.FC<{
   score: number;
   currentLevel: string;
 }> = ({ score, currentLevel }) => {
-  const [hoveredLevel, setHoveredLevel] = useState<string | null>(null);
+  const [hoveredLevel, setHoveredLevel] = React.useState<string | null>(null);
   const size = 180;
   const strokeWidth = 14;
   const radius = (size - strokeWidth) / 2;
@@ -381,45 +385,10 @@ const LevelProgressRing: React.FC<{
   );
 };
 
-const HeaderStats: React.FC = () => {
-  const mockData: DashboardOverview = {
-    totalScore: 196,
-    currentStreak: 12,
-    longestStreak: 27,
-    lastActiveDate: "2026-01-15"
-  };
-
-  const [data, setData] = useState<DashboardOverview | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-
+const HeaderStats: React.FC<Props> = ({ data }) => {
   const animatedTotalScore = useCountUp(data?.totalScore || 0);
   const animatedCurrentStreak = useCountUp(data?.currentStreak || 0);
   const animatedLongestStreak = useCountUp(data?.longestStreak || 0);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        await new Promise(resolve => setTimeout(resolve, 300));
-        setData(mockData);
-        setError(null);
-      } catch (err) {
-        console.error('Failed to fetch dashboard overview:', err);
-        setError('Failed to load statistics');
-        setData({
-          totalScore: 0,
-          currentStreak: 0,
-          longestStreak: 0,
-          lastActiveDate: ""
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
 
   const formatDate = (dateString: string): string => {
     if (!dateString) return "—";
@@ -434,48 +403,6 @@ const HeaderStats: React.FC = () => {
       return "—";
     }
   };
-
-  // Loading state
-  if (loading) {
-    return (
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Primary card loading */}
-        <div 
-          className="lg:col-span-2 rounded-lg border p-5"
-          style={{
-            backgroundColor: '#F1E8D7',
-            border: '1px solid rgba(210, 179, 130, 0.15)'
-          }}
-        >
-          <div className="space-y-4">
-            <div>
-              <div className="h-5 bg-gray-200 rounded w-32 mb-1 animate-pulse"></div>
-              <div className="h-4 bg-gray-200 rounded w-48 animate-pulse"></div>
-            </div>
-            <div className="flex justify-center">
-              <div className="w-48 h-48 bg-gray-200 rounded-full animate-pulse"></div>
-            </div>
-          </div>
-        </div>
-        
-        {/* Secondary cards loading */}
-        {[...Array(3)].map((_, index) => (
-          <div 
-            key={index} 
-            className="rounded-lg border p-5"
-            style={{
-              backgroundColor: '#F1E8D7',
-              border: '1px solid rgba(210, 179, 130, 0.15)'
-            }}
-          >
-            <div className="h-4 bg-gray-200 rounded w-20 mb-3 animate-pulse"></div>
-            <div className="h-7 bg-gray-200 rounded w-16 mb-2 animate-pulse"></div>
-            <div className="h-3 bg-gray-200 rounded w-32 animate-pulse"></div>
-          </div>
-        ))}
-      </div>
-    );
-  }
 
   const displayData = data || {
     totalScore: 0,
@@ -632,15 +559,6 @@ const HeaderStats: React.FC = () => {
           </div>
         </div>
       </div>
-
-      {error && (
-        <div className="lg:col-span-3 bg-red-50 border border-red-200 rounded-lg p-3">
-          <div className="flex items-center text-red-700 text-sm">
-            <span className="mr-2">⚠️</span>
-            <span>{error}</span>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

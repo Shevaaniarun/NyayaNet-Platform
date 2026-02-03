@@ -1,21 +1,27 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Plus, FileText, Heart, MessageSquare, TrendingUp, Loader2 } from 'lucide-react';
-import { PostCard } from '../components/PostCard';
-import { CreatePost } from '../components/CreatePost';
+import { PostCard } from '../components/Post/PostCard';
+import { CreatePost } from '../components/Post/CreatePost';
 import { PostFilters } from '../components/Post/PostFilters';
 import { getPosts } from '../api/postsAPI';
 import { toast } from 'react-toastify';
 
+interface PostsPageProps {
+  onNavigateToProfile?: (userId: string) => void;
+}
+
+
 interface PostFilterType {
     page: number;
     limit: number;
-    sort: 'newest' | 'active' | 'liked' | 'relevance';
+    sort: 'newest' | 'active' | 'liked' | 'relevance' | 'most_commented' | 'most_liked';
     postType?: 'POST' | 'QUESTION' | 'ARTICLE' | 'ANNOUNCEMENT';
     tags?: string[];
     q?: string;
+    following?: boolean;
 }
 
-export function PostsPage() {
+export function PostsPage({ onNavigateToProfile }: PostsPageProps) {
     const [posts, setPosts] = useState<any[]>([]);
     const [showCreateForm, setShowCreateForm] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
@@ -81,6 +87,7 @@ export function PostsPage() {
         tags?: string[];
         sort?: 'newest' | 'active' | 'liked' | 'relevance';
         q?: string;
+        following?: boolean;
     }) => {
         setFilters(prev => ({
             ...prev,
@@ -169,30 +176,6 @@ export function PostsPage() {
                     </button>
                 </div>
 
-                {/* Stats */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-                    <StatCard
-                        icon={FileText}
-                        title="Total Posts"
-                        value={stats.total}
-                    />
-                    <StatCard
-                        icon={Heart}
-                        title="Total Likes"
-                        value={stats.totalLikes}
-                    />
-                    <StatCard
-                        icon={MessageSquare}
-                        title="Total Comments"
-                        value={stats.totalComments}
-                    />
-                    <StatCard
-                        icon={TrendingUp}
-                        title="Questions"
-                        value={stats.questions}
-                    />
-                </div>
-
                 {/* Filters */}
                 <div className="mb-8">
                     <PostFilters onFilterChange={handleFilterChange} />
@@ -202,10 +185,10 @@ export function PostsPage() {
                 <div className="space-y-6">
                     {posts.map((post) => (
                         <PostCard
-                            key={post.id}
-                            post={post}
-                            currentUserId={currentUserId}
-                            onDelete={handlePostDeleted}
+                        key={post.id}
+                        post={post}
+                        currentUserId={currentUserId}
+                        onAuthorClick={(userId) => onNavigateToProfile?.(userId)}
                         />
                     ))}
                 </div>

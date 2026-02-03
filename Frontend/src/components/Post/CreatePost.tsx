@@ -89,7 +89,7 @@ export function CreatePost({ onPostCreated }: CreatePostProps) {
     setIsPublishing(true);
 
     try {
-      const { createPost, uploadFiles } = await import('../api/postsAPI');
+      const { createPost, uploadFiles } = await import('../../api/postsAPI');
 
       let media: any[] = [];
       if (attachedFiles.length > 0) {
@@ -104,7 +104,7 @@ export function CreatePost({ onPostCreated }: CreatePostProps) {
         .map(tag => tag.startsWith('#') ? tag.slice(1) : tag);
 
       await createPost({
-        title: postTitle.trim() || undefined,
+        title: postTitle.trim(),
         content: postContent.trim(),
         postType,
         tags: hashtagsArray,
@@ -179,10 +179,10 @@ export function CreatePost({ onPostCreated }: CreatePostProps) {
 
         {/* Input Area */}
         <div className="flex-1">
-          {/* Title Input (Optional) */}
+          {/* Title Input */}
           <input
             type="text"
-            placeholder="Title (optional)"
+            placeholder="Title"
             className="w-full parchment-bg border border-constitution-gold/30 rounded-lg p-3 mb-3 text-ink-gray font-heading font-semibold focus:outline-none focus:border-constitution-gold"
             value={postTitle}
             onChange={(e) => setPostTitle(e.target.value)}

@@ -134,3 +134,339 @@ export const searchNotifications = async (req: AuthRequest, res: Response) => {
     });
   }
 };
+
+export const getNotificationStats = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?. id;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: 'User not authenticated'
+      });
+    }
+
+    const stats = await NotificationModel.getNotificationStats(userId);
+
+    return res.status(200).json({
+      success: true,
+      data: stats
+    });
+  } catch (error:  any) {
+    console.error('Get notification stats error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to fetch notification statistics',
+      error: error.message
+    });
+  }
+};
+
+export const deleteNotification = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    const { notificationId } = req.params;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: 'User not authenticated'
+      });
+    }
+
+    await NotificationModel.deleteNotification(userId, notificationId);
+
+    return res.status(200).json({
+      success: true,
+      message: 'Notification deleted successfully'
+    });
+  } catch (error: any) {
+    console.error('Delete notification error:', error);
+    
+    if (error.message === 'Notification not found or unauthorized') {
+      return res.status(404).json({
+        success: false,
+        message: error.message
+      });
+    }
+    
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to delete notification',
+      error: error.message
+    });
+  }
+};
+
+
+export const bulkDeleteNotifications = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    const { notificationIds, deleteAllRead, deleteAllBefore } = req.body;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: 'User not authenticated'
+      });
+    }
+
+    const deletedCount = await NotificationModel.bulkDeleteNotifications(
+      userId,
+      notificationIds,
+      deleteAllRead,
+      deleteAllBefore ?  new Date(deleteAllBefore) : undefined
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: `${deletedCount} notification${deletedCount !== 1 ? 's' :  ''} deleted successfully`,
+      data: {
+        deletedCount
+      }
+    });
+  } catch (error: any) {
+    console.error('Bulk delete notifications error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to delete notifications',
+      error: error. message
+    });
+  }
+};
+
+
+export const createNewFollowerNotification = async (req: AuthRequest, res: Response) => {
+  try {
+    const { receiverId, followerId, followerName } = req.body;
+
+    if (! receiverId || !followerId || !followerName) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required fields:  receiverId, followerId, followerName'
+      });
+    }
+
+    const notificationId = await NotificationModel. createNewFollowerNotification(
+      receiverId,
+      followerId,
+      followerName
+    );
+
+    return res.status(201).json({
+      success: true,
+      message: 'New follower notification created',
+      data: {
+        notificationId
+      }
+    });
+  } catch (error: any) {
+    console.error('Create follower notification error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to create notification',
+      error: error.message
+    });
+  }
+};
+
+export const createPostLikeNotification = async (req: AuthRequest, res: Response) => {
+  try {
+    const { postOwnerId, likerId, likerName, postId, postTitle } = req.body;
+
+    if (! postOwnerId || !likerId || !likerName || !postId || !postTitle) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required fields: postOwnerId, likerId, likerName, postId, postTitle'
+      });
+    }
+
+    if (postOwnerId === likerId) {
+      return res.status(200).json({
+        success: true,
+        message: 'No notification created for self-like'
+      });
+    }
+
+    const notificationId = await NotificationModel.createPostLikeNotification(
+      postOwnerId,
+      likerId,
+      likerName,
+      postId,
+      postTitle
+    );
+
+    return res.status(201).json({
+      success: true,
+      message:  'Post like notification created',
+      data: {
+        notificationId
+      }
+    });
+  } catch (error: any) {
+    console.error('Create post like notification error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to create notification',
+      error: error.message
+    });
+  }
+};
+
+export const createDiscussionReplyNotification = async (req: AuthRequest, res: Response) => {
+  try {
+    const { 
+      discussionOwnerId, 
+      replierId, 
+      replierName, 
+      discussionId, 
+      discussionTitle, 
+      replyPreview,
+      isReplyToComment,
+      parentCommentId
+    } = req.body;
+
+    if (!discussionOwnerId || ! replierId || !replierName || !discussionId || !discussionTitle || !replyPreview) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required fields'
+      });
+    }
+
+    if (discussionOwnerId === replierId) {
+      return res.status(200).json({
+        success: true,
+        message: 'No notification created for self-reply'
+      });
+    }
+
+    const notificationId = await NotificationModel.createDiscussionReplyNotification(
+      discussionOwnerId,
+      replierId,
+      replierName,
+      discussionId,
+      discussionTitle,
+      replyPreview,
+      isReplyToComment || false,
+      parentCommentId
+    );
+
+    return res.status(201).json({
+      success: true,
+      message:  'Discussion reply notification created',
+      data:  {
+        notificationId
+      }
+    });
+  } catch (error:  any) {
+    console.error('Create discussion reply notification error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to create notification',
+      error: error.message
+    });
+  }
+};
+
+export const createDiscussionUpvoteNotification = async (req: AuthRequest, res: Response) => {
+  try {
+    const { 
+      contentOwnerId, 
+      upvoterId, 
+      upvoterName, 
+      discussionId, 
+      discussionTitle,
+      replyId,
+      isReply
+    } = req.body;
+
+    if (!contentOwnerId || !upvoterId || !upvoterName || !discussionId || !discussionTitle) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required fields'
+      });
+    }
+
+    if (contentOwnerId === upvoterId) {
+      return res.status(200).json({
+        success: true,
+        message: 'No notification created for self-upvote'
+      });
+    }
+
+    const notificationId = await NotificationModel.createDiscussionUpvoteNotification(
+      contentOwnerId,
+      upvoterId,
+      upvoterName,
+      discussionId,
+      discussionTitle,
+      replyId,
+      isReply || false
+    );
+
+    return res.status(201).json({
+      success: true,
+      message: 'Discussion upvote notification created',
+      data: {
+        notificationId
+      }
+    });
+  } catch (error: any) {
+    console.error('Create discussion upvote notification error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to create notification',
+      error: error.message
+    });
+  }
+};
+
+
+export const createConnectionRequestNotification = async (req: AuthRequest, res: Response) => {
+  try {
+    const { 
+      receiverId, 
+      requesterId, 
+      requesterName, 
+      requestMessage,
+      requestId
+    } = req.body;
+
+    if (!receiverId || !requesterId || !requesterName || !requestId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required fields:  receiverId, requesterId, requesterName, requestId'
+      });
+    }
+
+    if (receiverId === requesterId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Cannot send connection request to self'
+      });
+    }
+
+    const notificationId = await NotificationModel.createConnectionRequestNotification(
+      receiverId,
+      requesterId,
+      requesterName,
+      requestMessage || 'Would like to connect with you',
+      requestId
+    );
+
+    return res.status(201).json({
+      success: true,
+      message: 'Connection request notification created',
+      data: {
+        notificationId
+      }
+    });
+  } catch (error:  any) {
+    console.error('Create connection request notification error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to create notification',
+      error: error.message
+    });
+  }
+};
