@@ -1,8 +1,3 @@
-/**
- * Chat With Us Page - Browse and message legal experts
- * Updated to match legal theme
- */
-
 import React, { useState, useEffect } from 'react';
 import { getExperts } from '../api/messagesAPI';
 import { MessageCircle, Scale, Gavel, GraduationCap, User, Briefcase, Award, Search, Shield, Crown, Star, BookOpen, Clock } from 'lucide-react';
@@ -240,13 +235,14 @@ const ChatWithUsPage: React.FC<ChatWithUsPageProps> = ({ onNavigate }) => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {/* Search */}
               <div className="relative group">
-                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-ink-gray/40 group-focus-within:text-constitution-gold transition-colors" />
+                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-constitution-gold group-focus-within:text-constitution-gold transition-colors" />
                 <input
                   type="text"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   placeholder="Search by name, specialization, or organization..."
-                  className="w-full pl-12 pr-4 py-3 bg-justice-black/50 border border-ink-gray/20 rounded-xl text-judge-ivory placeholder-ink-gray/40 focus:outline-none focus:border-constitution-gold transition-colors"
+                  className="w-full pl-12 pr-4 py-3 bg-constitution-gold/10 border border-constitution-gold/20 text-constitution-gold rounded-xl  placeholder-ink-gray/40 focus:outline-none focus:border-constitution-gold transition-colors font-bold"
+                
                 />
               </div>
 
@@ -255,8 +251,9 @@ const ChatWithUsPage: React.FC<ChatWithUsPageProps> = ({ onNavigate }) => {
                 <select
                   value={selectedRole}
                   onChange={(e) => setSelectedRole(e.target.value)}
-                  className="w-full px-4 py-3 bg-justice-black/50 border border-ink-gray/20 rounded-xl text-judge-ivory focus:outline-none focus:border-constitution-gold transition-colors appearance-none"
+                  className="w-full px-4 py-3 bg-constitution-gold/10 border border-constitution-gold/20 text-constitution-gold rounded-xl  focus:outline-none focus:border-constitution-gold transition-colors appearance-none font-bold"
                 >
+                 
                   <option value="all">All Legal Roles</option>
                   <option value="JUDGE">Judges</option>
                   <option value="LAWYER">Lawyers</option>
@@ -441,4 +438,4 @@ const ChatWithUsPage: React.FC<ChatWithUsPageProps> = ({ onNavigate }) => {
   );
 };
 
-export default ChatWithUsPage;
+export default ChatWithUsPage

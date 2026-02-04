@@ -6,7 +6,7 @@ import { AIAssistant } from './components/AIAssistant';
 import { JusticeLoader } from './components/JusticeLoader';
 import { CreatePost } from './components/Post/CreatePost';
 import { MobileNotice } from './components/MobileNotice';
-import { Sparkles, TrendingUp, Gavel, Construction, Users, Bell } from 'lucide-react';
+import { Sparkles, TrendingUp, Gavel, Users, Bell } from 'lucide-react';
 import { DiscussionsPage } from './pages/DiscussionPage';
 import { PostsPage } from './pages/PostsPage';
 import RegisterPage from "./pages/RegisterPage";
@@ -21,8 +21,10 @@ import { getFeed, Post as ApiPost } from './api/postsAPI';
 import { toast } from 'react-toastify';
 import { NetworkPage } from './pages/NetworkPage';
 import * as networkApi from './api/networkAPI';
+import LandingPage from "./pages/LandingPage";
+import DashboardPage from './pages/dashboard/DashboardPage';
 import { Toaster } from "react-hot-toast";
-import { useNotificationCount } from './hooks/useNotificationCount'; 
+import { useNotificationCount } from './hooks/useNotificationCount';
 
 type ViewType =
     | 'dashboard'
@@ -38,7 +40,9 @@ type ViewType =
     | 'notifications'
     | 'network'
     | 'connectionRequests'
-    | 'createDiscussion';
+    | 'createDiscussion'
+    | "chat"
+;
 
 const getCurrentUser = () => {
     const userStr = localStorage.getItem('user');
@@ -59,36 +63,34 @@ const getCurrentUser = () => {
     }
 };
 
-// Fixed type adapter based on actual API response
 const adaptPost = (apiPost: ApiPost): PostComponentType => ({
     id: apiPost.id,
     userId: apiPost.userId,
     author: {
         fullName: apiPost.author?.fullName || 'Unknown User',
         profilePhotoUrl: apiPost.author?.profilePhotoUrl || '',
-        // Use default values since API doesn't provide role and organization
-        role: 'Legal Professional', // Default value
+        role: 'Legal Professional',
         designation: apiPost.author?.designation || '',
-        organization: apiPost.author?.organization || '' // Default value
+        organization: apiPost.author?.organization || ''
     },
-    postType:  apiPost.postType || 'POST',
-    title: apiPost.title || '', 
-    content: apiPost. content,
-    createdAt:  new Date(apiPost.createdAt).toLocaleDateString(),
-    likeCount: apiPost. likeCount || 0,
+    postType: apiPost.postType || 'POST',
+    title: apiPost.title || '',
+    content: apiPost.content || '',
+    createdAt: apiPost.createdAt ? new Date(apiPost.createdAt).toLocaleDateString() : '',
+    likeCount: apiPost.likeCount || 0,
     commentCount: apiPost.commentCount || 0,
     tags: apiPost.tags || [],
-    isLiked: apiPost.isLiked,
-    isSaved: apiPost.isSaved,
+    isLiked: !!apiPost.isLiked,
+    isSaved: !!apiPost.isSaved,
     media: apiPost.media?.map(m => ({
         id: m.id,
-        url: m.mediaUrl || '',  // Map mediaUrl to url
-        type: m.mediaType || '', // Map mediaType to type
-        mimeType: m.mediaType || '', // Add mimeType for compatibility
-        mediaUrl: m.mediaUrl || '', // Keep original for safety
-        mediaType: m.mediaType || '', // Keep original for safety
+        url: m.mediaUrl || '',
+        type: m.mediaType || '',
+        mimeType: m.mediaType || '',
+        mediaUrl: m.mediaUrl || '',
+        mediaType: m.mediaType || '',
         fileName: m.fileName || undefined
-    }))
+    })) || []
 });
 
 const mapCaseStatus = (status: string): CaseItemComponentType['caseStatus'] => {
@@ -110,32 +112,24 @@ export default function App() {
     const [cases] = useState<CaseItemComponentType[]>([]);
     const [pendingConnectionCount, setPendingConnectionCount] = useState(0);
     const { unreadCount, refetch: refetchNotificationCount } = useNotificationCount(30000);
-    
-    // Initialize auth state properly
+
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [authView, setAuthView] = useState<"register" | "login">("register");
     const [currentView, setCurrentView] = useState<ViewType>('dashboard');
-
-    // State for viewing another user's profile
+    const [currentPath, setCurrentPath] = useState(window.location.pathname);
     const [selectedProfileUserId, setSelectedProfileUserId] = useState<string | null>(null);
 
-    // Get current user
     const currentUser = getCurrentUser();
 
-    // Function to load pending connection count
     const loadPendingConnectionCount = async () => {
         if (!isAuthenticated || !currentUser?.id) return;
-
         try {
-            // Use the network API call
+            // placeholder for actual API call
             // const pendingRequests = await networkApi.getPendingConnectionRequests();
-            // console.log('Pending requests from API:', pendingRequests);
             // setPendingConnectionCount(pendingRequests.length || 0);
         } catch (error) {
             console.error('Failed to load connection requests:', error);
-            // Fallback to mock data for development
-            const mockCount = Math.floor(Math.random() * 5);
-            setPendingConnectionCount(mockCount);
+            setPendingConnectionCount(Math.floor(Math.random() * 5));
         }
     };
 
@@ -145,36 +139,72 @@ export default function App() {
         setIsAuthenticated(isAuth);
 
         if (isAuth) {
-            setCurrentView('dashboard');
+            if (currentPath === '/') {
+                setCurrentView('dashboard');
+                window.history.replaceState({ view: 'dashboard' }, '', '/');
+            }
+            else if (currentPath === '/login' || currentPath === '/register') {
+                setCurrentView('profile');
+                window.history.replaceState({ view: 'profile' }, '', '/profile');
+            }
+            else if (currentPath === '/dashboard') {
+                setCurrentView('dashboard');
+            } else {
+                const viewMap: Record<string, ViewType> = {
+                '/': 'dashboard',
+                '/feed': 'feed',
+                '/cases': 'cases',
+                '/notes': 'notes',
+                '/ai': 'ai',
+                '/chatbot': 'chatbot',
+                '/chat-with-us': 'chat-with-us',
+                '/messages': 'messages',
+                '/discussions': 'discussions',
+                '/profile': 'profile',
+                '/notifications': 'notifications',
+                '/network': 'network',
+                '/connection-requests': 'connectionRequests',
+                '/create-discussion': 'createDiscussion',
+                "/chat": "chat",
+                };
+
+                const newView = viewMap[currentPath] || 'profile';
+                setCurrentView(newView);
+            }
+
             refreshPosts();
             loadPendingConnectionCount();
+        } else {
+            if (currentPath === '/login') setAuthView('login');
+            else if (currentPath === '/register') setAuthView('register');
+            else if (currentPath === '/dashboard' || currentPath === '/profile') {
+                window.history.replaceState({}, '', '/login');
+                setAuthView('login');
+            } else if (currentPath !== '/') {
+                window.history.replaceState({}, '', '/');
+                setCurrentPath('/');
+            }
         }
 
         const timer = setTimeout(() => {
             setIsLoading(false);
-        }, 2500); 
+        }, 1500);
 
         return () => clearTimeout(timer);
-    }, []);
+    }, [currentPath]);
 
-    // Handle browser back/forward buttons
     useEffect(() => {
         const handlePopState = (event: PopStateEvent) => {
+            setCurrentPath(window.location.pathname);
             if (event.state?.view) {
                 setCurrentView(event.state.view);
-                if (event.state.view === 'feed' || event.state.view === 'dashboard') {
-                    refreshPosts();
-                }
+                if (event.state.view === 'feed' || event.state.view === 'dashboard') refreshPosts();
             }
         };
-
         window.addEventListener('popstate', handlePopState);
-
-        // Set initial state
         if (!window.history.state?.view) {
             window.history.replaceState({ view: currentView }, '', `/${currentView === 'dashboard' ? '' : currentView}`);
         }
-
         return () => window.removeEventListener('popstate', handlePopState);
     }, []);
 
@@ -183,24 +213,23 @@ export default function App() {
             const token = localStorage.getItem("token");
             if (token) {
                 setIsAuthenticated(true);
-                setCurrentView('dashboard');
+                setCurrentView('profile');
+                setSelectedProfileUserId(null);
                 refreshPosts();
                 loadPendingConnectionCount();
             }
         };
-
         window.addEventListener('storage', handleStorageChange);
-
         const interval = setInterval(() => {
             const token = localStorage.getItem("token");
             if (token && !isAuthenticated) {
                 setIsAuthenticated(true);
-                setCurrentView('dashboard');
+                setCurrentView('profile');
+                setSelectedProfileUserId(null);
                 refreshPosts();
                 loadPendingConnectionCount();
             }
         }, 1000);
-
         return () => {
             window.removeEventListener('storage', handleStorageChange);
             clearInterval(interval);
@@ -209,7 +238,6 @@ export default function App() {
 
     const refreshPosts = async () => {
         if (!isAuthenticated) return;
-
         try {
             setIsLoadingPosts(true);
             const postsData = await getFeed(1, 10);
@@ -223,14 +251,14 @@ export default function App() {
     };
 
     const handleLoginSuccess = () => {
-        const token = localStorage.getItem("token");
-        if (token) {
-            setIsAuthenticated(true);
-            setCurrentView("dashboard");
-            refreshPosts();
-            loadPendingConnectionCount();
-        }
+    setIsAuthenticated(true);
+
+    setCurrentView("dashboard");
+    setCurrentPath("/");
+
+    window.history.replaceState({ view: "dashboard" }, "", "/");
     };
+
 
     const handleLogout = () => {
         localStorage.removeItem("token");
@@ -239,264 +267,102 @@ export default function App() {
         setAuthView("login");
         setPosts([]);
         setPendingConnectionCount(0);
+        setCurrentPath('/');
+        window.history.replaceState({}, '', '/');
     };
 
     const handleNavigation = (path: string, pushToHistory = true) => {
-        const viewMap: Record<string, ViewType> = {
-            '/': 'dashboard',
-            '/feed': 'feed',
-            '/cases': 'cases',
-            '/ai': 'ai',
-            '/chatbot': 'chatbot',
-            '/chat-with-us': 'chat-with-us',
-            '/discussions': 'discussions',
-            '/profile': 'profile',
-            '/notes': 'notes',
-            '/notifications': 'notifications',
-            '/network': 'network',
-            '/connection-requests': 'connectionRequests',
-            '/create-discussion': 'createDiscussion',
-        };
-
-        // Handle messages with user ID
-        if (path.startsWith('/messages/')) {
-            setCurrentView('messages');
-            if (pushToHistory) {
-                window.history.pushState({ view: 'messages', path }, '', path);
-            }
-            return;
-        }
-
-        const newView = viewMap[path] || 'dashboard';
-        setCurrentView(newView);
-
-        // Clear profile user selection on navigation
-        if (newView !== 'profile') {
-            setSelectedProfileUserId(null);
-        }
-        if (newView !== 'notifications') {
-            setTimeout(() => refetchNotificationCount(), 1000);
-        }
-
-        // Push to browser history for back button support
-        if (pushToHistory) {
-            window.history.pushState({ view: newView }, '', path);
-        }
-
-        if (newView === 'feed' || newView === 'dashboard') {
-            refreshPosts();
-        }
+    const viewMap: Record<string, ViewType> = {
+        '/': 'dashboard',
+        '/feed': 'feed',
+        '/cases': 'cases',
+        '/ai': 'ai',
+        '/chatbot': 'chatbot',
+        '/chat-with-us': 'chat-with-us',
+        '/discussions': 'discussions',
+        '/profile': 'profile',
+        '/notes': 'notes',
+        '/notifications': 'notifications',
+        '/network': 'network',
+        '/connection-requests': 'connectionRequests',
+        '/create-discussion': 'createDiscussion',
     };
 
-    // Helper to navigate with history
+    // Handle messages with user ID
+    if (path.startsWith('/messages/')) {
+        setCurrentView('messages');
+        if (pushToHistory) {
+        window.history.pushState({ view: 'messages', path }, '', path);
+        }
+        return;
+    }
+
+    // ✅ Keep only this
+    const newView = viewMap[path] || 'dashboard';
+
+    setCurrentView(newView);
+    setCurrentPath(path);
+
+    if (newView !== 'profile') setSelectedProfileUserId(null);
+
+    if (newView !== 'notifications') {
+        setTimeout(() => refetchNotificationCount(), 1000);
+    }
+
+    if (pushToHistory) {
+        window.history.pushState({ view: newView }, '', path);
+    }
+
+    if (newView === 'feed' || newView === 'dashboard') {
+        refreshPosts();
+    }
+    };
+
+
     const navigateTo = (view: ViewType) => {
-        const path =
-            view === 'dashboard'
-                ? '/'
-                : view === 'createDiscussion'
-                    ? '/create-discussion'
-                    : `/${view}`;
+        const path = view === 'dashboard' ? '/' : view === 'createDiscussion' ? '/create-discussion' : `/${view}`;
         handleNavigation(path, true);
     };
 
-    // Author click handler for PostCard
     const handlePostAuthorClick = (userId: string) => {
         setSelectedProfileUserId(userId);
         navigateTo('profile');
     };
 
-    // Handler for navigating to a profile from discussions (reuse same logic as handlePostAuthorClick)
     const handleDiscussionProfileClick = (userId: string) => {
         setSelectedProfileUserId(userId);
         navigateTo('profile');
     };
 
-    // Handle refresh of connection count
-    const handleRefreshConnectionCount = () => {
-        loadPendingConnectionCount();
-    };
+    const handleRefreshConnectionCount = () => loadPendingConnectionCount();
 
-    if (isLoading) {
-        return <JusticeLoader />;
-    }
+    if (isLoading) return <JusticeLoader />;
 
     if (!isAuthenticated) {
-        return authView === "register" ? (
-            <RegisterPage onSwitchToLogin={() => setAuthView("login")} />
-        ) : (
-            <LoginPage
-                onSwitchToRegister={() => setAuthView("register")}
-                onLoginSuccess={handleLoginSuccess}
-            />
-        );
+        if (currentPath === '/') return <LandingPage />;
+        if (currentPath === '/login') return <LoginPage onSwitchToRegister={() => { setAuthView('register'); setCurrentPath('/register'); window.history.replaceState({}, '', '/register'); }} onLoginSuccess={handleLoginSuccess} />;
+        if (currentPath === '/register') return <RegisterPage onSwitchToLogin={() => { setAuthView('login'); setCurrentPath('/login'); window.history.replaceState({}, '', '/login'); }} />;
+        setCurrentPath('/');
+        window.history.replaceState({}, '', '/');
+        return <LandingPage />;
     }
 
     return (
         <div className="flex min-h-screen bg-justice-black">
             <MobileNotice />
             <Sidebar
-                currentPath={currentView === 'dashboard' ? '/' : `/${currentView}`}
-                onNavigate={handleNavigation}
-                notificationCount={unreadCount}
+            currentPath={currentPath}
+            onNavigate={handleNavigation}
+            pendingConnectionCount={pendingConnectionCount}
+            notificationCount={unreadCount}
+            onLogout={handleLogout}
             />
 
-            <div className="ml-64 flex-1">
-                {currentView === 'dashboard' && (
-                    <div className="min-h-screen bg-justice-black p-8">
-                        <div className="mb-12">
-                            <div className="aged-paper rounded-2xl p-12 relative overflow-hidden">
-                                <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-constitution-gold via-gavel-bronze to-constitution-gold"></div>
-                                <div className="relative z-10">
-                                    <div className="flex justify-between items-start mb-4">
-                                        <div>
-                                            <h1 className="font-heading font-bold text-ink-gray mb-4 text-5xl">
-                                                Welcome to NyayaNet
-                                            </h1>
-                                            <p className="text-ink-gray/70 max-w-3xl leading-relaxed mb-6 text-xl">
-                                                India's premier legal professional networking and AI-powered assistance platform.
-                                            </p>
-                                        </div>
-                                        {pendingConnectionCount > 0 && (
-                                            <button
-                                                onClick={() => navigateTo('connectionRequests')}
-                                                className="flex items-center gap-2 px-4 py-2 bg-constitution-gold/10 border border-constitution-gold/30 text-constitution-gold rounded-lg hover:bg-constitution-gold/20 transition-colors"
-                                            >
-                                                <Bell className="w-5 h-5" />
-                                                <span>Connection Requests</span>
-                                                <span className="bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                                                    {pendingConnectionCount}
-                                                </span>
-                                            </button>
-                                        )}
-                                    </div>
-                                    <div className="flex space-x-4">
-                                        <button
-                                            onClick={() => navigateTo('ai')}
-                                            className="px-8 py-4 bg-constitution-gold text-justice-black rounded-lg font-bold hover:bg-constitution-gold/90 transition-colors flex items-center space-x-2"
-                                        >
-                                            <Sparkles className="w-5 h-5" /><span>Try Legal AI</span>
-                                        </button>
-                                        <button
-                                            onClick={() => {
-                                                setSelectedProfileUserId(null); // Ensure own profile
-                                                navigateTo('profile');
-                                            }}
-                                            className="px-8 py-4 border-2 border-constitution-gold text-constitution-gold rounded-lg font-bold hover:bg-constitution-gold/5 transition-colors flex items-center space-x-2"
-                                        >
-                                            <Users className="w-5 h-5" /><span>View Profile</span>
-                                        </button>
-                                        {pendingConnectionCount > 0 && (
-                                            <button
-                                                onClick={() => navigateTo('connectionRequests')}
-                                                className="px-8 py-4 bg-red-500/10 border-2 border-red-500 text-red-500 rounded-lg font-bold hover:bg-red-500/20 transition-colors flex items-center space-x-2"
-                                            >
-                                                <Bell className="w-5 h-5" />
-                                                <span>View Requests ({pendingConnectionCount})</span>
-                                            </button>
-                                        )}
-                                        <button
-                                            onClick={handleLogout}
-                                            className="px-8 py-4 border-2 border-red-500 text-red-500 rounded-lg font-bold hover:bg-red-500/5 transition-colors flex items-center space-x-2"
-                                        >
-                                            <span>Logout</span>
-                                        </button>
-                                    </div>
-                                </div>
-                                <div className="absolute bottom-4 right-4 opacity-5 text-8xl">⚖️</div>
-                            </div>
-                        </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
-                            <div className="aged-paper rounded-lg p-6 border border-constitution-gold/20 hover:border-constitution-gold/40 transition-colors cursor-pointer"
-                                onClick={() => navigateTo('cases')}>
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <p className="text-ink-gray/60 mb-1 text-sm">Active Cases</p>
-                                        <p className="font-heading font-bold text-ink-gray text-2xl">5</p>
-                                    </div>
-                                    <div className="w-12 h-12 bg-constitution-gold/10 rounded-full flex items-center justify-center">
-                                        <Gavel className="w-6 h-6 text-constitution-gold" />
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="aged-paper rounded-lg p-6 border border-constitution-gold/20 hover:border-constitution-gold/40 transition-colors cursor-pointer"
-                                onClick={() => navigateTo('connectionRequests')}>
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <p className="text-ink-gray/60 mb-1 text-sm">Connections</p>
-                                        <p className="font-heading font-bold text-ink-gray text-2xl">248</p>
-                                    </div>
-                                    <div className="w-12 h-12 bg-constitution-gold/10 rounded-full flex items-center justify-center">
-                                        <TrendingUp className="w-6 h-6 text-constitution-gold" />
-                                    </div>
-                                </div>
-                                {pendingConnectionCount > 0 && (
-                                    <div className="mt-2 flex items-center gap-1 text-sm">
-                                        <span className="text-constitution-gold font-medium">
-                                            {pendingConnectionCount} pending request{pendingConnectionCount !== 1 ? 's' : ''}
-                                        </span>
-                                    </div>
-                                )}
-                            </div>
-                            <div className="aged-paper rounded-lg p-6 border border-constitution-gold/20 hover:border-constitution-gold/40 transition-colors cursor-pointer"
-                                onClick={() => navigateTo('ai')}>
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <p className="text-ink-gray/60 mb-1 text-sm">AI Analyses</p>
-                                        <p className="font-heading font-bold text-ink-gray text-2xl">12</p>
-                                    </div>
-                                    <div className="w-12 h-12 bg-constitution-gold/10 rounded-full flex items-center justify-center">
-                                        <Sparkles className="w-6 h-6 text-constitution-gold" />
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="aged-paper rounded-lg p-6 border border-constitution-gold/20 hover:border-constitution-gold/40 transition-colors cursor-pointer"
-                                onClick={() => {
-                                    setSelectedProfileUserId(null);
-                                    navigateTo('profile');
-                                }}>
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <p className="text-ink-gray/60 mb-1 text-sm">Your Posts</p>
-                                        <p className="font-heading font-bold text-ink-gray text-2xl">7</p>
-                                    </div>
-                                    <div className="w-12 h-12 bg-constitution-gold/10 rounded-full flex items-center justify-center">
-                                        <Users className="w-6 h-6 text-constitution-gold" />
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+            <div className="flex-1 ml-64 min-h-screen">
+                {currentView === 'dashboard' && <DashboardPage />}
 
-                        <div>
-                            <h2 className="font-heading font-bold text-judge-ivory mb-6">Recent Legal Updates</h2>
-                            <div className="space-y-6">
-                                {isLoadingPosts ? (
-                                    <div className="flex justify-center p-8">
-                                        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-justice-blue"></div>
-                                    </div>
-                                ) : posts.length > 0 ? (
-                                    posts.map((post) => (
-                                        <PostCard
-                                            key={post.id}
-                                            post={post}
-                                            currentUserId={currentUser?.id}
-                                            onDelete={(id) => setPosts(prev => prev.filter(p => p.id !== id))}
-                                            onAuthorClick={handlePostAuthorClick}
-                                        />
-                                    ))
-                                ) : (
-                                    <div className="text-center py-12 text-gray-400">
-                                        <p>No posts found. Be the first to post something!</p>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {currentView === 'feed' && (
-                <PostsPage onNavigateToProfile={handlePostAuthorClick} />
-                )}
+                {currentView === 'feed' && <PostsPage onNavigateToProfile={handlePostAuthorClick} />}
 
                 {currentView === 'cases' && (
                     <div className="min-h-screen bg-justice-black p-8">
@@ -515,54 +381,35 @@ export default function App() {
                 {currentView === 'chatbot' && <ChatbotPage />}
                 {currentView === 'chat-with-us' && <ChatWithUsPage onNavigate={handleNavigation} />}
                 {currentView === 'messages' && <MessagesPage onNavigate={handleNavigation} />}
-                {currentView === 'discussions' && (
-                    <DiscussionsPage
-                        onNavigateToProfile={handleDiscussionProfileClick}
+                {currentView === 'discussions' && <DiscussionsPage onNavigateToProfile={handleDiscussionProfileClick} />}
+                {currentView === 'notes' && <NotesPage />}
+
+                {(currentView === 'connectionRequests' || currentView === 'network') && (
+                    <NetworkPage
+                        onBack={() => setCurrentView('dashboard')}
+                        currentUserId={currentUser?.id}
+                        onNavigateToProfile={(userId) => { setSelectedProfileUserId(userId); navigateTo('profile'); }}
                     />
                 )}
-                {currentView === 'notes' && <NotesPage />}
-                
-                {(currentView === 'connectionRequests' || currentView === 'network') && (
-                <NetworkPage
-                    onBack={() => setCurrentView('dashboard')}
-                    currentUserId={currentUser?.id}
-                    onNavigateToProfile={(userId) => {
-                    setSelectedProfileUserId(userId);
-                    navigateTo('profile');
-                    }}
-                />
-                )}
 
-                {/* ProfilePage "+ New Discussion" button should switch to Discussions page */}
                 {currentView === 'profile' && (
                     <ProfilePage
-                        // ProfilePage will show other's profile if selectedProfileUserId is set, otherwise current user's
                         userId={selectedProfileUserId || undefined}
                         currentUserId={currentUser?.id || ''}
                         onBack={() => navigateTo('dashboard')}
                         onNavigateToFeed={() => navigateTo('feed')}
-                        onNavigateToDiscussion={() => {
-                            // Navigate to Discussions page
-                            navigateTo('discussions');
-                        }}
+                        onNavigateToDiscussion={() => navigateTo('discussions')}
                     />
                 )}
 
                 {currentView === 'notifications' && <NotificationsPage />}
-
-                {/* Add CreateDiscussion page route */}
+                {currentView === "chat" && <MessagesPage onNavigate={handleNavigation} />}
                 {currentView === 'createDiscussion' && (
-                    // TODO: Import and add your actual CreateDiscussion component below.
-                    // For now, a placeholder is provided.
                     <div className="max-w-3xl mx-auto p-8">
                         <div className="aged-paper rounded-lg p-8">
                             <h2 className="text-3xl font-heading mb-4">Create New Discussion</h2>
-                            {/* Replace this div below with <CreateDiscussion /> or similar */}
                             <p className="text-lg text-gray-400">Discussion creation form goes here.</p>
-                            <button
-                                className="mt-8 px-6 py-2 rounded-lg font-bold border border-constitution-gold text-constitution-gold hover:bg-constitution-gold/10"
-                                onClick={() => navigateTo('discussions')}
-                            >
+                            <button className="mt-8 px-6 py-2 rounded-lg font-bold border border-constitution-gold text-constitution-gold hover:bg-constitution-gold/10" onClick={() => navigateTo('discussions')}>
                                 Back to Discussions
                             </button>
                         </div>

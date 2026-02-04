@@ -271,8 +271,8 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ onNavigate }) => {
               <div className="w-16 h-16 border-4 border-constitution-gold/20 border-t-constitution-gold rounded-full animate-spin"></div>
               <MessageCircle className="w-8 h-8 text-constitution-gold absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" />
             </div>
-            <p className="text-ink-gray/60">Loading conversation...</p>
-            <p className="text-ink-gray/40 text-sm">User ID: {userId}</p>
+            <p className="text-judge-ivory/60">Loading conversation...</p>
+            <p className="text-judge-ivory/40 text-sm">User ID: {userId}</p>
           </div>
         </div>
       </div>
@@ -284,7 +284,7 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ onNavigate }) => {
   return (
     <div className="flex flex-col h-screen bg-justice-black">
       {/* Header */}
-      <div className="aged-paper border-b border-constitution-gold/20 px-6 py-4 flex items-center justify-between">
+      <div className="bg-justice-black/80 border-b border-constitution-gold/20 px-6 py-4 flex items-center justify-between backdrop-blur-sm">
         <div className="flex items-center gap-4">
           <button
             onClick={handleBack}
@@ -296,7 +296,7 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ onNavigate }) => {
           
           <div className="flex items-center gap-3">
             <div className="relative">
-              <div className="w-12 h-12 rounded-full border-2 border-constitution-gold overflow-hidden bg-parchment-cream">
+              <div className="w-12 h-12 rounded-full border-2 border-constitution-gold overflow-hidden bg-constitution-gold/10">
                 {otherUser?.photo ? (
                   <img 
                     src={otherUser.photo} 
@@ -324,7 +324,7 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ onNavigate }) => {
               </div>
               {/* Online indicator */}
               {otherUser?.isOnline && (
-                <div className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 rounded-full border-2 border-parchment-cream"></div>
+                <div className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 rounded-full border-2 border-justice-black"></div>
               )}
             </div>
             
@@ -332,11 +332,11 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ onNavigate }) => {
               <h2 className="font-heading font-bold text-judge-ivory text-lg">{otherUser?.name || 'Legal Expert'}</h2>
               <div className="flex items-center gap-2">
                 {otherUser?.role && (
-                  <span className="px-2 py-0.5 bg-constitution-gold/10 text-constitution-gold border border-constitution-gold/20 rounded-full text-[10px] font-bold uppercase tracking-wider">
+                  <span className="px-2 py-0.5 bg-constitution-gold/10 text-judge-ivory border border-constitution-gold/20 rounded-full text-[10px] font-bold uppercase tracking-wider">
                     {otherUser.role.replace('_', ' ')}
                   </span>
                 )}
-                <span className="text-ink-gray/60 text-xs flex items-center gap-1">
+                <span className="text-judge-ivory/60 text-xs flex items-center gap-1">
                   <Clock className="w-3 h-3" />
                   Usually replies within 2 hours
                 </span>
@@ -361,45 +361,45 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ onNavigate }) => {
       {/* Messages Container */}
       <div 
         ref={messagesContainerRef}
-        className="flex-1 overflow-y-auto bg-parchment-cream/5"
+        className="flex-1 overflow-y-auto bg-justice-black/50"
       >
         <div className="max-w-3xl mx-auto px-4 md:px-8 py-8">
           {error && messages.length === 0 ? (
             <div className="text-center py-12">
-              <div className="w-20 h-20 mx-auto mb-6 rounded-full border-2 border-constitution-gold/20 flex items-center justify-center">
+              <div className="w-20 h-20 mx-auto mb-6 rounded-full border-2 border-constitution-gold/20 flex items-center justify-center bg-constitution-gold/10">
                 <AlertCircle className="w-10 h-10 text-seal-red" />
               </div>
-              <h3 className="font-heading font-bold text-ink-gray text-xl mb-2">
+              <h3 className="font-heading font-bold text-judge-ivory text-xl mb-2">
                 {error.includes('404') || error.includes('Not Found') 
                   ? 'Start a Conversation' 
                   : 'Error Loading Messages'}
               </h3>
-              <p className="text-ink-gray/60 mb-6 max-w-md mx-auto">
+              <p className="text-judge-ivory/70 mb-6 max-w-md mx-auto">
                 {error.includes('404') || error.includes('Not Found') 
                   ? 'No conversation found. Send a message to start chatting!'
                   : error}
               </p>
               <div className="flex flex-col gap-3 max-w-sm mx-auto">
-                <p className="text-ink-gray/40 text-sm">
+                <p className="text-judge-ivory/40 text-sm">
                   Current User: {currentUserId || 'Not logged in'}
                 </p>
-                <p className="text-ink-gray/40 text-sm">
+                <p className="text-judge-ivory/40 text-sm">
                   Other User: {userId || 'No user selected'}
                 </p>
               </div>
             </div>
           ) : Object.keys(messageGroups).length === 0 ? (
             <div className="text-center py-12">
-              <div className="w-20 h-20 mx-auto mb-6 rounded-full border-2 border-constitution-gold/20 flex items-center justify-center">
-                <MessageCircle className="w-10 h-10 text-constitution-gold/40" />
+              <div className="w-20 h-20 mx-auto mb-6 rounded-full border-2 border-constitution-gold/20 flex items-center justify-center bg-constitution-gold/10">
+                <MessageCircle className="w-10 h-10 text-constitution-gold" />
               </div>
-              <h3 className="font-heading font-bold text-ink-gray text-xl mb-2">
+              <h3 className="font-heading font-bold text-judge-ivory text-xl mb-2">
                 No messages yet
               </h3>
-              <p className="text-ink-gray/60 mb-6 max-w-md mx-auto">
+              <p className="text-judge-ivory/70 mb-6 max-w-md mx-auto">
                 Start the conversation with your legal expert
               </p>
-              <p className="text-ink-gray/40 text-sm mb-4">
+              <p className="text-judge-ivory/40 text-sm mb-4">
                 Send a message to begin your consultation
               </p>
             </div>
@@ -408,7 +408,7 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ onNavigate }) => {
               <div key={date} className="mb-8">
                 {/* Date Header */}
                 <div className="flex items-center justify-center mb-6">
-                  <div className="px-4 py-1.5 bg-constitution-gold/10 text-constitution-gold border border-constitution-gold/20 rounded-full">
+                  <div className="px-4 py-1.5 bg-constitution-gold/10 text-judge-ivory border border-constitution-gold/20 rounded-full">
                     <span className="text-xs font-bold uppercase tracking-wider flex items-center gap-2">
                       <Calendar className="w-3 h-3" />
                       {date}
@@ -431,7 +431,7 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ onNavigate }) => {
                         <div className={`max-w-xs md:max-w-md lg:max-w-lg ${isSent ? 'order-2' : 'order-1'} flex gap-3`}>
                           {/* Avatar for received messages */}
                           {!isSent && showAvatar && (
-                            <div className="w-8 h-8 rounded-full border border-constitution-gold/20 overflow-hidden bg-parchment-cream flex-shrink-0">
+                            <div className="w-8 h-8 rounded-full border border-constitution-gold/20 overflow-hidden bg-constitution-gold/10 flex-shrink-0">
                               {msg.sender_photo ? (
                                 <img
                                   src={msg.sender_photo}
@@ -462,7 +462,7 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ onNavigate }) => {
                           <div className={`${isSent ? 'ml-auto' : ''}`}>
                             {/* Sender name for received messages */}
                             {!isSent && (
-                              <p className="text-xs font-bold text-ink-gray mb-1 ml-1">
+                              <p className="text-xs font-bold text-judge-ivory mb-1 ml-1">
                                 {msg.sender_name}
                               </p>
                             )}
@@ -470,8 +470,8 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ onNavigate }) => {
                             {/* Message bubble */}
                             <div
                               className={`rounded-2xl px-4 py-3 ${isSent
-                                ? 'bg-constitution-gold text-justice-black rounded-br-none shadow-lg'
-                                : 'bg-justice-black text-judge-ivory border border-constitution-gold/20 rounded-bl-none'
+                                ? 'bg-constitution-gold text-justice-black rounded-br-none shadow-lg shadow-constitution-gold/20'
+                                : 'bg-justice-black/80 text-judge-ivory border border-constitution-gold/20 rounded-bl-none'
                               }`}
                             >
                               <p className="text-sm md:text-base leading-relaxed whitespace-pre-wrap break-words">
@@ -481,11 +481,11 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ onNavigate }) => {
                             
                             {/* Timestamp and read status */}
                             <div className={`flex items-center gap-2 mt-1 ${isSent ? 'justify-end' : 'justify-start'}`}>
-                              <span className="text-ink-gray/40 text-[10px] font-medium uppercase tracking-wider">
+                              <span className="text-judge-ivory/40 text-[10px] font-medium uppercase tracking-wider">
                                 {formatMessageTime(msg.created_at)}
                               </span>
                               {isSent && (
-                                <span className={`${msg.is_read ? 'text-emerald-500' : 'text-ink-gray/30'}`}>
+                                <span className={`${msg.is_read ? 'text-emerald-500' : 'text-judge-ivory/30'}`}>
                                   {msg.is_read ? (
                                     <CheckCheck className="w-3 h-3" />
                                   ) : (
@@ -498,7 +498,7 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ onNavigate }) => {
 
                           {/* Avatar for sent messages */}
                           {isSent && showAvatar && (
-                            <div className="w-8 h-8 rounded-full border border-constitution-gold/20 overflow-hidden bg-parchment-cream flex-shrink-0">
+                            <div className="w-8 h-8 rounded-full border border-constitution-gold/20 overflow-hidden bg-constitution-gold/10 flex-shrink-0">
                               {currentUser?.profilePhotoUrl ? (
                                 <img
                                   src={currentUser.profilePhotoUrl}
@@ -538,10 +538,10 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ onNavigate }) => {
       </div>
 
       {/* Message Input */}
-      <div className="aged-paper border-t border-constitution-gold/20 p-4 md:p-6">
+      <div className="bg-justice-black/80 border-t border-constitution-gold/20 p-4 md:p-6 backdrop-blur-sm">
         {error && !error.includes('404') && !error.includes('Not Found') && (
-          <div className="mb-4 px-4 py-2 bg-seal-red/10 text-seal-red border border-seal-red/20 rounded-xl text-sm flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 flex-shrink-0" />
+          <div className="mb-4 px-4 py-2 bg-seal-red/10 text-judge-ivory border border-seal-red/30 rounded-xl text-sm flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 flex-shrink-0 text-seal-red" />
             <span>{error}</span>
           </div>
         )}
@@ -572,7 +572,7 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ onNavigate }) => {
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
                 placeholder="Type your legal query or message..."
-                className="w-full px-5 py-4 parchment-bg border-2 border-constitution-gold/20 rounded-2xl text-judge-ivory placeholder-ink-gray/40 focus:outline-none focus:border-constitution-gold resize-none text-base leading-relaxed pr-24"
+                className="w-full px-5 py-4 bg-justice-black/50 border-2 border-constitution-gold/20 rounded-2xl text-judge-ivory placeholder-judge-ivory/40 focus:outline-none focus:border-constitution-gold focus:bg-justice-black/70 resize-none text-base leading-relaxed pr-24 transition-all"
                 rows={1}
                 onInput={(e) => {
                   const target = e.target as HTMLTextAreaElement;
@@ -583,7 +583,7 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ onNavigate }) => {
               />
               
               {/* Character count */}
-              <div className="absolute right-4 bottom-4 text-xs text-ink-gray/30">
+              <div className="absolute right-4 bottom-4 text-xs text-judge-ivory/30">
                 {newMessage.length}/2000
               </div>
             </div>
@@ -593,8 +593,8 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ onNavigate }) => {
               type="submit"
               disabled={sending || !newMessage.trim() || !userId}
               className={`p-4 rounded-2xl font-bold transition-all flex items-center justify-center ${sending || !newMessage.trim() || !userId
-                ? 'bg-ink-gray/10 text-ink-gray/30 cursor-not-allowed'
-                : 'bg-constitution-gold text-justice-black hover:bg-constitution-gold/90 hover:scale-105 active:scale-95'
+                ? 'bg-constitution-gold/10 text-judge-ivory/30 cursor-not-allowed border border-constitution-gold/20'
+                : 'bg-constitution-gold text-justice-black hover:bg-constitution-gold/90 hover:scale-105 active:scale-95 border border-constitution-gold shadow-lg shadow-constitution-gold/20'
               }`}
               title={!userId ? "Select a user to message" : "Send message"}
             >
@@ -607,13 +607,13 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ onNavigate }) => {
           </div>
           
           {/* Helper text */}
-          <p className="text-ink-gray/40 text-xs mt-3 ml-3 flex items-center gap-2">
-            <Shield className="w-3 h-3" />
+          <p className="text-judge-ivory/40 text-xs mt-3 ml-3 flex items-center gap-2">
+            <Shield className="w-3 h-3 text-constitution-gold" />
             Your conversations are confidential and protected by attorney-client privilege
           </p>
           
           {/* Debug info (remove in production) */}
-          <div className="text-ink-gray/20 text-[10px] mt-2">
+          <div className="text-judge-ivory/20 text-[10px] mt-2">
             Debug: User ID: {userId} | Messages: {messages.length} | Status: {loading ? 'Loading' : 'Ready'}
           </div>
         </form>
