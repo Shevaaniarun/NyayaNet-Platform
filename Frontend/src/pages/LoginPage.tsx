@@ -28,18 +28,21 @@ const LoginPage: React.FC<LoginPageProps> = ({
       localStorage.setItem("user", JSON.stringify(result.user));
 
       toast.success('Login successful! Redirecting...', {
-        duration: 2000,
-        style: {
-          background: '#1a1a1a',
-          color: '#ffffff',
-          border: '1px solid #333',
-          borderRadius: '8px',
-        },
-        iconTheme: {
-          primary: '#3b82f6',
-          secondary: '#ffffff',
-        },
-      });
+  duration: 2000,
+  style: {
+    background: 'linear-gradient(135deg, #FFF8E1 0%, #F5EFD6 100%)', 
+    color: '#0A0A0A', // dark brown/sienna
+    border: '1px solid #D4AF37',
+    borderRadius: '12px',
+    boxShadow: '0 10px 40px -15px rgba(139, 69, 19, 0.2)',
+    fontFamily: 'serif',
+    fontWeight: '500',
+  },
+  iconTheme: {
+    primary: '#0A0A0A', 
+    secondary: '#FFF8E1',
+  },
+});
 
       setTimeout(() => {
         onLoginSuccess();

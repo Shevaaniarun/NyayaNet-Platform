@@ -7,7 +7,7 @@ import { ProfileTabs } from "../components/Profile/ProfileTabs";
 import { JusticeLoader } from "../components/JusticeLoader";
 import { Search, Award, Plus, ArrowLeft, X, UserPlus, UserCheck, Clock } from "lucide-react";
 import * as profileApi from "../api/profileAPI";
-
+import * as networkApi from "../api/networkAPI";
 interface ProfilePageProps {
   userId?: string;
   currentUserId?: string;
@@ -105,7 +105,7 @@ export function ProfilePage({
 
     setIsLoadingFollow(true);
     try {
-      const status = await profileApi.getFollowStatus(targetUserId);
+      const status = await networkApi.getFollowStatus(targetUserId);
       setFollowStatus(status.status);
       setRequestId(status.requestId || null);
     } catch (error) {
@@ -121,7 +121,7 @@ export function ProfilePage({
     if (!targetUserId) return;
     
     try {
-      const followersData = await profileApi.getFollowers(targetUserId);
+      const followersData = await networkApi.getFollowers();
       setFollowers(Array.isArray(followersData) ? followersData : []);
     } catch (error) {
       console.error('Failed to load followers:', error);
@@ -133,7 +133,7 @@ export function ProfilePage({
     if (!targetUserId) return;
     
     try {
-      const followingData = await profileApi.getFollowing(targetUserId);
+      const followingData = await profileApi.getFollowing();
       setFollowing(Array.isArray(followingData) ? followingData : []);
     } catch (error) {
       console.error('Failed to load following:', error);
@@ -226,14 +226,14 @@ export function ProfilePage({
 
     // Load followers and following data
     try {
-      const followersData = await profileApi.getFollowers(targetUserId!);
+      const followersData = await networkApi.getFollowers();
       setFollowers(Array.isArray(followersData) ? followersData : []);
     } catch (e) {
       setFollowers([]);
     }
 
     try {
-      const followingData = await profileApi.getFollowing(targetUserId!);
+      const followingData = await networkApi.getFollowing();
       setFollowing(Array.isArray(followingData) ? followingData : []);
     } catch (e) {
       setFollowing([]);
@@ -300,7 +300,7 @@ export function ProfilePage({
 
         case 'cancel_request':
           if (requestId) {
-            await profileApi.cancelFollowRequest(requestId);
+            await networkApi.cancelFollowRequest(requestId);
           }
           setFollowStatus('NONE');
           setRequestId(null);
