@@ -158,77 +158,16 @@ const ChatWithUsPage: React.FC<ChatWithUsPageProps> = ({ onNavigate }) => {
         {/* Header */}
         <div className="mb-8 md:mb-12">
           <div className="flex items-center gap-4 mb-6">
-            <div className="p-3 bg-constitution-gold/10 rounded-xl border border-constitution-gold/20">
-              <MessageCircle className="w-8 h-8 text-constitution-gold" />
-            </div>
             <div>
               <h1 className="font-heading font-bold text-judge-ivory text-2xl md:text-3xl">
                 Consult Legal Experts
               </h1>
-              <p className="text-ink-gray/60 text-sm md:text-base mt-2">
+              <p className="text-ink-white text-sm md:text-base mt-2">
                 Engage with qualified legal professionals for personalized guidance and insights
               </p>
             </div>
           </div>
 
-          {/* Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-            <div className="aged-paper rounded-xl p-4 border border-constitution-gold/20">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-ink-gray/60 text-xs mb-1">Available Experts</p>
-                  <p className="font-heading font-bold text-judge-ivory text-xl">
-                    {experts.filter(e => e.is_online).length}/{experts.length}
-                  </p>
-                </div>
-                <div className="w-10 h-10 bg-constitution-gold/10 rounded-full flex items-center justify-center">
-                  <User className="w-5 h-5 text-constitution-gold" />
-                </div>
-              </div>
-            </div>
-            <div className="aged-paper rounded-xl p-4 border border-constitution-gold/20">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-ink-gray/60 text-xs mb-1">Average Rating</p>
-                  <p className="font-heading font-bold text-judge-ivory text-xl">
-                    {experts.length > 0 
-                      ? (experts.reduce((sum, e) => sum + (e.rating || 0), 0) / experts.length).toFixed(1)
-                      : '0.0'}
-                    <Star className="w-4 h-4 text-constitution-gold inline ml-1 fill-current" />
-                  </p>
-                </div>
-                <div className="w-10 h-10 bg-constitution-gold/10 rounded-full flex items-center justify-center">
-                  <Star className="w-5 h-5 text-constitution-gold fill-current" />
-                </div>
-              </div>
-            </div>
-            <div className="aged-paper rounded-xl p-4 border border-constitution-gold/20">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-ink-gray/60 text-xs mb-1">Total Experience</p>
-                  <p className="font-heading font-bold text-judge-ivory text-xl">
-                    {experts.reduce((sum, e) => sum + e.experience_years, 0)}+ years
-                  </p>
-                </div>
-                <div className="w-10 h-10 bg-constitution-gold/10 rounded-full flex items-center justify-center">
-                  <Clock className="w-5 h-5 text-constitution-gold" />
-                </div>
-              </div>
-            </div>
-            <div className="aged-paper rounded-xl p-4 border border-constitution-gold/20">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-ink-gray/60 text-xs mb-1">Response Time</p>
-                  <p className="font-heading font-bold text-judge-ivory text-xl">
-                    <span className="text-constitution-gold">≤ 2h</span>
-                  </p>
-                </div>
-                <div className="w-10 h-10 bg-constitution-gold/10 rounded-full flex items-center justify-center">
-                  <MessageCircle className="w-5 h-5 text-constitution-gold" />
-                </div>
-              </div>
-            </div>
-          </div>
 
           {/* Filters */}
           <div className="aged-paper rounded-2xl p-6 mb-8 border border-constitution-gold/20">

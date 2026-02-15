@@ -41,7 +41,7 @@ export function Sidebar({
     // Core Navigation
     { path: "/", icon: Home, label: "Dashboard" },
 
-    { path: "/feed", icon: Newspaper, label: "Legal Feed" },
+    { path: "/feed", icon: Newspaper, label: "Feed" },
 
     { path: "/discussions", icon: MessageSquare, label: "Debates" },
 
@@ -55,13 +55,13 @@ export function Sidebar({
     {
       path: "/network",
       icon: Users,
-      label: "Colleagues",
+      label: "Network",
       badge: pendingConnectionCount > 0 ? pendingConnectionCount : null,
       badgeType: "count",
     },
 
     // Notes & Tools
-    { path: "/notes", icon: Notebook, label: "Case Notes" },
+    { path: "/notes", icon: Notebook, label: "Notes" },
 
     // Notifications
     {

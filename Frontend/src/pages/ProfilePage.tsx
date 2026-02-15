@@ -625,20 +625,10 @@ export function ProfilePage({
   return (
     <div className="min-h-screen bg-justice-black p-8">
       <div className="max-w-5xl mx-auto">
-        {onBack && (
-          <button
-            onClick={onBack}
-            className="flex items-center gap-2 text-constitution-gold hover:text-constitution-gold/80 mb-6 transition-colors"
-            type="button"
-          >
-            <ArrowLeft className="w-5 h-5" />Back
-          </button>
-        )}
-
         {/* Search Bar */}
         <div className="mb-6">
           <div className="relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-ink-gray/50" />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-judge-ivory/50" />
             <input
               type="text"
               placeholder="Search within your content..."
@@ -647,7 +637,7 @@ export function ProfilePage({
               onKeyDown={(e) =>
                 e.key === "Enter" ? handleSearch() : undefined
               }
-              className="w-full pl-12 pr-24 py-3 bg-aged-paper border border-constitution-gold/20 rounded-lg text-ink-gray placeholder-ink-gray/50 focus:outline-none focus:border-constitution-gold/50"
+              className="w-full pl-12 pr-24 py-3 bg-aged-paper border border-constitution-gold/20 rounded-lg text-judge-ivory placeholder-judge-ivory/50 focus:outline-none focus:border-constitution-gold/50"
             />
             <button
               onClick={handleSearch}

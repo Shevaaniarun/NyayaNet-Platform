@@ -594,26 +594,31 @@ export function DiscussionsPage({ onNavigateToProfile }: DiscussionsPageProps) {
           </div>
         )}
 
-        {/* Pagination */}
         {pagination.totalPages > 1 && (
-          <div className="mt-8 flex justify-center">
-            <div className="flex space-x-2">
-              {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map((page) => (
-                <button
-                  key={page}
-                  onClick={() => handlePageChange(page)}
-                  disabled={page === pagination.page}
-                  className={`px-3 py-1 rounded-md ${page === pagination.page
-                    ? 'bg-constitution-gold text-justice-black font-bold'
-                    : 'bg-justice-black text-ink-gray hover:bg-ink-gray/10'
-                    }`}
-                >
-                  {page}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
+  <div className="mt-8 flex justify-center">
+    <div className="flex space-x-2">
+      {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map((page) => {
+        const currentPage = Number(pagination.page);
+
+        return (
+          <button
+            key={page}
+            onClick={() => handlePageChange(page)}
+            disabled={page === currentPage}
+            className={`px-3 py-1 rounded-md ${
+              page === currentPage
+                ? 'bg-constitution-gold text-justice-black font-bold'
+                : 'bg-justice-black text-white hover:bg-ink-gray/10'
+            }`}
+          >
+            {page}
+          </button>
+        );
+      })}
+    </div>
+  </div>
+)}
+
       </div>
     </div>
   );

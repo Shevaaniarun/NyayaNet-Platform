@@ -163,7 +163,7 @@ export function PostsPage({ onNavigateToProfile }: PostsPageProps) {
                         <h1 className="font-heading font-bold text-judge-ivory text-2xl md:text-3xl mb-1 md:mb-2">
                             Legal Insights
                         </h1>
-                        <p className="text-ink-gray/70 text-sm md:text-base">
+                        <p className="text-white text-sm md:text-base">
                             Explore professional insights, questions, and articles
                         </p>
                     </div>
@@ -224,7 +224,7 @@ export function PostsPage({ onNavigateToProfile }: PostsPageProps) {
                                     disabled={page === pagination.page}
                                     className={`px-3 py-1 rounded-md ${page === pagination.page
                                         ? 'bg-constitution-gold text-justice-black font-bold'
-                                        : 'bg-justice-black text-ink-gray hover:bg-ink-gray/10'
+                                        : 'bg-justice-black text-iwhite hover:bg-ink-gray/10'
                                         }`}
                                 >
                                     {page}

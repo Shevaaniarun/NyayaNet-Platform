@@ -532,32 +532,22 @@ export function NetworkPage({ onBack, currentUserId, onNavigateToProfile }: Netw
   return (
     <div className="min-h-screen bg-justice-black p-8">
       <div className="max-w-6xl mx-auto">
-        {onBack && (
-          <button
-            onClick={onBack}
-            className="flex items-center gap-2 text-constitution-gold hover:text-constitution-gold/80 mb-6 transition-colors"
-            type="button"
-          >
-            <ArrowLeft className="w-5 h-5" />Back
-          </button>
-        )}
-
         {/* Header */}
         <div className="mb-8">
           <h1 className="font-heading font-bold text-3xl text-judge-ivory mb-2">Network</h1>
-          <p className="text-ink-gray/60">Connect with legal professionals and build your network</p>
+          <p className="text-white">Connect with legal professionals and build your network</p>
         </div>
 
-        {/* Search Bar - Fixed font color to white */}
+        {/* Search Bar */}
         <form onSubmit={handleSearch} className="mb-8">
           <div className="relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-ink-gray/50" />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-judge-ivory/50" />
             <input
               type="text"
               placeholder="Search for legal professionals..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-12 pr-24 py-3 bg-aged-paper border border-constitution-gold/20 rounded-lg text-judge-ivory placeholder-ink-gray/50 focus:outline-none focus:border-constitution-gold/50"
+              className="w-full pl-12 pr-24 py-3 bg-aged-paper border border-constitution-gold/20 rounded-lg text-judge-ivory placeholder-judge-ivory/50 focus:outline-none focus:border-constitution-gold/50"
             />
             <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2">
               <button
