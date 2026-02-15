@@ -24,10 +24,7 @@ const api = axios.create({
   baseURL: API_BASE,
 });
 
-/**
- * ✅ FIXED AXIOS INTERCEPTOR
- * Axios v1 headers are NOT plain objects
- */
+
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
 
