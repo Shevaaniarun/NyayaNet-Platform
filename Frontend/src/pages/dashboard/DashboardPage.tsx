@@ -28,6 +28,7 @@ const DashboardPage: React.FC = () => {
   const [badges, setBadges] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [showAllActivities, setShowAllActivities] = useState(false);
 
   // Fetch all dashboard data on component mount
   useEffect(() => {
@@ -128,6 +129,8 @@ const DashboardPage: React.FC = () => {
     );
   }
 
+  const visibleActivities = showAllActivities ? activities : activities.slice(0, 5);
+
   return (
     <div className="min-h-screen bg-justice-black p-8">
       {/* Page Header */}
@@ -138,8 +141,8 @@ const DashboardPage: React.FC = () => {
         </p>
       </header>
 
-      {/* Top Section: Header Stats */}
-      <section className="dashboard-section stats-section">
+  {/* Top Section: Header Stats (Overview full-width, streak cards below) */}
+  <section className="dashboard-section stats-section">
         <div className="section-header">
           <h2 className="section-title">Overview</h2>
           <p className="section-description">
@@ -154,8 +157,26 @@ const DashboardPage: React.FC = () => {
         }} />
       </section>
 
-      {/* Second Section: Heatmap */}
-      <section className="dashboard-section heatmap-section">
+      {/* Contribution Breakdown - full width */}
+      <section className="dashboard-section breakdown-section mt-6">
+        <div className="section-header">
+          <h2 className="section-title">Contribution Breakdown</h2>
+          <p className="section-description">Distribution of your contribution types</p>
+        </div>
+        <div className="mt-3">
+          <ContributionBreakdown data={breakdown || {
+            posts: 0,
+            discussions: 0,
+            replies: 0,
+            bestAnswers: 0,
+            aiQueries: 0,
+            lawBookmarks: 0
+          }} />
+        </div>
+      </section>
+
+      {/* Heatmap Section */}
+      <section className="dashboard-section heatmap-section mt-6">
         <div className="section-header">
           <h2 className="section-title">Contribution Activity</h2>
           <p className="section-description">
@@ -185,37 +206,27 @@ const DashboardPage: React.FC = () => {
         })()}
       </section>
 
-      {/* Middle Section: Two-column layout */}
-      <section className="dashboard-section middle-section">
-        <div className="two-column-layout">
-          {/* Left Column: Activity Timeline */}
-          <div className="column left-column">
-            <div className="column-header">
-              <h2 className="section-title">Recent Activity</h2>
-              <p className="section-description">
-                Your latest contributions and interactions
-              </p>
-            </div>
-            <ActivityTimeline items={activities || []} />
+      {/* Recent Activity (below breakdown) - show 5 by default with option to view full */}
+      <section className="dashboard-section recent-activity-section mt-6">
+        <div className="section-header flex items-center justify-between">
+          <div>
+            <h2 className="section-title">Recent Activity</h2>
+            <p className="section-description">Your latest contributions and interactions</p>
           </div>
+          {activities && activities.length > 5 && (
+            <div>
+              <button
+                className="px-3 py-1 text-sm rounded bg-constitution-gold/10 text-constitution-gold"
+                onClick={() => setShowAllActivities(!showAllActivities)}
+              >
+                {showAllActivities ? 'Show less' : `View full (${activities.length})`}
+              </button>
+            </div>
+          )}
+        </div>
 
-          {/* Right Column: Contribution Breakdown */}
-          <div className="column right-column">
-            <div className="column-header">
-              <h2 className="section-title">Contribution Breakdown</h2>
-              <p className="section-description">
-                Distribution of your contribution types
-              </p>
-            </div>
-            <ContributionBreakdown data={breakdown || {
-              posts: 0,
-              discussions: 0,
-              replies: 0,
-              bestAnswers: 0,
-              aiQueries: 0,
-              lawBookmarks: 0
-            }} />
-          </div>
+        <div className="mt-3">
+          <ActivityTimeline items={visibleActivities || []} hasMore={!showAllActivities && activities.length > visibleActivities.length} />
         </div>
       </section>
 

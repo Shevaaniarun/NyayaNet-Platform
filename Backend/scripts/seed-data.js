@@ -111,11 +111,47 @@ async function runSeed() {
         return false;
     }
 
+        // Run dashboard.sql before seeding
+        if (!await runDashboardSqlBeforeSeed()) {
+            return false;
+        }
+
     const seedCmd = `psql -h ${host} -p ${port} -U ${user} -d ${database} -f "${seedPath}"`;
     const result = runCommand(seedCmd);
 
     if (!result) {
         console.error('❌ Failed to run seed data');
+        return false;
+    }
+
+    return true;
+}
+
+async function runDashboardSqlBeforeSeed() {
+    console.log('\n2.b Running dashboard schema (contributions + triggers) before seeding...');
+
+    const dashboardPath = path.join(__dirname, '..', 'database', 'dashboard.sql');
+    if (!fs.existsSync(dashboardPath)) {
+        console.warn(`⚠️ Dashboard SQL not found: ${dashboardPath} — skipping dashboard triggers`);
+        return true;
+    }
+
+    try {
+        const stats = fs.statSync(dashboardPath);
+        if (stats.size === 0) {
+            console.warn('⚠️ Dashboard SQL is empty — skipping');
+            return true;
+        }
+    } catch (error) {
+        console.error(`❌ Cannot read dashboard SQL: ${error.message}`);
+        return false;
+    }
+
+    const dashCmd = `psql -h ${host} -p ${port} -U ${user} -d ${database} -f "${dashboardPath}"`;
+    const result = runCommand(dashCmd, true);
+
+    if (!result) {
+        console.error('❌ Failed to run dashboard.sql — triggers may be missing');
         return false;
     }
 
@@ -140,6 +176,16 @@ async function verifySeed() {
             console.log(`   ${result.trim()}`);
         }
     }
+
+        // Run backfill contributions to populate user_contributions and summary from existing content
+        const backfillPath = path.join(__dirname, '..', 'database', 'backfill_contributions.sql');
+        if (fs.existsSync(backfillPath)) {
+            console.log('\n⏱️ Running contributions backfill to compute user contribution records...');
+            const backfillCmd = `psql -h ${host} -p ${port} -U ${user} -d ${database} -f "${backfillPath}"`;
+            runCommand(backfillCmd, true);
+        } else {
+            console.log('\n⚠️ Backfill script not found; skipping contribution backfill');
+        }
 
     // Show test user credentials
     console.log('\n🔑 Test User Credentials (Password: username123):');

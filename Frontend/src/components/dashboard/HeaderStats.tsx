@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { Flame, Trophy, Calendar } from 'lucide-react';
 
 interface DashboardOverview {
@@ -386,6 +386,7 @@ const LevelProgressRing: React.FC<{
 };
 
 const HeaderStats: React.FC<Props> = ({ data }) => {
+  const [showDetails, setShowDetails] = useState(false);
   const animatedTotalScore = useCountUp(data?.totalScore || 0);
   const animatedCurrentStreak = useCountUp(data?.currentStreak || 0);
   const animatedLongestStreak = useCountUp(data?.longestStreak || 0);
@@ -411,11 +412,15 @@ const HeaderStats: React.FC<Props> = ({ data }) => {
     lastActiveDate: ""
   };
 
+  // Safe modal score/value fallbacks to avoid optional chaining issues in expressions
+  const modalScore = data?.totalScore ?? 0;
+  const modalLevel = modalScore >= 150 ? 'Legal Contributor' : modalScore >= 50 ? 'Active Member' : 'New Contributor';
+
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-      {/* Primary Card - Dashboard Overview with LeetCode-style Spiral */}
+    <div className="w-full">
+      {/* Overview full-width */}
       <div 
-        className="lg:col-span-2 rounded-lg border p-5 hover:shadow-sm transition-shadow"
+        className="rounded-lg border p-5 hover:shadow-sm transition-shadow w-full"
         style={{
           backgroundColor: '#F1E8D7',
           border: '1px solid rgba(210, 179, 130, 0.15)'
@@ -437,9 +442,8 @@ const HeaderStats: React.FC<Props> = ({ data }) => {
         <div className="mt-6 pt-4 border-t border-gray-200">
           <button 
             className="w-full px-4 py-2.5 text-white rounded-lg text-sm font-medium hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
-            style={{ 
-              backgroundColor: 'rgba(210, 179, 130, 0.8)' // Light constitution-gold
-            }}
+            style={{ backgroundColor: 'rgba(210, 179, 130, 0.8)' }}
+            onClick={() => setShowDetails(true)}
           >
             View Detailed Progress
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -449,8 +453,64 @@ const HeaderStats: React.FC<Props> = ({ data }) => {
         </div>
       </div>
 
-      {/* Right Column - Compact Stats Cards with #F1E8D7 background */}
-      <div className="space-y-4">
+      {/* Detail Modal */}
+      {showDetails && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/60" onClick={() => setShowDetails(false)} />
+          <div className="relative bg-white rounded-lg shadow-xl max-w-3xl w-full mx-4 p-6">
+            <div className="flex items-start justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Detailed Progress</h3>
+              <button className="text-gray-600 hover:text-gray-900" onClick={() => setShowDetails(false)} aria-label="Close">
+                ✕
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="flex items-center justify-center">
+                <div style={{ width: 320, height: 320 }}>
+                  <LevelProgressRing score={modalScore} currentLevel={modalLevel} />
+                </div>
+              </div>
+
+              <div>
+                <div className="mb-3 text-sm text-gray-700">
+                  Total Score: <span className="font-semibold text-gray-900">{data?.totalScore ?? 0}</span>
+                </div>
+                <div className="mb-3 text-sm text-gray-700">Current Streak: <span className="font-semibold text-gray-900">{data?.currentStreak ?? 0} days</span></div>
+                <div className="mb-3 text-sm text-gray-700">Longest Streak: <span className="font-semibold text-gray-900">{data?.longestStreak ?? 0} days</span></div>
+                <div className="mb-4 text-xs text-gray-500">Level breakdown:</div>
+                <div className="space-y-3">
+                  {/** Reuse legend content from LevelProgressRing by reconstructing level info here for clarity */}
+                  <div className="p-3 rounded-lg bg-gray-50 border">
+                    <div className="flex items-center justify-between">
+                      <div className="text-sm font-medium">New Contributor</div>
+                      <div className="text-sm text-gray-700">0 - 50</div>
+                    </div>
+                    <div className="text-xs text-gray-500">Beginner level — small contributions add up</div>
+                  </div>
+                  <div className="p-3 rounded-lg bg-gray-50 border">
+                    <div className="flex items-center justify-between">
+                      <div className="text-sm font-medium">Active Member</div>
+                      <div className="text-sm text-gray-700">50 - 150</div>
+                    </div>
+                    <div className="text-xs text-gray-500">Consistent contributor</div>
+                  </div>
+                  <div className="p-3 rounded-lg bg-gray-50 border">
+                    <div className="flex items-center justify-between">
+                      <div className="text-sm font-medium">Legal Contributor</div>
+                      <div className="text-sm text-gray-700">150 - 400</div>
+                    </div>
+                    <div className="text-xs text-gray-500">High quality contributions and engagement</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+  {/* Row of three compact stat cards under the Overview */}
+  <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-4">
         {/* Current Streak Card */}
         <div 
           className="rounded-lg border p-5 hover:shadow-sm transition-shadow"
