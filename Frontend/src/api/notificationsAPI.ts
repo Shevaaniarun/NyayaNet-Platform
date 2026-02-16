@@ -19,9 +19,16 @@ export interface Notification {
     message: string;
     sourceType: string | null;
     sourceId: string | null;
-    data? :  {
-        userId? :  string;
+    data?: {
+        userId?: string;
         userName?: string;
+        postId?: string;
+        postTitle?: string;
+        commentId?: string;
+        commentPreview?: string;  
+        discussionId?: string;
+        discussionTitle?: string;
+        replyPreview?: string;
     };
     isRead: boolean;
     createdAt: string;

@@ -42,7 +42,7 @@ export interface SearchNotificationsInput {
 
 export class NotificationModel {
   private static async mapRowToResponse(
-    row: any
+    row: any,
   ): Promise<NotificationResponse> {
     let formattedNotification: NotificationResponse = {
       id: row.id,
@@ -79,13 +79,19 @@ export class NotificationModel {
 
           if (userResult.rows.length > 0) {
             formattedNotification.data = {
+              ...parsedData, 
               userId: userResult.rows[0].id,
               userName: userResult.rows[0].userName,
             };
+          } else {
+            formattedNotification.data = parsedData;
           }
         } catch (error) {
           console.error("Error fetching user data for notification:", error);
+          formattedNotification.data = parsedData;
         }
+      } else {
+        formattedNotification.data = parsedData;
       }
     }
 
@@ -94,7 +100,7 @@ export class NotificationModel {
 
   static async getNotifications(
     userId: string,
-    input: GetNotificationsInput
+    input: GetNotificationsInput,
   ): Promise<GetNotificationsResult> {
     const { type, unread, page = 1, limit = 20 } = input;
     const offset = (page - 1) * limit;
@@ -150,13 +156,13 @@ export class NotificationModel {
 
     const notificationsResult = await pool.query(
       notificationsQuery,
-      queryParams
+      queryParams,
     );
 
     const notifications = await Promise.all(
       notificationsResult.rows.map(async (notification) => {
         return this.mapRowToResponse(notification);
-      })
+      }),
     );
 
     const pages = Math.ceil(total / limit);
@@ -175,7 +181,7 @@ export class NotificationModel {
 
   static async markAsRead(
     notificationId: string,
-    userId: string
+    userId: string,
   ): Promise<boolean> {
     const query = `
       UPDATE notifications
@@ -202,7 +208,7 @@ export class NotificationModel {
 
   static async searchNotifications(
     userId: string,
-    input: SearchNotificationsInput
+    input: SearchNotificationsInput,
   ): Promise<NotificationResponse[]> {
     const { q, type, startDate, endDate } = input;
 
@@ -212,7 +218,7 @@ export class NotificationModel {
 
     if (q) {
       conditions.push(
-        `(title ILIKE $${paramIndex} OR message ILIKE $${paramIndex})`
+        `(title ILIKE $${paramIndex} OR message ILIKE $${paramIndex})`,
       );
       params.push(`%${q}%`);
       paramIndex++;
@@ -318,7 +324,7 @@ export class NotificationModel {
 
   static async deleteNotification(
     userId: string,
-    notificationId: string
+    notificationId: string,
   ): Promise<void> {
     const query = `
     DELETE FROM notifications
@@ -335,7 +341,7 @@ export class NotificationModel {
     userId: string,
     notificationIds?: string[],
     deleteAllRead?: boolean,
-    deleteAllBefore?: Date
+    deleteAllBefore?: Date,
   ): Promise<number> {
     let query = "DELETE FROM notifications WHERE user_id = $1";
     const params: any[] = [userId];
@@ -360,7 +366,7 @@ export class NotificationModel {
   static async createNewFollowerNotification(
     receiverId: string,
     followerId: string,
-    followerName: string
+    followerName: string,
   ): Promise<string> {
     const query = `
     INSERT INTO notifications (
@@ -401,7 +407,7 @@ export class NotificationModel {
     likerId: string,
     likerName: string,
     postId: string,
-    postTitle: string
+    postTitle: string,
   ): Promise<string> {
     if (postOwnerId === likerId) {
       console.log("⚠️ User liked their own post, skipping notification");
@@ -452,11 +458,11 @@ export class NotificationModel {
     discussionTitle: string,
     replyPreview: string,
     isReplyToComment: boolean = false,
-    parentCommentId?: string
+    parentCommentId?: string,
   ): Promise<string> {
     if (discussionOwnerId === replierId) {
       console.log(
-        "⚠️ User replied to their own discussion, skipping notification"
+        "⚠️ User replied to their own discussion, skipping notification",
       );
       return "";
     }
@@ -524,7 +530,7 @@ export class NotificationModel {
     discussionId: string,
     discussionTitle: string,
     replyId?: string,
-    isReply: boolean = false
+    isReply: boolean = false,
   ): Promise<string> {
     if (contentOwnerId === upvoterId) {
       console.log("⚠️ User upvoted their own content, skipping notification");
@@ -588,7 +594,7 @@ export class NotificationModel {
     requesterId: string,
     requesterName: string,
     requestMessage: string,
-    requestId: string
+    requestId: string,
   ): Promise<string> {
     if (receiverId === requesterId) {
       console.log("⚠️ Cannot send connection request to self");
@@ -638,4 +644,133 @@ export class NotificationModel {
     const result = await pool.query(query, values);
     return result.rows[0].id;
   }
+
+  static async createPostCommentNotification(
+    postOwnerId: string,
+    commenterId: string,
+    commenterName: string,
+    postId: string,
+    postTitle: string,
+    commentPreview: string,
+    commentId: string,
+  ): Promise<string> {
+    if (postOwnerId === commenterId) {
+      console.log("⚠️ User commented on their own post, skipping notification");
+      return "";
+    }
+
+    const query = `
+      INSERT INTO notifications (
+        user_id,
+        notification_type,
+        title,
+        message,
+        source_type,
+        source_id,
+        data,
+        is_read
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      RETURNING id
+    `;
+
+    const truncatedTitle =
+      postTitle.length > 50 ? postTitle.substring(0, 50) + "..." : postTitle;
+    const truncatedComment =
+      commentPreview.length > 100
+        ? commentPreview.substring(0, 100) + "..."
+        : commentPreview;
+
+    const values = [
+      postOwnerId,
+      "POST_COMMENT",
+      "New Comment",
+      `${commenterName} commented on your post: "${truncatedTitle}"`,
+      "POST",
+      postId,
+      JSON.stringify({
+        userId: commenterId,
+        userName: commenterName,
+        postId: postId,
+        postTitle: postTitle,
+        commentId: commentId,
+        commentPreview: truncatedComment,
+      }),
+      false,
+    ];
+
+    try {
+      const result = await pool.query(query, values);
+      return result.rows[0].id;
+    } catch (error) {
+      console.error("❌ Database error inserting notification:", error);
+      throw error;
+    }
+  }
+
+//   static async createMessageReceivedNotification(
+//     receiverId: string,
+//     senderId: string,
+//     senderName: string,
+//     conversationId: string,
+//     messagePreview: string,
+//     messageType: string = 'TEXT'
+//   ): Promise<string> {
+//     console.log('💬 createMessageReceivedNotification called with:', {
+//       receiverId,
+//       senderId,
+//       senderName,
+//       conversationId,
+//       messageType
+//     });
+
+//     if (receiverId === senderId) {
+//       console.log('⚠️ User messaged themselves, skipping notification');
+//       return '';
+//     }
+
+//     const query = `
+//       INSERT INTO notifications (
+//         user_id,
+//         notification_type,
+//         title,
+//         message,
+//         source_type,
+//         source_id,
+//         data,
+//         is_read
+//       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+//       RETURNING id
+//     `;
+
+//     const truncatedMessage =
+//       messagePreview.length > 100 ? messagePreview.substring(0, 100) + '...' : messagePreview;
+
+//     const values = [
+//       receiverId,
+//       'MESSAGE_RECEIVED',
+//       'New Message',
+//       `${senderName} sent you a message`,
+//       'MESSAGE',
+//       conversationId,
+//       JSON.stringify({
+//         userId: senderId,
+//         userName: senderName,
+//         conversationId: conversationId,
+//         messagePreview: truncatedMessage,
+//         messageType: messageType,
+//       }),
+//       false,
+//     ];
+
+//     console.log('💾 Inserting message notification with values:', values);
+
+//     try {
+//       const result = await pool.query(query, values);
+//       console.log('✅ Message notification inserted, ID:', result.rows[0].id);
+//       return result.rows[0].id;
+//     } catch (error) {
+//       console.error('❌ Database error inserting message notification:', error);
+//       throw error;
+//     }
+//   }
 }
