@@ -135,6 +135,37 @@ async function runSchema() {
     return true;
 }
 
+async function runDashboardSql() {
+    console.log('\n3.b Running dashboard schema (contributions + triggers)...');
+
+    const dashboardPath = path.join(__dirname, '..', 'database', 'dashboard.sql');
+    if (!fs.existsSync(dashboardPath)) {
+        console.warn(`⚠️ Dashboard SQL not found: ${dashboardPath} — skipping dashboard triggers`);
+        return true;
+    }
+
+    try {
+        const stats = fs.statSync(dashboardPath);
+        if (stats.size === 0) {
+            console.warn('⚠️ Dashboard SQL is empty — skipping');
+            return true;
+        }
+    } catch (error) {
+        console.error(`❌ Cannot read dashboard SQL: ${error.message}`);
+        return false;
+    }
+
+    const dashCmd = `psql -h ${host} -p ${port} -U ${user} -d ${database} -f "${dashboardPath}"`;
+    const result = runCommand(dashCmd, true);
+
+    if (!result) {
+        console.error('❌ Failed to run dashboard.sql — triggers may be missing');
+        return false;
+    }
+
+    return true;
+}
+
 async function verifyDatabase() {
     console.log('\n4. Verifying database setup...');
 
@@ -180,6 +211,11 @@ async function main() {
 
         // Run schema
         if (!await runSchema()) {
+            process.exit(1);
+        }
+
+        // Run dashboard-specific SQL (triggers, contribution tables)
+        if (!await runDashboardSql()) {
             process.exit(1);
         }
 
