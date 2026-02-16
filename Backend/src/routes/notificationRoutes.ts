@@ -6,7 +6,8 @@ import { getNotifications,markNotificationAsRead,markAllAsRead,searchNotificatio
  createDiscussionUpvoteNotification,
  createDiscussionReplyNotification,
  createConnectionRequestNotification,
- createPostCommentNotification
+ createPostCommentNotification,
+//  createMessageReceivedNotification
  } from '../controllers/notificationController';
 const router = Router();
 
@@ -27,6 +28,6 @@ router.post('/discussion-reply', createDiscussionReplyNotification);
 router.post('/discussion-upvote', createDiscussionUpvoteNotification); 
 router.post('/connection-request', createConnectionRequestNotification);
 router.post('/post-comment', createPostCommentNotification);
-
- //14 15 16 17 18 
+// router.post('/message-received', createMessageReceivedNotification);
+ //14
 export default router;
