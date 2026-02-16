@@ -16,4 +16,22 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  build: {
+    // Raise warning limit slightly and provide manual chunking for large vendor libs
+    chunkSizeWarningLimit: 1000, // KB
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('react') || id.includes('react-dom')) return 'vendor_react';
+            if (id.includes('lucide-react')) return 'vendor_icons';
+            if (id.includes('date-fns')) return 'vendor_datefns';
+            if (id.includes('core-js')) return 'vendor_corejs';
+            // default vendor chunk
+            return 'vendor';
+          }
+        }
+      }
+    }
+  },
 })
