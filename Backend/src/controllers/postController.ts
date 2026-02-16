@@ -26,13 +26,11 @@ export class PostController {
 
       return res.json({ success: true, data: { media } });
     } catch (error: any) {
-      return res
-        .status(500)
-        .json({
-          success: false,
-          message: "Error uploading files",
-          error: error.message,
-        });
+      return res.status(500).json({
+        success: false,
+        message: "Error uploading files",
+        error: error.message,
+      });
     }
   }
 
@@ -53,14 +51,12 @@ export class PostController {
           .json({ success: false, message: "Content is required" });
       }
 
-      // Auto-extract hashtags
       const hashtagRegex = /#(\w+)/g;
       const extractedHashtags =
         content.match(hashtagRegex)?.map((h: string) => h.slice(1)) || [];
 
-      // Merge tags if provided, ensuring uniqueness
       const finalTags = Array.from(
-        new Set([...(tags || []), ...extractedHashtags])
+        new Set([...(tags || []), ...extractedHashtags]),
       );
 
       const postData: CreatePostInput = {
@@ -77,13 +73,11 @@ export class PostController {
       return res.status(201).json({ success: true, data: { post } });
     } catch (error: any) {
       console.error("Create post error:", error);
-      return res
-        .status(500)
-        .json({
-          success: false,
-          message: "Error creating post",
-          error: error.message,
-        });
+      return res.status(500).json({
+        success: false,
+        message: "Error creating post",
+        error: error.message,
+      });
     }
   }
 
@@ -102,13 +96,11 @@ export class PostController {
 
       return res.json({ success: true, data: { post } });
     } catch (error: any) {
-      return res
-        .status(500)
-        .json({
-          success: false,
-          message: "Error fetching post",
-          error: error.message,
-        });
+      return res.status(500).json({
+        success: false,
+        message: "Error fetching post",
+        error: error.message,
+      });
     }
   }
 
@@ -133,13 +125,11 @@ export class PostController {
 
       return res.json({ success: true, data: { post } });
     } catch (error: any) {
-      return res
-        .status(500)
-        .json({
-          success: false,
-          message: "Error updating post",
-          error: error.message,
-        });
+      return res.status(500).json({
+        success: false,
+        message: "Error updating post",
+        error: error.message,
+      });
     }
   }
 
@@ -179,7 +169,7 @@ export class PostController {
       const result = await PostModel.getFeed(
         parseInt(page as string),
         parseInt(limit as string),
-        userId
+        userId,
       );
 
       return res.json({ success: true, data: result });
@@ -247,14 +237,14 @@ export class PostController {
                 userId,
                 likerName,
                 postId,
-                postTitle
+                postTitle,
               );
             }
           }
         } catch (notifError: any) {
           console.error(
             "⚠️ Failed to create like notification:",
-            notifError.message
+            notifError.message,
           );
         }
       }
@@ -266,13 +256,11 @@ export class PostController {
       });
     } catch (error: any) {
       console.error("Like post error:", error);
-      return res
-        .status(500)
-        .json({
-          success: false,
-          message: "Error processing like",
-          error: error.message,
-        });
+      return res.status(500).json({
+        success: false,
+        message: "Error processing like",
+        error: error.message,
+      });
     }
   }
 
@@ -294,13 +282,11 @@ export class PostController {
         data: result,
       });
     } catch (error: any) {
-      return res
-        .status(500)
-        .json({
-          success: false,
-          message: "Error processing save",
-          error: error.message,
-        });
+      return res.status(500).json({
+        success: false,
+        message: "Error processing save",
+        error: error.message,
+      });
     }
   }
 
@@ -326,22 +312,73 @@ export class PostController {
         postId,
         userId,
         content.trim(),
-        parentCommentId
+        parentCommentId,
       );
+
+      try {
+        const postQuery = `
+        SELECT p.user_id as post_owner_id, p.title as post_title, u.full_name as commenter_name
+        FROM posts p
+        CROSS JOIN users u
+        WHERE p.id = $1 AND u.id = $2
+      `;
+        const result = await pool.query(postQuery, [postId, userId]);
+
+        console.log("📊 Post query result:", result.rows);
+
+        if (result.rows.length > 0) {
+          const { post_owner_id, post_title, commenter_name } = result.rows[0];
+
+          console.log("📝 Post info:", {
+            post_owner_id,
+            post_title,
+            commenter_name,
+            commenterId: userId,
+          });
+
+          if (post_owner_id !== userId) {
+            console.log("✨ Creating notification...");
+
+            const notificationId =
+              await NotificationModel.createPostCommentNotification(
+                post_owner_id,
+                userId,
+                commenter_name || "Someone",
+                postId,
+                post_title || "a post",
+                content.substring(0, 100),
+                comment.id,
+              );
+
+            console.log(
+              "✅ Post comment notification created with ID:",
+              notificationId,
+            );
+          } else {
+            console.log(
+              "⚠️ Skipping notification - user commented on own post",
+            );
+          }
+        } else {
+          console.log("⚠️ No post found or user not found");
+        }
+      } catch (notifError: any) {
+        console.error("❌ Failed to create comment notification:", notifError);
+        console.error("Stack:", notifError.stack);
+      }
 
       return res.status(201).json({
         success: true,
-        message: "Comment added",
+        message: "Comment added successfully",
         data: { comment },
       });
     } catch (error: any) {
-      return res
-        .status(500)
-        .json({
-          success: false,
-          message: "Error adding comment",
-          error: error.message,
-        });
+      console.error("❌ Add comment error:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to add comment",
+        error: error.message,
+      });
     }
   }
 
@@ -366,15 +403,13 @@ export class PostController {
       const comment = await PostModel.updateComment(
         commentId,
         userId,
-        content.trim()
+        content.trim(),
       );
       if (!comment) {
-        return res
-          .status(404)
-          .json({
-            success: false,
-            message: "Comment not found or unauthorized",
-          });
+        return res.status(404).json({
+          success: false,
+          message: "Comment not found or unauthorized",
+        });
       }
 
       return res.json({
@@ -383,13 +418,11 @@ export class PostController {
         data: { comment },
       });
     } catch (error: any) {
-      return res
-        .status(500)
-        .json({
-          success: false,
-          message: "Error updating comment",
-          error: error.message,
-        });
+      return res.status(500).json({
+        success: false,
+        message: "Error updating comment",
+        error: error.message,
+      });
     }
   }
 
@@ -406,23 +439,19 @@ export class PostController {
 
       const success = await PostModel.deleteComment(commentId, userId);
       if (!success) {
-        return res
-          .status(404)
-          .json({
-            success: false,
-            message: "Comment not found or unauthorized",
-          });
+        return res.status(404).json({
+          success: false,
+          message: "Comment not found or unauthorized",
+        });
       }
 
       return res.json({ success: true, message: "Comment deleted" });
     } catch (error: any) {
-      return res
-        .status(500)
-        .json({
-          success: false,
-          message: "Error deleting comment",
-          error: error.message,
-        });
+      return res.status(500).json({
+        success: false,
+        message: "Error deleting comment",
+        error: error.message,
+      });
     }
   }
 
@@ -437,7 +466,7 @@ export class PostController {
         postId,
         userId,
         parseInt(page as string),
-        parseInt(limit as string)
+        parseInt(limit as string),
       );
 
       return res.json({
@@ -445,14 +474,11 @@ export class PostController {
         data: { comments },
       });
     } catch (error: any) {
-      return res
-        .status(500)
-        .json({
-          success: false,
-          message: "Error fetching comments",
-          error: error.message,
-        });
-
+      return res.status(500).json({
+        success: false,
+        message: "Error fetching comments",
+        error: error.message,
+      });
     }
   }
 }

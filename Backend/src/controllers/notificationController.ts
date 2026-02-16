@@ -470,3 +470,48 @@ export const createConnectionRequestNotification = async (req: AuthRequest, res:
     });
   }
 };
+
+export const createPostCommentNotification = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: 'User not authenticated'
+      });
+    }
+
+    const { postOwnerId, commenterId, commenterName, postId, postTitle, commentPreview, commentId } = req.body;
+
+    if (!postOwnerId || !commenterId || !commenterName || !postId || !postTitle || !commentPreview || !commentId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required fields'
+      });
+    }
+
+    const notificationId = await NotificationModel.createPostCommentNotification(
+      postOwnerId,
+      commenterId,
+      commenterName,
+      postId,
+      postTitle,
+      commentPreview,
+      commentId 
+    );
+
+    return res.status(201).json({
+      success: true,
+      message: 'Post comment notification created',
+      data: { notificationId }
+    });
+  } catch (error: any) {
+    console.error('Create post comment notification error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to create post comment notification',
+      error: error.message
+    });
+  }
+};
