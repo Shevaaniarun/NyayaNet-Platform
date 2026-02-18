@@ -12,8 +12,8 @@ import { PostsPage } from './pages/PostsPage';
 import RegisterPage from "./pages/RegisterPage";
 import LoginPage from "./pages/LoginPage";
 import { ProfilePage } from './pages/ProfilePage';
-import  NotesPage  from './pages/NotesPage';
-import NotificationsPage from './pages/NotificationsPage'; 
+import NotesPage from './pages/NotesPage';
+import NotificationsPage from './pages/NotificationsPage';
 import { ChatbotPage } from './pages/ChatbotPage';
 import ChatWithUsPage from './pages/ChatWithUsPage';
 import MessagesPage from './pages/MessagesPage';
@@ -42,7 +42,13 @@ type ViewType =
     | 'connectionRequests'
     | 'createDiscussion'
     | "chat"
-;
+    | 'profile-posts'
+    | 'profile-discussions'
+    | 'profile-followers'
+    | 'profile-following'
+    | 'profile-bookmarks'
+    | 'profile-liked-posts'
+    | 'profile-liked-discussions';
 
 const getCurrentUser = () => {
     const userStr = localStorage.getItem('user');
@@ -151,21 +157,28 @@ export default function App() {
                 setCurrentView('dashboard');
             } else {
                 const viewMap: Record<string, ViewType> = {
-                '/': 'dashboard',
-                '/feed': 'feed',
-                '/cases': 'cases',
-                '/notes': 'notes',
-                '/ai': 'ai',
-                '/chatbot': 'chatbot',
-                '/chat-with-us': 'chat-with-us',
-                '/messages': 'messages',
-                '/discussions': 'discussions',
-                '/profile': 'profile',
-                '/notifications': 'notifications',
-                '/network': 'network',
-                '/connection-requests': 'connectionRequests',
-                '/create-discussion': 'createDiscussion',
-                "/chat": "chat",
+                    '/': 'dashboard',
+                    '/feed': 'feed',
+                    '/cases': 'cases',
+                    '/notes': 'notes',
+                    '/ai': 'ai',
+                    '/chatbot': 'chatbot',
+                    '/chat-with-us': 'chat-with-us',
+                    '/messages': 'messages',
+                    '/discussions': 'discussions',
+                    '/profile': 'profile',
+                    '/profile/posts': 'profile-posts',
+                    '/profile/discussions': 'profile-discussions',
+                    '/profile/followers': 'profile-followers',
+                    '/profile/following': 'profile-following',
+                    '/profile/bookmarks': 'profile-bookmarks',
+                    '/profile/liked-posts': 'profile-liked-posts',
+                    '/profile/liked-discussions': 'profile-liked-discussions',
+                    '/notifications': 'notifications',
+                    '/network': 'network',
+                    '/connection-requests': 'connectionRequests',
+                    '/create-discussion': 'createDiscussion',
+                    "/chat": "chat",
                 };
 
                 const newView = viewMap[currentPath] || 'profile';
@@ -251,12 +264,12 @@ export default function App() {
     };
 
     const handleLoginSuccess = () => {
-    setIsAuthenticated(true);
+        setIsAuthenticated(true);
 
-    setCurrentView("dashboard");
-    setCurrentPath("/");
+        setCurrentView("dashboard");
+        setCurrentPath("/");
 
-    window.history.replaceState({ view: "dashboard" }, "", "/");
+        window.history.replaceState({ view: "dashboard" }, "", "/");
     };
 
 
@@ -272,50 +285,57 @@ export default function App() {
     };
 
     const handleNavigation = (path: string, pushToHistory = true) => {
-    const viewMap: Record<string, ViewType> = {
-        '/': 'dashboard',
-        '/feed': 'feed',
-        '/cases': 'cases',
-        '/ai': 'ai',
-        '/chatbot': 'chatbot',
-        '/chat-with-us': 'chat-with-us',
-        '/discussions': 'discussions',
-        '/profile': 'profile',
-        '/notes': 'notes',
-        '/notifications': 'notifications',
-        '/network': 'network',
-        '/connection-requests': 'connectionRequests',
-        '/create-discussion': 'createDiscussion',
-    };
+        const viewMap: Record<string, ViewType> = {
+            '/': 'dashboard',
+            '/feed': 'feed',
+            '/cases': 'cases',
+            '/ai': 'ai',
+            '/chatbot': 'chatbot',
+            '/chat-with-us': 'chat-with-us',
+            '/discussions': 'discussions',
+            '/profile': 'profile',
+            '/profile/posts': 'profile-posts',
+            '/profile/discussions': 'profile-discussions',
+            '/profile/followers': 'profile-followers',
+            '/profile/following': 'profile-following',
+            '/profile/bookmarks': 'profile-bookmarks',
+            '/profile/liked-posts': 'profile-liked-posts',
+            '/profile/liked-discussions': 'profile-liked-discussions',
+            '/notes': 'notes',
+            '/notifications': 'notifications',
+            '/network': 'network',
+            '/connection-requests': 'connectionRequests',
+            '/create-discussion': 'createDiscussion',
+        };
 
-    // Handle messages with user ID
-    if (path.startsWith('/messages/')) {
-        setCurrentView('messages');
-        if (pushToHistory) {
-        window.history.pushState({ view: 'messages', path }, '', path);
+        // Handle messages with user ID
+        if (path.startsWith('/messages/')) {
+            setCurrentView('messages');
+            if (pushToHistory) {
+                window.history.pushState({ view: 'messages', path }, '', path);
+            }
+            return;
         }
-        return;
-    }
 
-    // ✅ Keep only this
-    const newView = viewMap[path] || 'dashboard';
+        // ✅ Keep only this
+        const newView = viewMap[path] || 'dashboard';
 
-    setCurrentView(newView);
-    setCurrentPath(path);
+        setCurrentView(newView);
+        setCurrentPath(path);
 
-    if (newView !== 'profile') setSelectedProfileUserId(null);
+        if (!newView.startsWith('profile')) setSelectedProfileUserId(null);
 
-    if (newView !== 'notifications') {
-        setTimeout(() => refetchNotificationCount(), 1000);
-    }
+        if (newView !== 'notifications') {
+            setTimeout(() => refetchNotificationCount(), 1000);
+        }
 
-    if (pushToHistory) {
-        window.history.pushState({ view: newView }, '', path);
-    }
+        if (pushToHistory) {
+            window.history.pushState({ view: newView }, '', path);
+        }
 
-    if (newView === 'feed' || newView === 'dashboard') {
-        refreshPosts();
-    }
+        if (newView === 'feed' || newView === 'dashboard') {
+            refreshPosts();
+        }
     };
 
 
@@ -351,11 +371,11 @@ export default function App() {
         <div className="flex min-h-screen bg-justice-black">
             <MobileNotice />
             <Sidebar
-            currentPath={currentPath}
-            onNavigate={handleNavigation}
-            pendingConnectionCount={pendingConnectionCount}
-            notificationCount={unreadCount}
-            onLogout={handleLogout}
+                currentPath={currentPath}
+                onNavigate={handleNavigation}
+                pendingConnectionCount={pendingConnectionCount}
+                notificationCount={unreadCount}
+                onLogout={handleLogout}
             />
 
 
@@ -392,13 +412,15 @@ export default function App() {
                     />
                 )}
 
-                {currentView === 'profile' && (
+                {currentView.startsWith('profile') && (
                     <ProfilePage
                         userId={selectedProfileUserId || undefined}
                         currentUserId={currentUser?.id || ''}
+                        activeTab={(currentView === 'profile' ? 'menu' : currentView.replace('profile-', '')) as any}
                         onBack={() => navigateTo('dashboard')}
                         onNavigateToFeed={() => navigateTo('feed')}
                         onNavigateToDiscussion={() => navigateTo('discussions')}
+                        onNavigateToTab={(tab: string) => handleNavigation(tab === 'menu' ? '/profile' : `/profile/${tab}`)}
                     />
                 )}
 

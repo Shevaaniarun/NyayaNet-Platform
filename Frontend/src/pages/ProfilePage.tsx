@@ -1,9 +1,10 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { ProfileHeader } from "../components/Profile/ProfileHeader";
-import { ProfileStats } from "../components/Profile/ProfileStats";
+import { ProfileHeader } from "../components/profile/ProfileHeader";
+import { ProfileStats } from "../components/profile/ProfileStats";
 import { CertificationCard } from "../components/CertificationCard";
-import { ProfileTabs } from "../components/Profile/ProfileTabs";
+import { ProfileMenuGrid } from "../components/profile/ProfileMenuGrid";
+import { ProfileViewHeader, PostList, DiscussionList, UserList } from "../components/profile/ProfileViews";
 import { JusticeLoader } from "../components/JusticeLoader";
 import { Search, Award, Plus, ArrowLeft, X, UserPlus, UserCheck, Clock } from "lucide-react";
 import * as profileApi from "../api/profileAPI";
@@ -13,6 +14,8 @@ interface ProfilePageProps {
   currentUserId?: string;
   onBack?: () => void;
   onNavigateToFeed?: () => void;
+  activeTab?: "menu" | "posts" | "discussions" | "bookmarks" | "likedPosts" | "likedDiscussions" | "followers" | "following" | "profile-liked-posts" | "profile-liked-discussions";
+  onNavigateToTab?: (tab: string) => void;
   onNavigateToDiscussion?: (discussionId?: string) => void;
 }
 
@@ -25,9 +28,11 @@ interface ProfilePageProps {
 export function ProfilePage({
   userId,
   currentUserId,
+  activeTab = 'menu',
   onBack,
   onNavigateToFeed,
   onNavigateToDiscussion,
+  onNavigateToTab,
 }: ProfilePageProps) {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -58,7 +63,7 @@ export function ProfilePage({
   const [uploadingCert, setUploadingCert] = useState<boolean>(false);
 
   // Follow states
-  const [followStatus, setFollowStatus] = useState<string>('NONE');
+  const [followStatus, setFollowStatus] = useState<'NONE' | 'PENDING' | 'CONNECTED' | 'REQUEST_SENT' | 'FOLLOWING' | 'MUTUAL' | 'FOLLOWED_BY'>('NONE');
   const [isLoadingFollow, setIsLoadingFollow] = useState<boolean>(false);
   const [requestId, setRequestId] = useState<string | null>(null);
 
@@ -84,8 +89,7 @@ export function ProfilePage({
     likes: 0
   });
 
-  // Active tab state
-  const [activeTab, setActiveTab] = useState<"posts" | "discussions" | "bookmarks" | "likedPosts" | "likedDiscussions" | "followers" | "following">("posts");
+
 
   useEffect(() => {
     if (targetUserId) {
@@ -106,7 +110,7 @@ export function ProfilePage({
     setIsLoadingFollow(true);
     try {
       const status = await networkApi.getFollowStatus(targetUserId);
-      setFollowStatus(status.status);
+      setFollowStatus(status.status as 'NONE' | 'PENDING' | 'CONNECTED' | 'REQUEST_SENT' | 'FOLLOWING' | 'MUTUAL' | 'FOLLOWED_BY');
       setRequestId(status.requestId || null);
     } catch (error) {
       console.error("Failed to load follow status:", error);
@@ -119,7 +123,7 @@ export function ProfilePage({
 
   async function loadFollowersData() {
     if (!targetUserId) return;
-    
+
     try {
       const followersData = await networkApi.getFollowers();
       setFollowers(Array.isArray(followersData) ? followersData : []);
@@ -131,7 +135,7 @@ export function ProfilePage({
 
   async function loadFollowingData() {
     if (!targetUserId) return;
-    
+
     try {
       const followingData = await profileApi.getFollowing();
       setFollowing(Array.isArray(followingData) ? followingData : []);
@@ -166,9 +170,9 @@ export function ProfilePage({
       stats.likes = typeof profileData.likes === "number"
         ? profileData.likes
         : (
-            (typeof profileData.likeCount === "number" && profileData.likeCount) ||
-            0
-          );
+          (typeof profileData.likeCount === "number" && profileData.likeCount) ||
+          0
+        );
     } catch (err: any) {
       const emptyProfile = {
         id: targetUserId ?? "",
@@ -390,15 +394,15 @@ export function ProfilePage({
   // Handle follow/unfollow from tabs
   const handleFollowUser = async (userId: string) => {
     if (!currentUserId || userId === currentUserId || isOwnProfile) return;
-    
+
     try {
       await profileApi.followUser(userId);
-      
+
       // Update followers list if the user is in followers tab
-      setFollowers(prev => prev.map(user => 
+      setFollowers(prev => prev.map(user =>
         user.id === userId ? { ...user, isFollowingBack: true } : user
       ));
-      
+
       // Reload profile data to update counts
       await loadProfileData();
       alert('Successfully followed user!');
@@ -410,19 +414,19 @@ export function ProfilePage({
 
   const handleUnfollowUser = async (userId: string) => {
     if (!currentUserId || userId === currentUserId || isOwnProfile) return;
-    
+
     if (!window.confirm('Are you sure you want to unfollow this user?')) return;
-    
+
     try {
       await profileApi.unfollowUser(userId);
-      
+
       // Update both followers and following lists
-      setFollowers(prev => prev.map(user => 
+      setFollowers(prev => prev.map(user =>
         user.id === userId ? { ...user, isFollowingBack: false } : user
       ));
-      
+
       setFollowing(prev => prev.filter(user => user.id !== userId));
-      
+
       // Reload profile data to update counts
       await loadProfileData();
       alert('Successfully unfollowed user!');
@@ -521,7 +525,7 @@ export function ProfilePage({
             (p: any) =>
               (p.title && p.title.toLowerCase().includes(q)) ||
               (p.content && p.content.toLowerCase().includes(q))
-            )
+          )
           : []
       );
       setDiscussions((prev = []) =>
@@ -530,7 +534,7 @@ export function ProfilePage({
             (d: any) =>
               (d.title && d.title.toLowerCase().includes(q)) ||
               (d.description && d.description.toLowerCase().includes(q))
-            )
+          )
           : []
       );
     }
@@ -540,7 +544,7 @@ export function ProfilePage({
     if (!window.confirm("Are you sure you want to delete this certification?")) return;
     try {
       await profileApi.deleteCertification(certId);
-    } catch (err) {}
+    } catch (err) { }
     setCertifications((certs) => certs.filter((c) => c.id !== certId));
   };
 
@@ -575,9 +579,9 @@ export function ProfilePage({
       fileType,
       tags: newCert.tags
         ? newCert.tags
-            .split(",")
-            .map((t) => t.trim())
-            .filter((t) => t)
+          .split(",")
+          .map((t) => t.trim())
+          .filter((t) => t)
         : [],
     };
 
@@ -649,107 +653,212 @@ export function ProfilePage({
           </div>
         </div>
 
-        {/* Profile Header */}
-        <ProfileHeader
-          profile={profile}
-          isOwnProfile={isOwnProfile}
-          onEditProfile={handleEditProfile}
-          onPhotoUpdate={handlePhotoUpdate}
-          connectionStatus={followStatus}
-        />
+        {/* Sub-Page Content Rendering */}
+        {activeTab && activeTab !== 'posts' && activeTab === 'menu' ? (
+          /* This condition effectively handles 'menu' or undefined if we pass 'menu' as default from App.tsx 
+             Wait, in App.tsx we pass 'posts' as default activeTab? No, we pass 'posts', 'discussions', etc.
+             We need a 'menu' state.
+             Let's assume IF activeTab is undefined, we show menu. 
+             But App.tsx passes activeTab prop depending on route. 
+             /profile -> activeTab='menu' (requires App.tsx change)
+             /profile/posts -> activeTab='posts'
+          */
+          null
+        ) : null}
 
-        {/* Follow Button Section */}
-        {!isOwnProfile && (
-          <div className="mt-4 flex justify-end">
-            {getFollowButton()}
-          </div>
-        )}
+        {/* 
+           We need to restructure the logic. 
+           If sub-page is active, we hide Header/Stats/Menu and show ONLY the sub-page content with back button.
+        */}
 
-        <div className="mt-6">
-          <ProfileStats
-            followerCount={profileStats.followers}
-            followingCount={profileStats.following}
-            postCount={profileStats.posts}
-            discussionCount={profileStats.discussions}
-            likesCount={profileStats.likes}
-          />
-        </div>
+        {(activeTab === 'menu' || !activeTab) ? (
+          <>
+            {/* Main Profile Dashboard View */}
 
-        {/* Certifications Section */}
-        <div className="mt-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <Award className="w-5 h-5 text-constitution-gold" />
-              <h2 className="font-heading font-bold text-judge-ivory">
-                Certifications & Qualifications
-              </h2>
-            </div>
-            {isOwnProfile && (
-              <button
-                onClick={() => setShowAddCertModal(true)}
-                className="flex items-center gap-1 px-3 py-1.5 bg-constitution-gold text-justice-black rounded-lg font-medium text-sm hover:bg-constitution-gold/90"
-                type="button"
-              >
-                <Plus className="w-4 h-4" />
-                Add Certification
-              </button>
+            {/* Profile Header */}
+            <ProfileHeader
+              profile={profile}
+              isOwnProfile={isOwnProfile}
+              onEditProfile={handleEditProfile}
+              onPhotoUpdate={handlePhotoUpdate}
+              connectionStatus={followStatus}
+            />
+
+            {/* Follow Button Section */}
+            {!isOwnProfile && (
+              <div className="mt-4 flex justify-end">
+                {getFollowButton()}
+              </div>
             )}
-          </div>
-          {(Array.isArray(certifications) && certifications.length > 0) ? (
-            <div className="space-y-3">
-              {certifications.map((cert) => (
-                <CertificationCard
-                  key={cert.id}
-                  certification={cert}
-                  isOwnProfile={isOwnProfile}
-                  onDelete={handleDeleteCertification}
-                />
-              ))}
+
+            <div className="mt-6">
+              <ProfileStats
+                followerCount={profileStats.followers}
+                followingCount={profileStats.following}
+                postCount={profileStats.posts}
+                discussionCount={profileStats.discussions}
+                likesCount={profileStats.likes}
+              />
             </div>
-          ) : (
-            <div className="aged-paper rounded-lg p-8 text-center border border-constitution-gold/20">
-              <Award className="w-12 h-12 text-ink-gray/30 mx-auto mb-3" />
-              <p className="text-ink-gray/60">No certifications added yet</p>
-              {isOwnProfile && (
-                <button
-                  onClick={() => setShowAddCertModal(true)}
-                  className="mt-3 text-constitution-gold hover:underline text-sm"
-                  type="button"
-                >
-                  Add your first certification
-                </button>
+
+            {/* Certifications Section */}
+            <div className="mt-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <Award className="w-5 h-5 text-constitution-gold" />
+                  <h2 className="font-heading font-bold text-judge-ivory">
+                    Certifications & Qualifications
+                  </h2>
+                </div>
+                {isOwnProfile && (
+                  <button
+                    onClick={() => setShowAddCertModal(true)}
+                    className="flex items-center gap-1 px-3 py-1.5 bg-constitution-gold text-justice-black rounded-lg font-medium text-sm hover:bg-constitution-gold/90"
+                    type="button"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Add Certification
+                  </button>
+                )}
+              </div>
+              {(Array.isArray(certifications) && certifications.length > 0) ? (
+                <div className="space-y-3">
+                  {certifications.map((cert) => (
+                    <CertificationCard
+                      key={cert.id}
+                      certification={cert}
+                      isOwnProfile={isOwnProfile}
+                      onDelete={handleDeleteCertification}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="aged-paper rounded-lg p-8 text-center border border-constitution-gold/20">
+                  <Award className="w-12 h-12 text-ink-gray/30 mx-auto mb-3" />
+                  <p className="text-ink-gray/60">No certifications added yet</p>
+                  {isOwnProfile && (
+                    <button
+                      onClick={() => setShowAddCertModal(true)}
+                      className="mt-3 text-constitution-gold hover:underline text-sm"
+                      type="button"
+                    >
+                      Add your first certification
+                    </button>
+                  )}
+                </div>
               )}
             </div>
-          )}
-        </div>
 
-        {/* --------- ProfileTabs with followers/following --------- */}
-        <div className="mt-6">
-          <ProfileTabs
-            posts={posts}
-            discussions={discussions}
-            bookmarks={bookmarks}
-            likedPosts={likedPosts}
-            likedDiscussions={likedDiscussions}
-            followers={followers}
-            following={following}
-            isOwnProfile={isOwnProfile}
-            onCreatePost={() => {
-              // Handle post creation
-              if (onNavigateToFeed) onNavigateToFeed();
-            }}
-            onCreateDiscussion={handleCreateDiscussion}
-            onPostClick={(postId) => {
-              if (onNavigateToFeed) onNavigateToFeed();
-            }}
-            onDiscussionClick={(discussionId) => {
-              if (onNavigateToDiscussion) onNavigateToDiscussion(discussionId);
-            }}
-            onUserClick={handleUserClick}
-            onFollow={handleFollowUser}
-            onUnfollow={handleUnfollowUser}
-          />
-        </div>
+            {/* Menu Grid */}
+            <div className="mt-8">
+              <h3 className="font-heading font-bold text-xl text-judge-ivory mb-4">Profile Content</h3>
+              <ProfileMenuGrid
+                menuStats={{
+                  posts: profileStats.posts,
+                  discussions: profileStats.discussions,
+                  followers: profileStats.followers,
+                  following: profileStats.following,
+                  bookmarks: bookmarks.length,
+                  likedPosts: likedPosts.length,
+                  likedDiscussions: likedDiscussions.length
+                }}
+                isOwnProfile={isOwnProfile}
+                onNavigate={(view) => onNavigateToTab?.(view)}
+              />
+            </div>
+          </>
+        ) : (
+          /* Sub-Page Views */
+          <div className="mt-4">
+            {activeTab === 'posts' && (
+              <>
+                <ProfileViewHeader title="Posts" onBack={() => onNavigateToTab?.('menu')} />
+                <PostList
+                  posts={posts}
+                  onPostClick={(id) => onNavigateToFeed?.()} // Assuming feed has details, or implement detail view
+                />
+                {isOwnProfile && (
+                  <button onClick={() => onNavigateToFeed?.()} className="fixed bottom-8 right-8 p-4 bg-constitution-gold rounded-full shadow-lg text-justice-black hover:bg-constitution-gold/90 transition-transform hover:scale-105 z-10">
+                    <Plus className="w-6 h-6" />
+                  </button>
+                )}
+              </>
+            )}
+
+            {activeTab === 'discussions' && (
+              <>
+                <ProfileViewHeader title="Discussions" onBack={() => onNavigateToTab?.('menu')} />
+                <DiscussionList
+                  discussions={discussions}
+                  onDiscussionClick={(id) => onNavigateToDiscussion?.(id)}
+                />
+                {isOwnProfile && (
+                  <button onClick={handleCreateDiscussion} className="fixed bottom-8 right-8 p-4 bg-constitution-gold rounded-full shadow-lg text-justice-black hover:bg-constitution-gold/90 transition-transform hover:scale-105 z-10">
+                    <Plus className="w-6 h-6" />
+                  </button>
+                )}
+              </>
+            )}
+
+            {activeTab === 'followers' && (
+              <>
+                <ProfileViewHeader title="Followers" onBack={() => onNavigateToTab?.('menu')} />
+                <UserList
+                  users={followers}
+                  isOwnProfile={isOwnProfile}
+                  isFollowerTab={true}
+                  onUserClick={handleUserClick}
+                  onFollow={handleFollowUser}
+                  onUnfollow={handleUnfollowUser}
+                  emptyMessage="No followers yet"
+                />
+              </>
+            )}
+
+            {activeTab === 'following' && (
+              <>
+                <ProfileViewHeader title="Following" onBack={() => onNavigateToTab?.('menu')} />
+                <UserList
+                  users={following}
+                  isOwnProfile={isOwnProfile}
+                  isFollowerTab={false}
+                  onUserClick={handleUserClick}
+                  onFollow={handleFollowUser}
+                  onUnfollow={handleUnfollowUser}
+                  emptyMessage="Not following anyone yet"
+                />
+              </>
+            )}
+
+            {activeTab === 'bookmarks' && (
+              <>
+                <ProfileViewHeader title="Bookmarks" onBack={() => onNavigateToTab?.('menu')} />
+                {/* Reuse lists or specific renderer */}
+                <div className="space-y-4">
+                  {bookmarks.map(b => (
+                    <div key={b.id} className="p-4 bg-justice-black/20 rounded-lg border border-constitution-gold/10">
+                      <h3 className="font-medium text-ink-gray">{b.title}</h3>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+
+            {(activeTab === 'likedPosts' || activeTab === 'profile-liked-posts') && (
+              <>
+                <ProfileViewHeader title="Liked Posts" onBack={() => onNavigateToTab?.('menu')} />
+                <PostList posts={likedPosts} onPostClick={(id) => onNavigateToFeed?.()} />
+              </>
+            )}
+
+            {(activeTab === 'likedDiscussions' || activeTab === 'profile-liked-discussions') && (
+              <>
+                <ProfileViewHeader title="Liked Discussions" onBack={() => onNavigateToTab?.('menu')} />
+                <DiscussionList discussions={likedDiscussions} onDiscussionClick={(id) => onNavigateToDiscussion?.(id)} />
+              </>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Edit Profile Modal */}
@@ -1007,7 +1116,7 @@ export function ProfilePage({
                       onChange={(e) =>
                         setNewCert({ ...newCert, issueDate: e.target.value })
                       }
-                    className="w-full px-4 py-2 bg-justice-black border border-constitution-gold/20 rounded-lg text-judge-ivory focus:outline-none focus:border-constitution-gold/50"
+                      className="w-full px-4 py-2 bg-justice-black border border-constitution-gold/20 rounded-lg text-judge-ivory focus:outline-none focus:border-constitution-gold/50"
                     />
                   </div>
 
@@ -1021,7 +1130,7 @@ export function ProfilePage({
                       onChange={(e) =>
                         setNewCert({ ...newCert, expiryDate: e.target.value })
                       }
-                    className="w-full px-4 py-2 bg-justice-black border border-constitution-gold/20 rounded-lg text-judge-ivory focus:outline-none focus:border-constitution-gold/50"
+                      className="w-full px-4 py-2 bg-justice-black border border-constitution-gold/20 rounded-lg text-judge-ivory focus:outline-none focus:border-constitution-gold/50"
                     />
                   </div>
                 </div>
