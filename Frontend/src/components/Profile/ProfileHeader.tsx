@@ -35,7 +35,7 @@ interface ProfileHeaderProps {
   onConnect?: () => void; // Connect button handler
   onMessage?: () => void; // Message button handler
   onPhotoUpdate?: (type: 'profile' | 'cover', file: File, previewUrl: string) => void;
-  connectionStatus?: 'NONE' | 'PENDING' | 'CONNECTED' | 'REQUEST_SENT';
+  connectionStatus?: 'NONE' | 'PENDING' | 'CONNECTED' | 'REQUEST_SENT' | 'FOLLOWING' | 'MUTUAL' | 'FOLLOWED_BY';
   notificationCount?: number;
   onViewNotifications?: () => void;
 }
@@ -202,7 +202,7 @@ export function ProfileHeader({
             <UserCheck className="w-4 h-4" />Connected
           </button>
         );
-      
+
       case 'REQUEST_SENT':
         return (
           <button
@@ -213,11 +213,11 @@ export function ProfileHeader({
             <Clock className="w-4 h-4" />Request Sent
           </button>
         );
-      
+
       case 'PENDING':
         // This status is only for receiving requests, not sending
         return null;
-      
+
       case 'NONE':
       default:
         return (
@@ -299,8 +299,8 @@ export function ProfileHeader({
             <div className="flex gap-3">
               {isOwnProfile ? (
                 <>
-                  <button 
-                    onClick={onEditProfile} 
+                  <button
+                    onClick={onEditProfile}
                     className="px-4 py-2 bg-constitution-gold text-justice-black rounded-lg font-medium hover:bg-constitution-gold/90 transition-colors flex items-center gap-2"
                     type="button"
                   >
@@ -326,7 +326,7 @@ export function ProfileHeader({
                   </button>
                 </>
               ) : (
-                <>                  
+                <>
                   {/* Message button */}
                   <button
                     onClick={handleMessageButton}
@@ -335,7 +335,7 @@ export function ProfileHeader({
                   >
                     <MessageSquare className="w-5 h-5 text-constitution-gold" />
                   </button>
-                  
+
                   {/* Share button */}
                   <button
                     onClick={handleShare}
@@ -345,7 +345,7 @@ export function ProfileHeader({
                   >
                     <Share2 className="w-5 h-5 text-constitution-gold" />
                   </button>
-                  
+
                   {/* QR Code button */}
                   <button
                     onClick={() => setShowQrModal(true)}
@@ -379,20 +379,20 @@ export function ProfileHeader({
 
           <div className="flex gap-4">
             {profile.websiteUrl && (
-              <a 
-                href={profile.websiteUrl} 
-                target="_blank" 
-                rel="noopener noreferrer" 
+              <a
+                href={profile.websiteUrl}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="flex items-center gap-1 text-sm text-constitution-gold hover:underline"
               >
                 <Globe className="w-4 h-4" />Website
               </a>
             )}
             {profile.linkedinUrl && (
-              <a 
-                href={profile.linkedinUrl} 
-                target="_blank" 
-                rel="noopener noreferrer" 
+              <a
+                href={profile.linkedinUrl}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="flex items-center gap-1 text-sm text-constitution-gold hover:underline"
               >
                 <Linkedin className="w-4 h-4" />LinkedIn
