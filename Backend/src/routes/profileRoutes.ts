@@ -1,9 +1,8 @@
-// [file name]: routes/profileRoutes.ts
-import express from 'express';
+import { Router, RequestHandler } from 'express';
 import { ProfileController } from '../controllers/profileController';
 import { authenticate } from '../middleware/auth';
 
-const router = express.Router();
+const router = Router();
 
 /* ============================
    FIXED ROUTE ORDER
@@ -11,37 +10,38 @@ const router = express.Router();
 
 /* ---- SPECIAL ROUTES FIRST ---- */
 
-router.get('/search', authenticate, ProfileController.searchUserContent);
-router.get('/bookmarks', authenticate, ProfileController.getBookmarks);
+router.get('/search', authenticate, ProfileController.searchUserContent as RequestHandler);
+router.get('/bookmarks', authenticate, ProfileController.getBookmarks as RequestHandler);
 
-router.get('/liked-posts', authenticate, ProfileController.getLikedPosts);
-router.get('/liked-discussions', authenticate, ProfileController.getLikedDiscussions);
-router.get('/following-discussions', authenticate, ProfileController.getFollowingDiscussions);
+router.get('/liked-posts', authenticate, ProfileController.getLikedPosts as RequestHandler);
+router.get('/liked-discussions', authenticate, ProfileController.getLikedDiscussions as RequestHandler);
+router.get('/following-discussions', authenticate, ProfileController.getFollowingDiscussions as RequestHandler);
 
 /* ---- CERTIFICATIONS ---- */
 
-router.get('/:userId/certifications', authenticate, ProfileController.getCertifications);
-router.post('/certifications', authenticate, ProfileController.addCertification);
-router.delete('/certifications/:certificationId', authenticate, ProfileController.deleteCertification);
+router.get('/:userId/certifications', authenticate, ProfileController.getCertifications as RequestHandler);
+router.post('/certifications', authenticate, ProfileController.addCertification as RequestHandler);
+router.delete('/certifications/:certificationId', authenticate, ProfileController.deleteCertification as RequestHandler);
 
 /* ---- USER CONTENT ---- */
 
-router.get('/:userId/posts', authenticate, ProfileController.getUserPosts);
-router.get('/:userId/discussions', authenticate, ProfileController.getUserDiscussions);
+router.get('/:userId/posts', authenticate, ProfileController.getUserPosts as RequestHandler);
+router.get('/:userId/discussions', authenticate, ProfileController.getUserDiscussions as RequestHandler);
+router.get('/:userId/following-discussions', authenticate, ProfileController.getUserFollowingDiscussions as RequestHandler);
 
 /* ---- FOLLOW PLACEHOLDERS ---- */
 
-router.get('/:userId/followers', authenticate, (req, res) => {
+router.get('/:userId/followers', authenticate, ((req, res) => {
   res.json({ success: true, data: { followers: [] } });
-});
+}) as RequestHandler);
 
-router.get('/:userId/following', authenticate, (req, res) => {
+router.get('/:userId/following', authenticate, ((req, res) => {
   res.json({ success: true, data: { following: [] } });
-});
+}) as RequestHandler);
 
 /* ---- PROFILE CORE (MUST BE LAST) ---- */
 
-router.get('/:userId', authenticate, ProfileController.getProfile);
-router.put('/', authenticate, ProfileController.updateProfile);
+router.get('/:userId', authenticate, ProfileController.getProfile as RequestHandler);
+router.put('/', authenticate, ProfileController.updateProfile as RequestHandler);
 
 export default router;

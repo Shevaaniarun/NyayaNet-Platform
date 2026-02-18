@@ -1,4 +1,4 @@
-import { Router, Request, Response, NextFunction } from 'express';
+import { Router, Request, Response, NextFunction, RequestHandler } from 'express';
 import { UploadController, upload, uploadCertificate } from '../controllers/uploadController';
 import { authenticate } from '../middleware/auth';
 
@@ -16,7 +16,7 @@ router.post(
     authenticate,
     setUploadType('profile'),
     upload.single('photo'),
-    UploadController.uploadProfilePhoto
+    UploadController.uploadProfilePhoto as RequestHandler
 );
 
 // Cover photo upload
@@ -25,7 +25,7 @@ router.post(
     authenticate,
     setUploadType('cover'),
     upload.single('photo'),
-    UploadController.uploadCoverPhoto
+    UploadController.uploadCoverPhoto as RequestHandler
 );
 
 // Certificate file upload
@@ -33,7 +33,7 @@ router.post(
     '/certificate',
     authenticate,
     uploadCertificate.single('certificate'),
-    UploadController.uploadCertificateFile
+    UploadController.uploadCertificateFile as RequestHandler
 );
 
 export default router;

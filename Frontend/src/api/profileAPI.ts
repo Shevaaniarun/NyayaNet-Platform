@@ -200,6 +200,22 @@ export const getUserDiscussions = async (
   }
 };
 
+export const getUserFollowingDiscussions = async (
+  userId: string,
+  page = 1,
+  limit = 20
+) => {
+  try {
+    const response = await profileApi.get(`/profile/${userId}/following-discussions`, {
+      params: { page, limit },
+    });
+    return response.data.data;
+  } catch (error: any) {
+    console.warn('Error fetching following discussions', error);
+    return { discussions: [], pagination: { total: 0, page, limit, pages: 0 } };
+  }
+};
+
 export const getBookmarks = async (
   folder?: string,
   type?: string,

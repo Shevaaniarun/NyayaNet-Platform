@@ -1,6 +1,4 @@
-// src/routes/noteRoutes.ts
-
-import { Router } from "express";
+import { Router, RequestHandler } from "express";
 import {
   createNote,
   getUserNotes,
@@ -22,36 +20,36 @@ const router = Router();
  * Create a new note
  * POST /api/notes
  */
-router.post("/", authenticate, createNote);
+router.post("/", authenticate, createNote as RequestHandler);
 
 /**
  * Get all notes of logged-in user
  * GET /api/notes
  */
-router.get("/", authenticate, getUserNotes);
+router.get("/", authenticate, getUserNotes as RequestHandler);
 
 /**
  * Get a single note by ID
  * GET /api/notes/:id
  */
-router.get("/:id", authenticate, getNoteById);
+router.get("/:id", authenticate, getNoteById as RequestHandler);
 
 /**
  * Update a note
  * PUT /api/notes/:id
  */
-router.put("/:id", authenticate, updateNote);
+router.put("/:id", authenticate, updateNote as RequestHandler);
 
 /**
  * Archive (soft delete) a note
  * PATCH /api/notes/:id/archive
  */
-router.patch("/:id/archive", authenticate, archiveNote);
+router.patch("/:id/archive", authenticate, archiveNote as RequestHandler);
 
 /**
  * Permanently delete a note
  * DELETE /api/notes/:id
  */
-router.delete("/:id", authenticate, deleteNote);
+router.delete("/:id", authenticate, deleteNote as RequestHandler);
 
 export default router;

@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, RequestHandler } from 'express';
 import { DiscussionController } from '../controllers/discussionController';
 import { authenticate, optionalAuthenticate } from '../middleware/auth';
 import { validate } from '../utils/validation';
@@ -60,18 +60,18 @@ const markBestAnswerSchema = {
 };
 
 // Public routes (now with optional authentication for personalization)
-router.get('/', optionalAuthenticate, DiscussionController.getDiscussions);
-router.get('/search', optionalAuthenticate, DiscussionController.searchDiscussions);
-router.get('/:discussionId', optionalAuthenticate, DiscussionController.getDiscussionDetails);
+router.get('/', optionalAuthenticate, DiscussionController.getDiscussions as RequestHandler);
+router.get('/search', optionalAuthenticate, DiscussionController.searchDiscussions as RequestHandler);
+router.get('/:discussionId', optionalAuthenticate, DiscussionController.getDiscussionDetails as RequestHandler);
 
 // Protected routes (require authentication)
-router.post('/', authenticate, validate(createDiscussionSchema), DiscussionController.createDiscussion);
-router.post('/:discussionId/replies', authenticate, validate(createReplySchema), DiscussionController.addReply);
-router.post('/replies/:replyId/upvote', authenticate, DiscussionController.toggleUpvote);
-router.post('/:discussionId/follow', authenticate, DiscussionController.toggleFollow);
-router.post('/:discussionId/upvote', authenticate, DiscussionController.toggleDiscussionUpvote);
-router.post('/:discussionId/save', authenticate, DiscussionController.toggleSave);
-router.post('/:discussionId/best-answer', authenticate, validate(markBestAnswerSchema), DiscussionController.markBestAnswer);
-router.post('/:discussionId/resolve', authenticate, DiscussionController.markResolved);
+router.post('/', authenticate, validate(createDiscussionSchema), DiscussionController.createDiscussion as RequestHandler);
+router.post('/:discussionId/replies', authenticate, validate(createReplySchema), DiscussionController.addReply as RequestHandler);
+router.post('/replies/:replyId/upvote', authenticate, DiscussionController.toggleUpvote as RequestHandler);
+router.post('/:discussionId/follow', authenticate, DiscussionController.toggleFollow as RequestHandler);
+router.post('/:discussionId/upvote', authenticate, DiscussionController.toggleDiscussionUpvote as RequestHandler);
+router.post('/:discussionId/save', authenticate, DiscussionController.toggleSave as RequestHandler);
+router.post('/:discussionId/best-answer', authenticate, validate(markBestAnswerSchema), DiscussionController.markBestAnswer as RequestHandler);
+router.post('/:discussionId/resolve', authenticate, DiscussionController.markResolved as RequestHandler);
 
 export default router;

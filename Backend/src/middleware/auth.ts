@@ -21,7 +21,7 @@ interface MulterFile {
  */
 export interface AuthPayload extends JwtPayload {
   userId: string;
-  id?: string;  // Added for controller compatibility
+  id: string;  // Required for controller compatibility and Express.User types
   role: string;
 }
 
@@ -60,7 +60,7 @@ export const authenticate: RequestHandler = (
       throw new Error("JWT_SECRET is not defined");
     }
 
-    const decoded = jwt.verify(token, JWT_SECRET) as AuthPayload;
+    const decoded = jwt.verify(token, JWT_SECRET) as { userId: string, role: string } & JwtPayload;
 
     // Map userId to id for controller compatibility
     authRequest.user = {
@@ -100,7 +100,7 @@ export const optionalAuthenticate: RequestHandler = (
       return next();
     }
 
-    const decoded = jwt.verify(token, JWT_SECRET) as AuthPayload;
+    const decoded = jwt.verify(token, JWT_SECRET) as { userId: string, role: string } & JwtPayload;
 
     authRequest.user = {
       ...decoded,
