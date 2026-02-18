@@ -1,0 +1,4 @@
+src/middleware/auth.ts(31,18): error TS2430: Interface 'AuthRequest' incorrectly extends interface 'Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>'.
+  Types of property 'user' are incompatible.
+    Type 'AuthPayload' is not assignable to type 'User'.
+      Property 'id' is optional in type 'AuthPayload' but required in type 'User'.

@@ -14,7 +14,7 @@ interface ProfilePageProps {
   currentUserId?: string;
   onBack?: () => void;
   onNavigateToFeed?: () => void;
-  activeTab?: "menu" | "posts" | "discussions" | "bookmarks" | "likedPosts" | "likedDiscussions" | "followers" | "following" | "profile-liked-posts" | "profile-liked-discussions";
+  activeTab?: "menu" | "posts" | "discussions" | "following-discussions" | "bookmarks" | "likedPosts" | "likedDiscussions" | "followers" | "following" | "profile-liked-posts" | "profile-liked-discussions";
   onNavigateToTab?: (tab: string) => void;
   onNavigateToDiscussion?: (discussionId?: string) => void;
 }
@@ -40,6 +40,7 @@ export function ProfilePage({
   const [certifications, setCertifications] = useState<any[]>([]);
   const [posts, setPosts] = useState<any[]>([]);
   const [discussions, setDiscussions] = useState<any[]>([]);
+  const [followingDiscussions, setFollowingDiscussions] = useState<any[]>([]);
   const [bookmarks, setBookmarks] = useState<any[]>([]);
   const [likedPosts, setLikedPosts] = useState<any[]>([]);
   const [likedDiscussions, setLikedDiscussions] = useState<any[]>([]);
@@ -74,18 +75,19 @@ export function ProfilePage({
 
   const targetUserId = userId || currentUserId;
 
-  // Profile Stats State
   const [profileStats, setProfileStats] = useState<{
     followers: number,
     following: number,
     posts: number,
     discussions: number,
+    followingDiscussions: number,
     likes: number
   }>({
     followers: 0,
     following: 0,
     posts: 0,
     discussions: 0,
+    followingDiscussions: 0,
     likes: 0
   });
 
@@ -154,6 +156,7 @@ export function ProfilePage({
       following: 0,
       posts: 0,
       discussions: 0,
+      followingDiscussions: 0,
       likes: 0
     };
 
@@ -167,6 +170,8 @@ export function ProfilePage({
       stats.following = typeof profileData.followingCount === "number" ? profileData.followingCount : 0;
       stats.posts = typeof profileData.postCount === "number" ? profileData.postCount : 0;
       stats.discussions = typeof profileData.discussionCount === "number" ? profileData.discussionCount : 0;
+      // TODO: Add followingDiscussionCount to backend profile data if available, or rely on separate fetch
+      stats.followingDiscussions = 0;
       stats.likes = typeof profileData.likes === "number"
         ? profileData.likes
         : (
@@ -203,6 +208,7 @@ export function ProfilePage({
         following: 0,
         posts: 0,
         discussions: 0,
+        followingDiscussions: 0,
         likes: 0
       };
     }
@@ -226,6 +232,17 @@ export function ProfilePage({
       setDiscussions(discussionsData?.discussions || []);
     } catch (e) {
       setDiscussions([]);
+    }
+
+    try {
+      const followingDiscussionsData = await profileApi.getUserFollowingDiscussions(targetUserId!);
+      setFollowingDiscussions(followingDiscussionsData?.discussions || []);
+      // Update stats with actual count if available
+      if (followingDiscussionsData?.pagination?.total) {
+        stats.followingDiscussions = followingDiscussionsData.pagination.total;
+      }
+    } catch (e) {
+      setFollowingDiscussions([]);
     }
 
     // Load followers and following data
@@ -756,6 +773,7 @@ export function ProfilePage({
                 menuStats={{
                   posts: profileStats.posts,
                   discussions: profileStats.discussions,
+                  followingDiscussions: profileStats.followingDiscussions,
                   followers: profileStats.followers,
                   following: profileStats.following,
                   bookmarks: bookmarks.length,
@@ -797,6 +815,17 @@ export function ProfilePage({
                     <Plus className="w-6 h-6" />
                   </button>
                 )}
+              </>
+            )}
+
+            {activeTab === 'following-discussions' && (
+              <>
+                <ProfileViewHeader title="Following Discussions" onBack={() => onNavigateToTab?.('menu')} />
+                <DiscussionList
+                  discussions={followingDiscussions}
+                  onDiscussionClick={(id) => onNavigateToDiscussion?.(id)}
+                  emptyMessage="Not following any discussions yet"
+                />
               </>
             )}
 

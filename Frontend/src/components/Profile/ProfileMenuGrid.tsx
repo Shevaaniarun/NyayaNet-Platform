@@ -5,6 +5,7 @@ interface ProfileMenuGridProps {
     menuStats: {
         posts: number;
         discussions: number;
+        followingDiscussions: number;
         followers: number;
         following: number;
         bookmarks: number;
@@ -24,6 +25,7 @@ export function ProfileMenuGrid({
     const menuItems = [
         { id: 'posts', label: 'Posts', icon: FileText, count: menuStats.posts },
         { id: 'discussions', label: 'Discussions', icon: MessageSquare, count: menuStats.discussions },
+        { id: 'following-discussions', label: 'Following Discussions', icon: Users, count: menuStats.followingDiscussions },
         { id: 'followers', label: 'Followers', icon: Users, count: menuStats.followers },
         { id: 'following', label: 'Following', icon: UserCheck, count: menuStats.following },
     ];

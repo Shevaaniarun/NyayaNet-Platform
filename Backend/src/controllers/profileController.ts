@@ -238,6 +238,27 @@ export class ProfileController {
     }
   }
 
+  static async getUserFollowingDiscussions(req: Request, res: Response) {
+    try {
+      const { userId } = req.params;
+      const { page = '1', limit = '20' } = req.query;
+
+      const result = await UserModel.getFollowingDiscussions(
+        userId,
+        parseInt(page as string),
+        parseInt(limit as string)
+      );
+
+      return res.json({ success: true, data: result });
+    } catch (error: any) {
+      return res.status(500).json({
+        success: false,
+        message: 'Error fetching following discussions',
+        error: error.message,
+      });
+    }
+  }
+
   static async getBookmarks(req: AuthRequest, res: Response) {
     try {
       const userId = req.user?.id;

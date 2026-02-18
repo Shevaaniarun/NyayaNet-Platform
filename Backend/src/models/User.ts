@@ -220,7 +220,7 @@ export class UserModel {
   }
 
   // ================== FOLLOW METHODS ==================
-  
+
   static async followUser(followerId: string, followingId: string) {
     if (followerId === followingId) {
       throw new Error('Cannot follow yourself');
@@ -337,7 +337,7 @@ export class UserModel {
   }
 
   // ================== EXISTING METHODS ==================
-  
+
   static async getUserPosts(userId: string, page = 1, limit = 20, sort = 'newest') {
     const offset = (page - 1) * limit;
     const orderBy = sort === 'newest' ? 'created_at DESC' : 'created_at ASC';
@@ -412,6 +412,8 @@ export class UserModel {
       }
     };
   }
+
+
 
   static async getUserBookmarks(userId: string, folder?: string, type?: string, page = 1, limit = 20) {
     const offset = (page - 1) * limit;
@@ -632,12 +634,12 @@ export class UserModel {
   }
 
   // Add this method to UserModel class
-static async getLikedPosts(userId: string, page = 1, limit = 20) {
-  const offset = (page - 1) * limit;
-  
-  try {
-    const result = await pool.query(
-      `SELECT p.id, p.title, p.content, p.like_count, p.comment_count, 
+  static async getLikedPosts(userId: string, page = 1, limit = 20) {
+    const offset = (page - 1) * limit;
+
+    try {
+      const result = await pool.query(
+        `SELECT p.id, p.title, p.content, p.like_count, p.comment_count, 
               p.created_at, u.full_name as author_name
        FROM post_likes pl
        JOIN posts p ON pl.post_id = p.id
@@ -645,47 +647,47 @@ static async getLikedPosts(userId: string, page = 1, limit = 20) {
        WHERE pl.user_id = $1
        ORDER BY pl.created_at DESC
        LIMIT $2 OFFSET $3`,
-      [userId, limit, offset]
-    );
+        [userId, limit, offset]
+      );
 
-    const countResult = await pool.query(
-      'SELECT COUNT(*) FROM post_likes WHERE user_id = $1',
-      [userId]
-    );
+      const countResult = await pool.query(
+        'SELECT COUNT(*) FROM post_likes WHERE user_id = $1',
+        [userId]
+      );
 
-    return {
-      posts: result.rows.map(row => ({
-        id: row.id,
-        title: row.title,
-        content: row.content,
-        likeCount: row.like_count || 0,
-        commentCount: row.comment_count || 0,
-        authorName: row.author_name,
-        createdAt: row.created_at?.toISOString()
-      })),
-      pagination: {
-        total: parseInt(countResult.rows[0].count),
-        page,
-        limit,
-        pages: Math.ceil(parseInt(countResult.rows[0].count) / limit)
-      }
-    };
-  } catch (error) {
-    console.error('Error in getLikedPosts:', error);
-    // Return empty results if table doesn't exist yet
-    return {
-      posts: [],
-      pagination: { total: 0, page, limit, pages: 0 }
-    };
+      return {
+        posts: result.rows.map(row => ({
+          id: row.id,
+          title: row.title,
+          content: row.content,
+          likeCount: row.like_count || 0,
+          commentCount: row.comment_count || 0,
+          authorName: row.author_name,
+          createdAt: row.created_at?.toISOString()
+        })),
+        pagination: {
+          total: parseInt(countResult.rows[0].count),
+          page,
+          limit,
+          pages: Math.ceil(parseInt(countResult.rows[0].count) / limit)
+        }
+      };
+    } catch (error) {
+      console.error('Error in getLikedPosts:', error);
+      // Return empty results if table doesn't exist yet
+      return {
+        posts: [],
+        pagination: { total: 0, page, limit, pages: 0 }
+      };
+    }
   }
-}
 
-static async getLikedDiscussions(userId: string, page = 1, limit = 20) {
-  const offset = (page - 1) * limit;
-  
-  try {
-    const result = await pool.query(
-      `SELECT d.id, d.title, d.description, d.category,
+  static async getLikedDiscussions(userId: string, page = 1, limit = 20) {
+    const offset = (page - 1) * limit;
+
+    try {
+      const result = await pool.query(
+        `SELECT d.id, d.title, d.description, d.category,
               d.reply_count, d.upvote_count, d.is_resolved, d.created_at,
               u.full_name as author_name
        FROM discussion_upvotes du
@@ -694,49 +696,49 @@ static async getLikedDiscussions(userId: string, page = 1, limit = 20) {
        WHERE du.user_id = $1
        ORDER BY du.created_at DESC
        LIMIT $2 OFFSET $3`,
-      [userId, limit, offset]
-    );
+        [userId, limit, offset]
+      );
 
-    const countResult = await pool.query(
-      'SELECT COUNT(*) FROM discussion_upvotes WHERE user_id = $1',
-      [userId]
-    );
+      const countResult = await pool.query(
+        'SELECT COUNT(*) FROM discussion_upvotes WHERE user_id = $1',
+        [userId]
+      );
 
-    return {
-      discussions: result.rows.map(row => ({
-        id: row.id,
-        title: row.title,
-        description: row.description,
-        category: row.category,
-        replyCount: row.reply_count || 0,
-        upvoteCount: row.upvote_count || 0,
-        isResolved: row.is_resolved || false,
-        authorName: row.author_name,
-        createdAt: row.created_at?.toISOString()
-      })),
-      pagination: {
-        total: parseInt(countResult.rows[0].count),
-        page,
-        limit,
-        pages: Math.ceil(parseInt(countResult.rows[0].count) / limit)
-      }
-    };
-  } catch (error) {
-    console.error('Error in getLikedDiscussions:', error);
-    // Return empty results if table doesn't exist yet
-    return {
-      discussions: [],
-      pagination: { total: 0, page, limit, pages: 0 }
-    };
+      return {
+        discussions: result.rows.map(row => ({
+          id: row.id,
+          title: row.title,
+          description: row.description,
+          category: row.category,
+          replyCount: row.reply_count || 0,
+          upvoteCount: row.upvote_count || 0,
+          isResolved: row.is_resolved || false,
+          authorName: row.author_name,
+          createdAt: row.created_at?.toISOString()
+        })),
+        pagination: {
+          total: parseInt(countResult.rows[0].count),
+          page,
+          limit,
+          pages: Math.ceil(parseInt(countResult.rows[0].count) / limit)
+        }
+      };
+    } catch (error) {
+      console.error('Error in getLikedDiscussions:', error);
+      // Return empty results if table doesn't exist yet
+      return {
+        discussions: [],
+        pagination: { total: 0, page, limit, pages: 0 }
+      };
+    }
   }
-}
 
-static async getFollowingDiscussions(userId: string, page = 1, limit = 20) {
-  const offset = (page - 1) * limit;
-  
-  try {
-    const result = await pool.query(
-      `SELECT d.id, d.title, d.description, d.category,
+  static async getFollowingDiscussions(userId: string, page = 1, limit = 20) {
+    const offset = (page - 1) * limit;
+
+    try {
+      const result = await pool.query(
+        `SELECT d.id, d.title, d.description, d.category,
               d.reply_count, d.upvote_count, d.is_resolved, d.created_at,
               u.full_name as author_name
        FROM discussion_followers df
@@ -745,302 +747,301 @@ static async getFollowingDiscussions(userId: string, page = 1, limit = 20) {
        WHERE df.user_id = $1
        ORDER BY d.created_at DESC
        LIMIT $2 OFFSET $3`,
-      [userId, limit, offset]
-    );
-
-    const countResult = await pool.query(
-      'SELECT COUNT(*) FROM discussion_followers WHERE user_id = $1',
-      [userId]
-    );
-
-    return {
-      discussions: result.rows.map(row => ({
-        id: row.id,
-        title: row.title,
-        description: row.description,
-        category: row.category,
-        replyCount: row.reply_count || 0,
-        upvoteCount: row.upvote_count || 0,
-        isResolved: row.is_resolved || false,
-        authorName: row.author_name,
-        createdAt: row.created_at?.toISOString()
-      })),
-      pagination: {
-        total: parseInt(countResult.rows[0].count),
-        page,
-        limit,
-        pages: Math.ceil(parseInt(countResult.rows[0].count) / limit)
-      }
-    };
-  } catch (error) {
-    console.error('Error in getFollowingDiscussions:', error);
-    // Return empty results if table doesn't exist yet
-    return {
-      discussions: [],
-      pagination: { total: 0, page, limit, pages: 0 }
-    };
-  }
-}
-/*
-  // ================== CONNECTION REQUEST METHODS ==================
-  
-  static async sendConnectionRequest(requesterId: string, receiverId: string, message?: string) {
-    if (requesterId === receiverId) {
-      throw new Error('Cannot send connection request to yourself');
-    }
-
-    try {
-      // Check if request already exists
-      const existing = await pool.query(
-        `SELECT id FROM connection_requests 
-         WHERE requester_id = $1 AND receiver_id = $2 AND status = 'PENDING'`,
-        [requesterId, receiverId]
+        [userId, limit, offset]
       );
 
-      if (existing.rows.length > 0) {
-        return { success: false, message: 'Request already sent' };
-      }
-
-      // Check if already connected
-      const connected = await pool.query(
-        `SELECT id FROM user_follows 
-         WHERE follower_id = $1 AND following_id = $2 AND status = 'ACCEPTED'`,
-        [requesterId, receiverId]
+      const countResult = await pool.query(
+        'SELECT COUNT(*) FROM discussion_followers WHERE user_id = $1',
+        [userId]
       );
 
-      if (connected.rows.length > 0) {
-        return { success: false, message: 'Already connected' };
-      }
-
-      // Create connection request
-      const result = await pool.query(
-        `INSERT INTO connection_requests (requester_id, receiver_id, request_message, status) 
-         VALUES ($1, $2, $3, 'PENDING') 
-         RETURNING id, requested_at`,
-        [requesterId, receiverId, message || null]
-      );
-
-      return { 
-        success: true, 
-        message: 'Connection request sent',
-        requestId: result.rows[0].id 
+      return {
+        discussions: result.rows.map(row => ({
+          id: row.id,
+          title: row.title,
+          description: row.description,
+          category: row.category,
+          replyCount: row.reply_count || 0,
+          upvoteCount: row.upvote_count || 0,
+          isResolved: row.is_resolved || false,
+          authorName: row.author_name,
+          createdAt: row.created_at?.toISOString()
+        })),
+        pagination: {
+          total: parseInt(countResult.rows[0].count),
+          page,
+          limit,
+          pages: Math.ceil(parseInt(countResult.rows[0].count) / limit)
+        }
       };
     } catch (error) {
-      console.error('Error in sendConnectionRequest:', error);
-      throw error;
+      console.error('Error in getFollowingDiscussions:', error);
+      // Return empty results if table doesn't exist yet
+      return {
+        discussions: [],
+        pagination: { total: 0, page, limit, pages: 0 }
+      };
     }
   }
-
-  static async cancelConnectionRequest(requestId: string, requesterId: string) {
-    try {
-      const result = await pool.query(
-        `DELETE FROM connection_requests 
-         WHERE id = $1 AND requester_id = $2 AND status = 'PENDING'`,
-        [requestId, requesterId]
-      );
-
-      return result.rowCount ? result.rowCount > 0 : false;
-    } catch (error) {
-      console.error('Error in cancelConnectionRequest:', error);
-      throw error;
-    }
-  }
-
-  static async getConnectionStatus(requesterId: string, receiverId: string) {
-    try {
-      // Check if already following
-      const followResult = await pool.query(
-        `SELECT id, status FROM user_follows 
-         WHERE follower_id = $1 AND following_id = $2`,
-        [requesterId, receiverId]
-      );
-
-      if (followResult.rows.length > 0) {
-        return {
-          status: 'CONNECTED',
-          followId: followResult.rows[0].id
-        };
+  /*
+    // ================== CONNECTION REQUEST METHODS ==================
+    
+    static async sendConnectionRequest(requesterId: string, receiverId: string, message?: string) {
+      if (requesterId === receiverId) {
+        throw new Error('Cannot send connection request to yourself');
       }
-
-      // Check for pending request
-      const requestResult = await pool.query(
-        `SELECT id, status, request_message FROM connection_requests 
-         WHERE requester_id = $1 AND receiver_id = $2 AND status = 'PENDING'`,
-        [requesterId, receiverId]
-      );
-
-      if (requestResult.rows.length > 0) {
-        return {
-          status: 'PENDING',
-          requestId: requestResult.rows[0].id,
-          requestMessage: requestResult.rows[0].request_message
-        };
-      }
-
-      return { status: 'NONE' };
-    } catch (error) {
-      console.error('Error in getConnectionStatus:', error);
-      throw error;
-    }
-  }
-
-  // Update acceptFollowRequest to handle connection requests properly
-  static async acceptFollowRequest(requestId: string, receiverId: string) {
-    try {
-      // Get the connection request
-      const requestResult = await pool.query(
-        `SELECT requester_id FROM connection_requests 
-         WHERE id = $1 AND receiver_id = $2 AND status = 'PENDING'`,
-        [requestId, receiverId]
-      );
-
-      if (requestResult.rows.length === 0) {
-        throw new Error('Connection request not found or already processed');
-      }
-
-      const requesterId = requestResult.rows[0].requester_id;
-
-      // Update connection request status
-      await pool.query(
-        `UPDATE connection_requests 
-         SET status = 'ACCEPTED', responded_at = CURRENT_TIMESTAMP 
-         WHERE id = $1`,
-        [requestId]
-      );
-
-      // Create follow relationship (both ways for mutual connection)
-      // User follows the requester
-      const existingFollow1 = await pool.query(
-        'SELECT id FROM user_follows WHERE follower_id = $1 AND following_id = $2',
-        [receiverId, requesterId]
-      );
-
-      if (existingFollow1.rows.length === 0) {
-        await pool.query(
-          `INSERT INTO user_follows (follower_id, following_id, status) 
-           VALUES ($1, $2, 'ACCEPTED')`,
-          [receiverId, requesterId]
-        );
-      }
-
-      // Requester follows the user
-      const existingFollow2 = await pool.query(
-        'SELECT id FROM user_follows WHERE follower_id = $1 AND following_id = $2',
-        [requesterId, receiverId]
-      );
-
-      if (existingFollow2.rows.length === 0) {
-        await pool.query(
-          `INSERT INTO user_follows (follower_id, following_id, status) 
-           VALUES ($1, $2, 'ACCEPTED')`,
+  
+      try {
+        // Check if request already exists
+        const existing = await pool.query(
+          `SELECT id FROM connection_requests 
+           WHERE requester_id = $1 AND receiver_id = $2 AND status = 'PENDING'`,
           [requesterId, receiverId]
         );
-      }
-
-      return { success: true, requesterId };
-    } catch (error) {
-      console.error('Error in acceptFollowRequest:', error);
-      throw error;
-    }
-  }
-
-  // Update rejectFollowRequest
-  static async rejectFollowRequest(requestId: string, receiverId: string) {
-    try {
-      const result = await pool.query(
-        `UPDATE connection_requests 
-         SET status = 'REJECTED', responded_at = CURRENT_TIMESTAMP 
-         WHERE id = $1 AND receiver_id = $2 AND status = 'PENDING'`,
-        [requestId, receiverId]
-      );
-
-      return result.rowCount ? result.rowCount > 0 : false;
-    } catch (error) {
-      console.error('Error in rejectFollowRequest:', error);
-      throw error;
-    }
-  }
-
-  // Get pending connection requests for a user
-  static async getPendingConnectionRequests(userId: string) {
-    try {
-      const result = await pool.query(
-        `SELECT cr.*, 
-                u.full_name, u.profile_photo_url, u.designation, u.organization,
-                u.role, u.location, u.experience_years
-         FROM connection_requests cr
-         JOIN users u ON cr.requester_id = u.id
-         WHERE cr.receiver_id = $1 AND cr.status = 'PENDING'
-         ORDER BY cr.requested_at DESC`,
-        [userId]
-      );
-
-      return result.rows.map(row => ({
-        id: row.id,
-        requesterId: row.requester_id,
-        receiverId: row.receiver_id,
-        status: row.status,
-        requestMessage: row.request_message,
-        requestedAt: row.requested_at,
-        respondedAt: row.responded_at,
-        user: {
-          id: row.requester_id,
-          fullName: row.full_name,
-          profilePhotoUrl: row.profile_photo_url,
-          designation: row.designation,
-          organization: row.organization,
-          role: row.role,
-          location: row.location,
-          experienceYears: row.experience_years
-        }
-      }));
-    } catch (error) {
-      console.error('Error in getPendingConnectionRequests:', error);
-      throw error;
-    }
-  }
-
-  // Get sent connection requests
-  static async getSentConnectionRequests(userId: string) {
-    try {
-      const result = await pool.query(
-        `SELECT cr.*, 
-                u.full_name, u.profile_photo_url, u.designation, u.organization
-         FROM connection_requests cr
-         JOIN users u ON cr.receiver_id = u.id
-         WHERE cr.requester_id = $1 AND cr.status = 'PENDING'
-         ORDER BY cr.requested_at DESC`,
-        [userId]
-      );
-
-      return result.rows;
-    } catch (error) {
-      console.error('Error in getSentConnectionRequests:', error);
-      throw error;
-    }
-  }
-
-  // Get connections/followers (mutual follows)
-  static async getConnections(userId: string) {
-    try {
-      const result = await pool.query(
-        `SELECT u.* 
-         FROM users u
-         JOIN user_follows uf1 ON u.id = uf1.following_id
-         JOIN user_follows uf2 ON u.id = uf2.follower_id
-         WHERE uf1.follower_id = $1 
-           AND uf2.following_id = $1
-           AND uf1.status = 'ACCEPTED'
-           AND uf2.status = 'ACCEPTED'`,
-        [userId]
-      );
-
-      return result.rows;
-    } catch (error) {
-      console.error('Error in getConnections:', error);
-      throw error;
-    }
-  }
-  */
-}
   
+        if (existing.rows.length > 0) {
+          return { success: false, message: 'Request already sent' };
+        }
+  
+        // Check if already connected
+        const connected = await pool.query(
+          `SELECT id FROM user_follows 
+           WHERE follower_id = $1 AND following_id = $2 AND status = 'ACCEPTED'`,
+          [requesterId, receiverId]
+        );
+  
+        if (connected.rows.length > 0) {
+          return { success: false, message: 'Already connected' };
+        }
+  
+        // Create connection request
+        const result = await pool.query(
+          `INSERT INTO connection_requests (requester_id, receiver_id, request_message, status) 
+           VALUES ($1, $2, $3, 'PENDING') 
+           RETURNING id, requested_at`,
+          [requesterId, receiverId, message || null]
+        );
+  
+        return { 
+          success: true, 
+          message: 'Connection request sent',
+          requestId: result.rows[0].id 
+        };
+      } catch (error) {
+        console.error('Error in sendConnectionRequest:', error);
+        throw error;
+      }
+    }
+  
+    static async cancelConnectionRequest(requestId: string, requesterId: string) {
+      try {
+        const result = await pool.query(
+          `DELETE FROM connection_requests 
+           WHERE id = $1 AND requester_id = $2 AND status = 'PENDING'`,
+          [requestId, requesterId]
+        );
+  
+        return result.rowCount ? result.rowCount > 0 : false;
+      } catch (error) {
+        console.error('Error in cancelConnectionRequest:', error);
+        throw error;
+      }
+    }
+  
+    static async getConnectionStatus(requesterId: string, receiverId: string) {
+      try {
+        // Check if already following
+        const followResult = await pool.query(
+          `SELECT id, status FROM user_follows 
+           WHERE follower_id = $1 AND following_id = $2`,
+          [requesterId, receiverId]
+        );
+  
+        if (followResult.rows.length > 0) {
+          return {
+            status: 'CONNECTED',
+            followId: followResult.rows[0].id
+          };
+        }
+  
+        // Check for pending request
+        const requestResult = await pool.query(
+          `SELECT id, status, request_message FROM connection_requests 
+           WHERE requester_id = $1 AND receiver_id = $2 AND status = 'PENDING'`,
+          [requesterId, receiverId]
+        );
+  
+        if (requestResult.rows.length > 0) {
+          return {
+            status: 'PENDING',
+            requestId: requestResult.rows[0].id,
+            requestMessage: requestResult.rows[0].request_message
+          };
+        }
+  
+        return { status: 'NONE' };
+      } catch (error) {
+        console.error('Error in getConnectionStatus:', error);
+        throw error;
+      }
+    }
+  
+    // Update acceptFollowRequest to handle connection requests properly
+    static async acceptFollowRequest(requestId: string, receiverId: string) {
+      try {
+        // Get the connection request
+        const requestResult = await pool.query(
+          `SELECT requester_id FROM connection_requests 
+           WHERE id = $1 AND receiver_id = $2 AND status = 'PENDING'`,
+          [requestId, receiverId]
+        );
+  
+        if (requestResult.rows.length === 0) {
+          throw new Error('Connection request not found or already processed');
+        }
+  
+        const requesterId = requestResult.rows[0].requester_id;
+  
+        // Update connection request status
+        await pool.query(
+          `UPDATE connection_requests 
+           SET status = 'ACCEPTED', responded_at = CURRENT_TIMESTAMP 
+           WHERE id = $1`,
+          [requestId]
+        );
+  
+        // Create follow relationship (both ways for mutual connection)
+        // User follows the requester
+        const existingFollow1 = await pool.query(
+          'SELECT id FROM user_follows WHERE follower_id = $1 AND following_id = $2',
+          [receiverId, requesterId]
+        );
+  
+        if (existingFollow1.rows.length === 0) {
+          await pool.query(
+            `INSERT INTO user_follows (follower_id, following_id, status) 
+             VALUES ($1, $2, 'ACCEPTED')`,
+            [receiverId, requesterId]
+          );
+        }
+  
+        // Requester follows the user
+        const existingFollow2 = await pool.query(
+          'SELECT id FROM user_follows WHERE follower_id = $1 AND following_id = $2',
+          [requesterId, receiverId]
+        );
+  
+        if (existingFollow2.rows.length === 0) {
+          await pool.query(
+            `INSERT INTO user_follows (follower_id, following_id, status) 
+             VALUES ($1, $2, 'ACCEPTED')`,
+            [requesterId, receiverId]
+          );
+        }
+  
+        return { success: true, requesterId };
+      } catch (error) {
+        console.error('Error in acceptFollowRequest:', error);
+        throw error;
+      }
+    }
+  
+    // Update rejectFollowRequest
+    static async rejectFollowRequest(requestId: string, receiverId: string) {
+      try {
+        const result = await pool.query(
+          `UPDATE connection_requests 
+           SET status = 'REJECTED', responded_at = CURRENT_TIMESTAMP 
+           WHERE id = $1 AND receiver_id = $2 AND status = 'PENDING'`,
+          [requestId, receiverId]
+        );
+  
+        return result.rowCount ? result.rowCount > 0 : false;
+      } catch (error) {
+        console.error('Error in rejectFollowRequest:', error);
+        throw error;
+      }
+    }
+  
+    // Get pending connection requests for a user
+    static async getPendingConnectionRequests(userId: string) {
+      try {
+        const result = await pool.query(
+          `SELECT cr.*, 
+                  u.full_name, u.profile_photo_url, u.designation, u.organization,
+                  u.role, u.location, u.experience_years
+           FROM connection_requests cr
+           JOIN users u ON cr.requester_id = u.id
+           WHERE cr.receiver_id = $1 AND cr.status = 'PENDING'
+           ORDER BY cr.requested_at DESC`,
+          [userId]
+        );
+  
+        return result.rows.map(row => ({
+          id: row.id,
+          requesterId: row.requester_id,
+          receiverId: row.receiver_id,
+          status: row.status,
+          requestMessage: row.request_message,
+          requestedAt: row.requested_at,
+          respondedAt: row.responded_at,
+          user: {
+            id: row.requester_id,
+            fullName: row.full_name,
+            profilePhotoUrl: row.profile_photo_url,
+            designation: row.designation,
+            organization: row.organization,
+            role: row.role,
+            location: row.location,
+            experienceYears: row.experience_years
+          }
+        }));
+      } catch (error) {
+        console.error('Error in getPendingConnectionRequests:', error);
+        throw error;
+      }
+    }
+  
+    // Get sent connection requests
+    static async getSentConnectionRequests(userId: string) {
+      try {
+        const result = await pool.query(
+          `SELECT cr.*, 
+                  u.full_name, u.profile_photo_url, u.designation, u.organization
+           FROM connection_requests cr
+           JOIN users u ON cr.receiver_id = u.id
+           WHERE cr.requester_id = $1 AND cr.status = 'PENDING'
+           ORDER BY cr.requested_at DESC`,
+          [userId]
+        );
+  
+        return result.rows;
+      } catch (error) {
+        console.error('Error in getSentConnectionRequests:', error);
+        throw error;
+      }
+    }
+  
+    // Get connections/followers (mutual follows)
+    static async getConnections(userId: string) {
+      try {
+        const result = await pool.query(
+          `SELECT u.* 
+           FROM users u
+           JOIN user_follows uf1 ON u.id = uf1.following_id
+           JOIN user_follows uf2 ON u.id = uf2.follower_id
+           WHERE uf1.follower_id = $1 
+             AND uf2.following_id = $1
+             AND uf1.status = 'ACCEPTED'
+             AND uf2.status = 'ACCEPTED'`,
+          [userId]
+        );
+  
+        return result.rows;
+      } catch (error) {
+        console.error('Error in getConnections:', error);
+        throw error;
+      }
+    }
+    */
+}

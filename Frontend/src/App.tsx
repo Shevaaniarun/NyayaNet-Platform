@@ -48,7 +48,8 @@ type ViewType =
     | 'profile-following'
     | 'profile-bookmarks'
     | 'profile-liked-posts'
-    | 'profile-liked-discussions';
+    | 'profile-liked-discussions'
+    | 'profile-group-discussions';
 
 const getCurrentUser = () => {
     const userStr = localStorage.getItem('user');
@@ -169,6 +170,7 @@ export default function App() {
                     '/profile': 'profile',
                     '/profile/posts': 'profile-posts',
                     '/profile/discussions': 'profile-discussions',
+                    '/profile/group-discussions': 'profile-group-discussions',
                     '/profile/followers': 'profile-followers',
                     '/profile/following': 'profile-following',
                     '/profile/bookmarks': 'profile-bookmarks',
@@ -296,6 +298,7 @@ export default function App() {
             '/profile': 'profile',
             '/profile/posts': 'profile-posts',
             '/profile/discussions': 'profile-discussions',
+            '/profile/following-discussions': 'profile-following-discussions',
             '/profile/followers': 'profile-followers',
             '/profile/following': 'profile-following',
             '/profile/bookmarks': 'profile-bookmarks',

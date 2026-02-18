@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, RequestHandler } from 'express';
 import {
   getDashboardOverview,
   getContributionHeatmap,
@@ -16,14 +16,14 @@ const router = Router();
  * Base path: /api/dashboard
  */
 
-router.get('/overview', authenticate, getDashboardOverview);
+router.get('/overview', authenticate, getDashboardOverview as RequestHandler);
 
-router.get('/heatmap', authenticate, getContributionHeatmap);
+router.get('/heatmap', authenticate, getContributionHeatmap as RequestHandler);
 
-router.get('/activity-feed', authenticate, getActivityFeed);
+router.get('/activity-feed', authenticate, getActivityFeed as RequestHandler);
 
-router.get('/breakdown', authenticate, getContributionBreakdown);
+router.get('/breakdown', authenticate, getContributionBreakdown as RequestHandler);
 
-router.get('/badges', authenticate, getUserBadges);
+router.get('/badges', authenticate, getUserBadges as RequestHandler);
 
 export default router;
