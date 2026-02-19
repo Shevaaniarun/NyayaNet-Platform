@@ -1,6 +1,6 @@
 export interface PostMediaInput {
   mediaType: 'IMAGE' | 'PDF' | 'DOCUMENT';
-  mediaData: Buffer;         // Binary file data stored in DB
+  mediaData: Buffer | string; // Support both for transport and storage
   mediaMimeType: string;     // e.g. 'image/jpeg', 'application/pdf'
   fileName: string;
   fileSize: number;

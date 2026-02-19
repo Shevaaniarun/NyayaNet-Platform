@@ -31,7 +31,7 @@ export class PostController {
         mediaType: file.mimetype.startsWith("image/") ? "IMAGE" as const
           : file.mimetype === "application/pdf" ? "PDF" as const
             : "DOCUMENT" as const,
-        mediaData: file.buffer,
+        mediaData: file.buffer.toString('base64'),
         mediaMimeType: file.mimetype,
         fileName: file.originalname,
         fileSize: file.size,
@@ -103,7 +103,11 @@ export class PostController {
       // Convert base64 media data back to Buffers if sent via JSON
       const processedMedia: PostMediaInput[] = (media || []).map((m: any) => ({
         mediaType: m.mediaType,
-        mediaData: m.mediaData ? (typeof m.mediaData === 'string' ? Buffer.from(m.mediaData, 'base64') : m.mediaData) : Buffer.alloc(0),
+        mediaData: m.mediaData ? (
+          typeof m.mediaData === 'string'
+            ? Buffer.from(m.mediaData, 'base64')
+            : (m.mediaData.type === 'Buffer' ? Buffer.from(m.mediaData.data) : m.mediaData)
+        ) : Buffer.alloc(0),
         mediaMimeType: m.mediaMimeType || m.mimeType || 'application/octet-stream',
         fileName: m.fileName || 'unnamed',
         fileSize: m.fileSize || 0,
