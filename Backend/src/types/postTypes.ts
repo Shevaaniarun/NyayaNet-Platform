@@ -1,10 +1,9 @@
 export interface PostMediaInput {
   mediaType: 'IMAGE' | 'PDF' | 'DOCUMENT';
-  mediaUrl: string;
-  thumbnailUrl?: string;
-  fileName?: string;
-  fileSize?: number;
-  mimeType?: string;
+  mediaData: Buffer;         // Binary file data stored in DB
+  mediaMimeType: string;     // e.g. 'image/jpeg', 'application/pdf'
+  fileName: string;
+  fileSize: number;
 }
 
 export interface Post {
@@ -56,4 +55,3 @@ export interface PostFilters {
   q?: string;
   following?: boolean;
 }
-

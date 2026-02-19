@@ -5,9 +5,10 @@ import { UserBookmarkModel } from './UserBookmark';
 export interface PostMedia {
   id: string;
   mediaType: string;
-  mediaUrl: string;
-  thumbnailUrl: string | null;
+  mediaUrl: string | null; // Added for legacy support
+  mediaMimeType: string;
   fileName: string | null;
+  fileSize: number | null;
   displayOrder: number;
 }
 
@@ -48,28 +49,29 @@ export class PostModel {
 
       const post = result.rows[0];
 
-      // Insert media if any
+      // Insert media with binary data into DB
       if (media.length > 0) {
-        const mediaValues: any[] = [];
-        const mediaPlaceholders: string[] = [];
-        let pIdx = 1;
-
-        media.forEach((m: PostMediaInput, index) => {
-          mediaValues.push(post.id, m.mediaType, m.mediaUrl, m.thumbnailUrl || null, m.fileName || null, m.fileSize || null, m.mimeType || null, index);
-          mediaPlaceholders.push(`($${pIdx}, $${pIdx + 1}, $${pIdx + 2}, $${pIdx + 3}, $${pIdx + 4}, $${pIdx + 5}, $${pIdx + 6}, $${pIdx + 7})`);
-          pIdx += 8;
-        });
-
-        await client.query(
-          `INSERT INTO post_media (post_id, media_type, media_url, thumbnail_url, file_name, file_size, mime_type, display_order)
-                     VALUES ${mediaPlaceholders.join(', ')}`,
-          mediaValues
-        );
+        for (let index = 0; index < media.length; index++) {
+          const m = media[index];
+          await client.query(
+            `INSERT INTO post_media (post_id, media_type, media_data, media_mime_type, file_name, file_size, display_order)
+             VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+            [
+              post.id,
+              m.mediaType,
+              m.mediaData,
+              m.mediaMimeType,
+              m.fileName || null,
+              m.fileSize || null,
+              index
+            ]
+          );
+        }
       }
 
       await client.query('COMMIT');
 
-      // Fetch complete post with media
+      // Fetch complete post with media metadata (not binary data)
       return this.findById(post.id) as Promise<PostResponse>;
     } catch (error) {
       await client.query('ROLLBACK');
@@ -90,8 +92,9 @@ export class PostModel {
                         'id', pm.id,
                         'mediaType', pm.media_type,
                         'mediaUrl', pm.media_url,
-                        'thumbnailUrl', pm.thumbnail_url,
+                        'mediaMimeType', pm.media_mime_type,
                         'fileName', pm.file_name,
+                        'fileSize', pm.file_size,
                         'displayOrder', pm.display_order
                     ) ORDER BY pm.display_order ASC
                 ) FILTER (WHERE pm.id IS NOT NULL),
@@ -110,6 +113,25 @@ export class PostModel {
 
     const row = result.rows[0];
     return this.mapRowToResponse(result.rows[0]);
+  }
+
+  /**
+   * Fetch the raw binary media data for a specific media item.
+   * Used by the media-serving endpoint.
+   */
+  static async getMediaData(mediaId: string): Promise<{ mediaData: Buffer; mediaMimeType: string; fileName: string } | null> {
+    const result = await pool.query(
+      `SELECT media_data, media_mime_type, file_name FROM post_media WHERE id = $1`,
+      [mediaId]
+    );
+
+    if (!result.rows[0] || !result.rows[0].media_data) return null;
+
+    return {
+      mediaData: result.rows[0].media_data,
+      mediaMimeType: result.rows[0].media_mime_type,
+      fileName: result.rows[0].file_name
+    };
   }
 
   static async update(id: string, userId: string, updates: Partial<CreatePostInput>): Promise<PostResponse | null> {
@@ -150,25 +172,26 @@ export class PostModel {
 
       // Handle media updates if provided
       if (updates.media !== undefined) {
-        // Simple strategy: Clear old media and insert new ones
+        // Clear old media and insert new ones
         await client.query('DELETE FROM post_media WHERE post_id = $1', [id]);
 
         if (updates.media.length > 0) {
-          const mediaValues: any[] = [];
-          const mediaPlaceholders: string[] = [];
-          let pIdx = 1;
-
-          updates.media.forEach((m: PostMediaInput, index) => {
-            mediaValues.push(id, m.mediaType, m.mediaUrl, m.thumbnailUrl || null, m.fileName || null, m.fileSize || null, m.mimeType || null, index);
-            mediaPlaceholders.push(`($${pIdx}, $${pIdx + 1}, $${pIdx + 2}, $${pIdx + 3}, $${pIdx + 4}, $${pIdx + 5}, $${pIdx + 6}, $${pIdx + 7})`);
-            pIdx += 8;
-          });
-
-          await client.query(
-            `INSERT INTO post_media (post_id, media_type, media_url, thumbnail_url, file_name, file_size, mime_type, display_order)
-             VALUES ${mediaPlaceholders.join(', ')}`,
-            mediaValues
-          );
+          for (let index = 0; index < updates.media.length; index++) {
+            const m = updates.media[index];
+            await client.query(
+              `INSERT INTO post_media (post_id, media_type, media_data, media_mime_type, file_name, file_size, display_order)
+               VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+              [
+                id,
+                m.mediaType,
+                m.mediaData,
+                m.mediaMimeType,
+                m.fileName || null,
+                m.fileSize || null,
+                index
+              ]
+            );
+          }
         }
       }
 
@@ -297,7 +320,7 @@ export class PostModel {
         break;
     }
 
-    // Get paginated results
+    // Get paginated results — DO NOT select media_data here (too large)
     const finalParams = [...commonParams];
     const limitIdx = finalParams.length + 1;
     const offsetIdx = finalParams.length + 2;
@@ -314,8 +337,9 @@ export class PostModel {
                         'id', pm.id,
                         'mediaType', pm.media_type,
                         'mediaUrl', pm.media_url,
-                        'thumbnailUrl', pm.thumbnail_url,
+                        'mediaMimeType', pm.media_mime_type,
                         'fileName', pm.file_name,
+                        'fileSize', pm.file_size,
                         'displayOrder', pm.display_order
                     ) ORDER BY pm.display_order ASC
                 ) FILTER (WHERE pm.id IS NOT NULL),
@@ -418,11 +442,6 @@ export class PostModel {
 
       // Increment post comment count
       await client.query('UPDATE posts SET comment_count = comment_count + 1 WHERE id = $1', [postId]);
-
-      // If it's a nested comment, increment parent comment count
-      /*if (parentCommentId) {
-          await client.query('UPDATE post_comments SET comment_count = comment_count + 1 WHERE id = $1', [parentCommentId]);
-      }*/
 
       // Fetch user details
       const userRes = await client.query('SELECT full_name, profile_photo_url FROM users WHERE id = $1', [userId]);
