@@ -111,7 +111,7 @@ export default function App() {
     const [posts, setPosts] = useState<PostComponentType[]>([]);
     const [cases] = useState<CaseItemComponentType[]>([]);
     const [pendingConnectionCount, setPendingConnectionCount] = useState(0);
-    const { unreadCount, refetch: refetchNotificationCount } = useNotificationCount(30000);
+    const { unreadCount, refetch: refetchNotificationCount } = useNotificationCount(60000);
 
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [authView, setAuthView] = useState<"register" | "login">("register");

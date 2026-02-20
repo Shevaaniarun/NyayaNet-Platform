@@ -5,6 +5,8 @@
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { MessagesService } from '../services/messagesService';
+import { NotificationModel } from '../models/Notification';
+import pool from '../config/database'; 
 
 const messagesService = new MessagesService();
 
@@ -85,11 +87,43 @@ export class MessagesController {
         return;
       }
 
-      // For now, only text messages are implemented
       const newMessage = await messagesService.sendMessage(senderId, recipientId, message);
+      // try {
+      //   const userQuery = `
+      //     SELECT full_name as sender_name
+      //     FROM users
+      //     WHERE id = $1
+      //   `;
+      //   const userResult = await pool.query(userQuery, [senderId]);
+
+      //   if (userResult.rows.length > 0) {
+      //     const { sender_name } = userResult.rows[0];
+          
+      //     const conversationId = newMessage.conversation_id;
+
+      //     console.log('📝 Message info:', { sender_name, conversationId, recipientId });
+
+      //     const notificationId = await NotificationModel.createMessageReceivedNotification(
+      //       recipientId,
+      //       senderId,
+      //       sender_name || 'Someone',
+      //       conversationId,
+      //       message,
+      //       messageType
+      //     );
+
+      //     console.log('✅ Message notification created with ID:', notificationId);
+      //   } else {
+      //     console.log('⚠️ Sender not found');
+      //   }
+      // } catch (notifError: any) {
+      //   console.error('❌ Failed to create message notification:', notifError);
+      //   console.error('Stack:', notifError.stack);
+      // }
+
       res.status(201).json(newMessage);
     } catch (error: any) {
-      console.error('Error sending message:', error);
+      console.error('❌ Error sending message:', error);
       res.status(500).json({ error: 'Failed to send message' });
     }
   }

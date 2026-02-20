@@ -3,20 +3,6 @@
 -- Description: Legal Professional Platform Database
 -- =============================================
 
--- Create database
-CREATE DATABASE nyayanet
-    WITH
-    OWNER = postgres
-    ENCODING = 'UTF8'
-    LC_COLLATE = 'en_US.UTF-8'
-    LC_CTYPE = 'en_US.UTF-8'
-    TABLESPACE = pg_default
-    CONNECTION LIMIT = -1
-    IS_TEMPLATE = False;
-
--- Connect to the database
-\c nyayanet;
-
 -- =============================================
 -- CREATE EXTENSIONS
 -- =============================================
@@ -797,6 +783,9 @@ CREATE INDEX idx_activity_logs_user ON activity_logs(user_id);
 CREATE INDEX idx_activity_logs_type ON activity_logs(activity_type);
 CREATE INDEX idx_activity_logs_created ON activity_logs(created_at DESC);
 CREATE INDEX idx_activity_logs_entity ON activity_logs(entity_type, entity_id);
+CREATE UNIQUE INDEX unique_discussion_upvote ON discussion_upvotes(discussion_id, user_id) WHERE discussion_id IS NOT NULL;
+CREATE UNIQUE INDEX unique_reply_upvote ON discussion_upvotes(reply_id, user_id) WHERE reply_id IS NOT NULL;
+
 
 -- Partial indexes for unique constraints with conditions
 CREATE UNIQUE INDEX idx_unique_discussion_upvote ON discussion_upvotes(discussion_id, user_id) WHERE discussion_id IS NOT NULL;
@@ -852,7 +841,7 @@ CREATE TRIGGER update_workspace_notes_updated_at BEFORE UPDATE ON workspace_note
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- Update discussion activity timestamp
-CREATE OR REPLACE FUNCTION update_discussion_activity()
+/*CREATE OR REPLACE FUNCTION update_discussion_activity()
 RETURNS TRIGGER AS $$
 BEGIN
     UPDATE discussions 
@@ -936,7 +925,7 @@ FOR EACH ROW EXECUTE FUNCTION update_user_stats();
 
 CREATE TRIGGER update_user_discussion_stats
 AFTER INSERT OR DELETE ON discussions
-FOR EACH ROW EXECUTE FUNCTION update_user_stats();
+FOR EACH ROW EXECUTE FUNCTION update_user_stats();*/
 
 -- Update conversation timestamp
 CREATE OR REPLACE FUNCTION update_conversation_timestamp()
@@ -954,6 +943,7 @@ CREATE TRIGGER update_conversation_on_message
 AFTER INSERT ON messages
 FOR EACH ROW EXECUTE FUNCTION update_conversation_timestamp();
 
+/*
 -- Update discussion view count
 CREATE OR REPLACE FUNCTION update_discussion_view_count()
 RETURNS TRIGGER AS $$
@@ -1009,7 +999,7 @@ $$ language 'plpgsql';
 
 CREATE TRIGGER update_reply_upvote_count_trigger
 AFTER INSERT OR DELETE ON discussion_upvotes
-FOR EACH ROW EXECUTE FUNCTION update_reply_upvote_count();
+FOR EACH ROW EXECUTE FUNCTION update_reply_upvote_count();*/
 
 -- =============================================
 -- DEFAULT DATA
@@ -1052,8 +1042,8 @@ GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO postgres;
 -- =============================================
 DO $$
 BEGIN
-    RAISE NOTICE '✅ Database schema created successfully!';
-    RAISE NOTICE '📊 Tables created: 27';
-    RAISE NOTICE '📈 Indexes created: 50';
-    RAISE NOTICE '⚙️  Triggers created: 18';
+    RAISE NOTICE 'Database schema created successfully!';
+    RAISE NOTICE 'Tables created: 27';
+    RAISE NOTICE 'Indexes created: 46';
+    RAISE NOTICE 'Triggers created: 18';
 END$$;

@@ -72,44 +72,62 @@ export function NotificationItem({ notification, onClick, onDelete }: Notificati
         }
     };
 
+    const commentPreview = notification.data?.commentPreview;
+    const replyPreview = notification.data?.replyPreview;
+
     return (
         <div
             className={`flex items-start gap-4 p-4 border-b border-constitution-gold/10 hover:bg-constitution-gold/5 transition-colors relative group ${
-                ! notification.isRead ? 'bg-constitution-gold/5' : ''
+                !notification.isRead ? 'bg-constitution-gold/5' : ''
             }`}
         >
             <div 
                 onClick={() => onClick(notification)}
-                className="cursor-pointer"
+                className="flex items-start gap-4 flex-1 cursor-pointer"
             >
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${getIconBgColor(notification.type)}`}>
+                <div className={`p-2 rounded-full ${getIconBgColor(notification.type)} flex-shrink-0`}>
                     {getIcon(notification.type)}
                 </div>
-            </div>
 
-            <div 
-                className="flex-1 min-w-0 cursor-pointer"
-                onClick={() => onClick(notification)}
-            >
-                <div className="flex items-start justify-between gap-2 mb-1">
-                    <h4 className="font-semibold text-ink-gray text-sm">{notification.title}</h4>
-                    {! notification.isRead && (
-                        <div className="w-2 h-2 bg-constitution-gold rounded-full flex-shrink-0 mt-1"></div>
-                    )}
+                <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1">
+                            <p className="text-sm font-medium text-ink-gray">
+                                {notification.title}
+                            </p>
+                            
+                            <p className="text-sm text-ink-gray/70 mt-1">
+                                {notification.message}
+                            </p>
+                            {notification.type === 'POST_COMMENT' && commentPreview && (
+                                <p className="text-sm text-ink-gray/80 mt-2 italic">
+                                    "{commentPreview}"
+                                </p>
+                            )}
+
+                            {notification.type === 'DISCUSSION_REPLY' && replyPreview && (
+                                <p className="text-sm text-ink-gray/80 mt-2 italic">
+                                    "{replyPreview}"
+                                </p>
+                            )}
+
+                            <p className="text-xs text-ink-gray/50 mt-2">
+                                {timeAgo}
+                            </p>
+                        </div>
+
+                        {!notification.isRead && (
+                            <div className="w-2 h-2 rounded-full bg-blue-500 flex-shrink-0 mt-1.5" />
+                        )}
+                    </div>
                 </div>
-                <p className="text-sm text-ink-gray/70 leading-relaxed mb-2">{notification.message}</p>
-                {notification.data?. userName && (
-                    <p className="text-xs text-constitution-gold font-medium mb-1">
-                        by {notification.data.userName}
-                    </p>
-                )}
-                <p className="text-xs text-ink-gray/50">{timeAgo}</p>
             </div>
 
             <button
                 onClick={handleDelete}
                 disabled={isDeleting}
-                className="opacity-0 group-hover:opacity-100 transition-opacity w-8 h-8 flex items-center justify-center rounded-full hover:bg-red-500/10 text-red-500 disabled:opacity-50"
+                className="opacity-0 group-hover:opacity-100 transition-opacity p-2 hover:bg-red-500/10 rounded-full text-red-500 disabled:opacity-50"
+                title="Delete notification"
             >
                 <Trash2 className="w-4 h-4" />
             </button>
