@@ -1,7 +1,7 @@
 .badges-container {
-  background: #FFF8E1;
+  background: #F1E8D7;  /* Changed to match your theme */
   border-radius: 12px;
-  border: 1px solid #FFD54F;
+  border: 1px solid rgba(210, 179, 130, 0.2);  /* Changed to gold tone */
   padding: 16px;
   position: relative;
 }
@@ -27,7 +27,7 @@
 }
 
 .badge-icon {
-  color: #D4AF37;
+  color: #D2B382;  /* Changed to gold */
 }
 
 .badges-label {
@@ -37,7 +37,7 @@
 }
 
 .badges-count {
-  background: #D4AF37;
+  background: #D2B382;  /* Changed to gold */
   color: white;
   font-size: 12px;
   font-weight: 600;
@@ -49,7 +49,7 @@
 
 .expand-btn {
   background: transparent;
-  border: 1px solid #D4AF37;
+  border: 1px solid #D2B382;  /* Changed to gold */
   border-radius: 6px;
   width: 28px;
   height: 28px;
@@ -57,12 +57,12 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  color: #D4AF37;
+  color: #D2B382;  /* Changed to gold */
   transition: all 0.2s;
 }
 
 .expand-btn:hover {
-  background: #D4AF37;
+  background: #D2B382;  /* Changed to gold */
   color: white;
 }
 
@@ -71,8 +71,8 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  background: linear-gradient(135deg, #FFF8E1, #FFECB3);
-  border: 1px solid #FFD54F;
+  background: #FFFFFF;  /* Changed to white */
+  border: 1px solid rgba(210, 179, 130, 0.3);  /* Changed to gold tone */
   border-radius: 8px;
   padding: 12px;
 }
@@ -80,7 +80,7 @@
 .recent-badge-icon {
   width: 40px;
   height: 40px;
-  background: #D4AF37;
+  background: #D2B382;  /* Changed to gold */
   border-radius: 8px;
   display: flex;
   align-items: center;
@@ -117,7 +117,7 @@
 .expanded-view {
   margin-top: 20px;
   padding-top: 20px;
-  border-top: 1px solid #FFD54F;
+  border-top: 1px solid rgba(210, 179, 130, 0.3);  /* Changed to gold tone */
   animation: slideDown 0.3s ease;
 }
 
@@ -153,7 +153,7 @@
 
 .earned-count {
   font-weight: 600;
-  color: #D4AF37;
+  color: #D2B382;  /* Changed to gold */
 }
 
 .total-count {
@@ -175,18 +175,18 @@
 }
 
 .badges-grid::-webkit-scrollbar-track {
-  background: #FFF8E1;
+  background: #F1E8D7;  /* Changed to match container */
   border-radius: 3px;
 }
 
 .badges-grid::-webkit-scrollbar-thumb {
-  background: #D4AF37;
+  background: #D2B382;  /* Changed to gold */
   border-radius: 3px;
 }
 
 .badge-item {
-  background: linear-gradient(180deg, #FFFFFF 0%, #FFFDF8 100%);
-  border: 1px solid rgba(224, 224, 224, 0.9);
+  background: #FFFFFF;  /* Changed to white */
+  border: 1px solid #E5E7EB;
   border-radius: 12px;
   padding: 18px 14px;
   text-align: center;
@@ -201,20 +201,21 @@
 }
 
 .badge-item.earned {
-  border-color: #D4AF37;
-  background: linear-gradient(180deg, #FFF8E1, #FFFAE6);
-  box-shadow: 0 6px 18px rgba(212, 175, 55, 0.08);
+  border-color: #D2B382;  /* Changed to gold */
+  background: #FFFFFF;  /* White background */
+  box-shadow: 0 6px 18px rgba(210, 179, 130, 0.08);  /* Gold shadow */
 }
 
 .badge-item.locked {
   opacity: 0.6;
   cursor: not-allowed;
+  background: #F9FAFB;
 }
 
 .badge-item.earned:hover {
   transform: translateY(-6px);
-  box-shadow: 0 14px 30px rgba(212, 175, 55, 0.12);
-  border-color: #C19A0B;
+  box-shadow: 0 14px 30px rgba(210, 179, 130, 0.12);  /* Gold shadow */
+  border-color: #c4a571;  /* Darker gold */
 }
 
 .badge-icon-wrapper {
@@ -226,7 +227,7 @@
   width: 64px;
   height: 64px;
   margin: 0 auto;
-  background: linear-gradient(180deg, #D4AF37, #C19A0B);
+  background: #D2B382;  /* Changed to gold */
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -236,8 +237,8 @@
 }
 
 .badge-item.locked .badge-icon-bg {
-  background: linear-gradient(180deg, #E0E0E0, #CFCFCF);
-  color: #888;
+  background: #E5E7EB;  /* Gray for locked */
+  color: #9CA3AF;
 }
 
 .badge-earned-indicator {
@@ -246,7 +247,7 @@
   right: 10px;
   width: 26px;
   height: 26px;
-  background: #4CAF50;
+  background: #10B981;  /* Green for earned indicator */
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -274,13 +275,13 @@
 }
 
 .badge-item.earned .badge-status {
-  background: #4CAF50;
+  background: #10B981;  /* Green for earned */
   color: white;
 }
 
 .badge-item.locked .badge-status {
-  background: #E0E0E0;
-  color: #666;
+  background: #E5E7EB;
+  color: #6B7280;
 }
 
 /* Badge Detail Modal */
@@ -354,7 +355,7 @@
 .modal-icon-wrapper {
   width: 80px;
   height: 80px;
-  background: linear-gradient(135deg, #D4AF37, #C19A0B);
+  background: #D2B382;  /* Changed to gold */
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -380,10 +381,10 @@
 }
 
 .modal-badge-meta {
-  background: #FFF8E1;
+  background: #F1E8D7;  /* Changed to match theme */
   border-radius: 8px;
   padding: 16px;
-  border: 1px solid #FFD54F;
+  border: 1px solid rgba(210, 179, 130, 0.3);  /* Gold border */
 }
 
 .meta-item {
@@ -402,6 +403,138 @@
   font-size: 13px;
   color: #1a1a1a;
   font-weight: 600;
+}
+
+/* Celebration Popup */
+.celebration-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  animation: fadeIn 0.3s ease;
+}
+
+.celebration-modal {
+  background: #FFFFFF;  /* White background */
+  border-radius: 20px;
+  padding: 32px;
+  width: 90%;
+  max-width: 420px;
+  position: relative;
+  box-shadow: 0 25px 50px rgba(210, 179, 130, 0.3);  /* Gold shadow */
+  border: 3px solid #D2B382;  /* Gold border */
+  animation: celebrationPop 0.5s ease-out;
+}
+
+@keyframes celebrationPop {
+  0% {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  70% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.celebration-content {
+  text-align: center;
+}
+
+.celebration-icon {
+  color: #D2B382;  /* Gold */
+  margin-bottom: 16px;
+  animation: bounce 1s ease infinite;
+}
+
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.celebration-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 0 0 12px 0;
+  background: linear-gradient(90deg, #D2B382, #c4a571);  /* Gold gradient */
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.celebration-message {
+  color: #666;
+  font-size: 16px;
+  line-height: 1.5;
+  margin-bottom: 24px;
+}
+
+.celebration-message strong {
+  color: #D2B382;  /* Gold */
+}
+
+.celebration-badge-preview {
+  background: #F1E8D7;  /* Light cream */
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 24px;
+  border: 2px solid rgba(210, 179, 130, 0.3);  /* Gold border */
+  box-shadow: 0 8px 20px rgba(210, 179, 130, 0.15);  /* Gold shadow */
+}
+
+.celebration-badge-icon {
+  width: 64px;
+  height: 64px;
+  background: #D2B382;  /* Gold */
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 12px;
+  color: white;
+}
+
+.celebration-badge-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.celebration-close-btn {
+  background: #D2B382;  /* Gold */
+  color: white;
+  border: none;
+  border-radius: 25px;
+  padding: 12px 32px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 6px 15px rgba(210, 179, 130, 0.3);  /* Gold shadow */
+}
+
+.celebration-close-btn:hover {
+  background: #c4a571;  /* Darker gold */
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(210, 179, 130, 0.4);
+}
+
+.celebration-close-btn:active {
+  transform: translateY(0);
 }
 
 /* Responsive */
@@ -431,134 +564,4 @@
     align-items: flex-start;
     gap: 8px;
   }
-}
-/* Celebration Popup */
-.celebration-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 2000;
-  animation: fadeIn 0.3s ease;
-}
-
-.celebration-modal {
-  background: linear-gradient(135deg, #FFF8E1, #FFECB3);
-  border-radius: 20px;
-  padding: 32px;
-  width: 90%;
-  max-width: 420px;
-  position: relative;
-  box-shadow: 0 25px 50px rgba(212, 175, 55, 0.3);
-  border: 3px solid #D4AF37;
-  animation: celebrationPop 0.5s ease-out;
-}
-
-@keyframes celebrationPop {
-  0% {
-    transform: scale(0.8);
-    opacity: 0;
-  }
-  70% {
-    transform: scale(1.05);
-  }
-  100% {
-    transform: scale(1);
-    opacity: 1;
-  }
-}
-
-.celebration-content {
-  text-align: center;
-}
-
-.celebration-icon {
-  color: #D4AF37;
-  margin-bottom: 16px;
-  animation: bounce 1s ease infinite;
-}
-
-@keyframes bounce {
-  0%, 100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-10px);
-  }
-}
-
-.celebration-title {
-  font-size: 28px;
-  font-weight: 700;
-  color: #1a1a1a;
-  margin: 0 0 12px 0;
-  background: linear-gradient(90deg, #D4AF37, #C19A0B);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-.celebration-message {
-  color: #666;
-  font-size: 16px;
-  line-height: 1.5;
-  margin-bottom: 24px;
-}
-
-.celebration-message strong {
-  color: #D4AF37;
-}
-
-.celebration-badge-preview {
-  background: white;
-  border-radius: 12px;
-  padding: 20px;
-  margin-bottom: 24px;
-  border: 2px solid #FFD54F;
-  box-shadow: 0 8px 20px rgba(212, 175, 55, 0.15);
-}
-
-.celebration-badge-icon {
-  width: 64px;
-  height: 64px;
-  background: linear-gradient(135deg, #D4AF37, #C19A0B);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 12px;
-  color: white;
-}
-
-.celebration-badge-name {
-  font-size: 16px;
-  font-weight: 600;
-  color: #1a1a1a;
-}
-
-.celebration-close-btn {
-  background: linear-gradient(135deg, #D4AF37, #C19A0B);
-  color: white;
-  border: none;
-  border-radius: 25px;
-  padding: 12px 32px;
-  font-size: 16px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 6px 15px rgba(212, 175, 55, 0.3);
-}
-
-.celebration-close-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 20px rgba(212, 175, 55, 0.4);
-}
-
-.celebration-close-btn:active {
-  transform: translateY(0);
 }

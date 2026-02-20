@@ -28,8 +28,11 @@ if (!urlMatch) {
 
 const [_, user, password, host, port, database] = urlMatch;
 
+// Decode percent-encoded password (e.g. %40 -> @) to support DATABASE_URL encoding
+const decodedPassword = decodeURIComponent(password);
+
 // Set environment variable for psql
-process.env.PGPASSWORD = password;
+process.env.PGPASSWORD = decodedPassword;
 
 function runCommand(command, ignoreErrors = false) {
     console.log(`\n> ${command.substring(0, 100)}...`);

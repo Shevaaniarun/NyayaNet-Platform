@@ -3,9 +3,6 @@
 -- Description: Legal Professional Platform Database
 -- =============================================
 
--- Drop existing database if exists (for fresh setup)
-DROP DATABASE IF EXISTS nyayanet;
-
 -- Create database
 CREATE DATABASE nyayanet
     WITH
@@ -370,10 +367,7 @@ CREATE TABLE discussion_views (
     discussion_id UUID REFERENCES discussions(id) ON DELETE CASCADE,
     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
     ip_address TEXT,
-    viewed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    CONSTRAINT unique_user_view UNIQUE(discussion_id, user_id) WHERE user_id IS NOT NULL,
-    CONSTRAINT unique_ip_view UNIQUE(discussion_id, ip_address) WHERE user_id IS NULL
+    viewed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- =============================================
@@ -403,15 +397,7 @@ CREATE TABLE discussion_upvotes (
     
     CONSTRAINT one_target_check 
     CHECK ((reply_id IS NULL AND discussion_id IS NOT NULL) OR 
-           (reply_id IS NOT NULL AND discussion_id IS NULL)),
-    
-    -- Unique constraint for discussion upvotes
-    CONSTRAINT unique_discussion_upvote UNIQUE(discussion_id, user_id) 
-    WHERE discussion_id IS NOT NULL,
-    
-    -- Unique constraint for reply upvotes
-    CONSTRAINT unique_reply_upvote UNIQUE(reply_id, user_id) 
-    WHERE reply_id IS NOT NULL
+           (reply_id IS NOT NULL AND discussion_id IS NULL))
 );
 
 -- Bookmarks/Saves
@@ -736,7 +722,7 @@ CREATE TABLE activity_logs (
 );
 
 -- =============================================
--- CREATE ALL INDEXES
+-- CREATE ALL INDEXES (including partial indexes from constraints)
 -- =============================================
 CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_users_role ON users(role);
@@ -764,8 +750,8 @@ CREATE INDEX idx_discussion_followers_user ON discussion_followers(user_id);
 CREATE INDEX idx_discussion_views_discussion ON discussion_views(discussion_id);
 CREATE INDEX idx_post_likes_post ON post_likes(post_id);
 CREATE INDEX idx_post_likes_user ON post_likes(user_id);
-CREATE INDEX idx_discussion_upvotes_discussion ON discussion_upvotes(discussion_id) WHERE discussion_id IS NOT NULL;
-CREATE INDEX idx_discussion_upvotes_reply ON discussion_upvotes(reply_id) WHERE reply_id IS NOT NULL;
+CREATE INDEX idx_discussion_upvotes_discussion ON discussion_upvotes(discussion_id);
+CREATE INDEX idx_discussion_upvotes_reply ON discussion_upvotes(reply_id);
 CREATE INDEX idx_discussion_upvotes_user ON discussion_upvotes(user_id);
 CREATE INDEX idx_user_bookmarks_user ON user_bookmarks(user_id);
 CREATE INDEX idx_user_bookmarks_entity ON user_bookmarks(entity_type, entity_id);
@@ -811,6 +797,12 @@ CREATE INDEX idx_activity_logs_user ON activity_logs(user_id);
 CREATE INDEX idx_activity_logs_type ON activity_logs(activity_type);
 CREATE INDEX idx_activity_logs_created ON activity_logs(created_at DESC);
 CREATE INDEX idx_activity_logs_entity ON activity_logs(entity_type, entity_id);
+
+-- Partial indexes for unique constraints with conditions
+CREATE UNIQUE INDEX idx_unique_discussion_upvote ON discussion_upvotes(discussion_id, user_id) WHERE discussion_id IS NOT NULL;
+CREATE UNIQUE INDEX idx_unique_reply_upvote ON discussion_upvotes(reply_id, user_id) WHERE reply_id IS NOT NULL;
+CREATE UNIQUE INDEX idx_unique_user_view ON discussion_views(discussion_id, user_id) WHERE user_id IS NOT NULL;
+CREATE UNIQUE INDEX idx_unique_ip_view ON discussion_views(discussion_id, ip_address) WHERE user_id IS NULL;
 
 -- =============================================
 -- TRIGGERS & FUNCTIONS
@@ -1062,6 +1054,6 @@ DO $$
 BEGIN
     RAISE NOTICE '✅ Database schema created successfully!';
     RAISE NOTICE '📊 Tables created: 27';
-    RAISE NOTICE '📈 Indexes created: 46';
+    RAISE NOTICE '📈 Indexes created: 50';
     RAISE NOTICE '⚙️  Triggers created: 18';
 END$$;

@@ -1,5 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { Flame, Trophy, Calendar } from 'lucide-react';
+import ViewDetailedProgress from './ViewDetailedProgress';
 
 interface DashboardOverview {
   totalScore: number;
@@ -453,64 +454,15 @@ const HeaderStats: React.FC<Props> = ({ data }) => {
         </div>
       </div>
 
-      {/* Detail Modal */}
-      {showDetails && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/60" onClick={() => setShowDetails(false)} />
-          <div className="relative bg-white rounded-lg shadow-xl max-w-3xl w-full mx-4 p-6">
-            <div className="flex items-start justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Detailed Progress</h3>
-              <button className="text-gray-600 hover:text-gray-900" onClick={() => setShowDetails(false)} aria-label="Close">
-                ✕
-              </button>
-            </div>
+      {/* Detail Modal - Using the new component */}
+<ViewDetailedProgress 
+  isOpen={showDetails}
+  onClose={() => setShowDetails(false)}
+  data={data ? data : null}  // This converts undefined to null
+/>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="flex items-center justify-center">
-                <div style={{ width: 320, height: 320 }}>
-                  <LevelProgressRing score={modalScore} currentLevel={modalLevel} />
-                </div>
-              </div>
-
-              <div>
-                <div className="mb-3 text-sm text-gray-700">
-                  Total Score: <span className="font-semibold text-gray-900">{data?.totalScore ?? 0}</span>
-                </div>
-                <div className="mb-3 text-sm text-gray-700">Current Streak: <span className="font-semibold text-gray-900">{data?.currentStreak ?? 0} days</span></div>
-                <div className="mb-3 text-sm text-gray-700">Longest Streak: <span className="font-semibold text-gray-900">{data?.longestStreak ?? 0} days</span></div>
-                <div className="mb-4 text-xs text-gray-500">Level breakdown:</div>
-                <div className="space-y-3">
-                  {/** Reuse legend content from LevelProgressRing by reconstructing level info here for clarity */}
-                  <div className="p-3 rounded-lg bg-gray-50 border">
-                    <div className="flex items-center justify-between">
-                      <div className="text-sm font-medium">New Contributor</div>
-                      <div className="text-sm text-gray-700">0 - 50</div>
-                    </div>
-                    <div className="text-xs text-gray-500">Beginner level — small contributions add up</div>
-                  </div>
-                  <div className="p-3 rounded-lg bg-gray-50 border">
-                    <div className="flex items-center justify-between">
-                      <div className="text-sm font-medium">Active Member</div>
-                      <div className="text-sm text-gray-700">50 - 150</div>
-                    </div>
-                    <div className="text-xs text-gray-500">Consistent contributor</div>
-                  </div>
-                  <div className="p-3 rounded-lg bg-gray-50 border">
-                    <div className="flex items-center justify-between">
-                      <div className="text-sm font-medium">Legal Contributor</div>
-                      <div className="text-sm text-gray-700">150 - 400</div>
-                    </div>
-                    <div className="text-xs text-gray-500">High quality contributions and engagement</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-  {/* Row of three compact stat cards under the Overview */}
-  <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-4">
+      {/* Row of three compact stat cards under the Overview */}
+      <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-4">
         {/* Current Streak Card */}
         <div 
           className="rounded-lg border p-5 hover:shadow-sm transition-shadow"
