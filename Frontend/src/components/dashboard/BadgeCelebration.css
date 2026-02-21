@@ -1,0 +1,437 @@
+/* BadgeCelebration.css */
+
+.celebration-overlay-modern {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(12px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  animation: fadeIn 0.5s ease;
+}
+
+.celebration-modal-modern {
+  background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+  border-radius: 48px;
+  padding: 48px;
+  width: 90%;
+  max-width: 560px;
+  position: relative;
+  box-shadow: 0 30px 80px rgba(210, 179, 130, 0.5);
+  border: 3px solid rgba(210, 179, 130, 0.5);
+  animation: modalPop 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+  overflow: hidden;
+}
+
+@keyframes modalPop {
+  0% {
+    transform: scale(0.3) rotate(-10deg);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.1) rotate(2deg);
+  }
+  100% {
+    transform: scale(1) rotate(0);
+    opacity: 1;
+  }
+}
+
+/* Animated background circles */
+.celebration-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
+}
+
+.celebration-bg-circle {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(60px);
+  animation: float 8s ease-in-out infinite;
+}
+
+.circle1 {
+  width: 300px;
+  height: 300px;
+  background: rgba(210, 179, 130, 0.2);
+  top: -100px;
+  left: -100px;
+  animation-delay: 0s;
+}
+
+.circle2 {
+  width: 400px;
+  height: 400px;
+  background: rgba(139, 92, 246, 0.15);
+  bottom: -150px;
+  right: -150px;
+  animation-delay: -2s;
+}
+
+.circle3 {
+  width: 200px;
+  height: 200px;
+  background: rgba(59, 130, 246, 0.1);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  animation-delay: -4s;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-20px) scale(1.05); }
+}
+
+/* Sparkles */
+.sparkles {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+}
+
+.sparkle {
+  position: absolute;
+  font-size: 24px;
+  color: #D2B382;
+  animation: sparkleFloat 3s ease-in-out infinite;
+  opacity: 0;
+}
+
+.s1 { top: 10%; left: 10%; animation-delay: 0s; }
+.s2 { top: 20%; right: 15%; animation-delay: 0.5s; }
+.s3 { bottom: 25%; left: 20%; animation-delay: 1s; }
+.s4 { bottom: 15%; right: 25%; animation-delay: 1.5s; }
+.s5 { top: 40%; left: 50%; animation-delay: 2s; }
+
+@keyframes sparkleFloat {
+  0%, 100% {
+    transform: translateY(0) scale(1);
+    opacity: 0;
+  }
+  50% {
+    transform: translateY(-20px) scale(1.2);
+    opacity: 1;
+  }
+}
+
+/* Particles */
+.particles {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+}
+
+.particle {
+  position: absolute;
+  background: rgba(210, 179, 130, 0.6);
+  border-radius: 50%;
+  animation: particleFloat 3s ease-in-out infinite;
+}
+
+@keyframes particleFloat {
+  0% {
+    transform: translateY(0) scale(1);
+    opacity: 0;
+  }
+  50% {
+    transform: translateY(-100px) scale(1.5);
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateY(-200px) scale(0.5);
+    opacity: 0;
+  }
+}
+
+.celebration-content-modern {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+}
+
+/* Trophy/Medal */
+.celebration-trophy {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  margin: 0 auto 24px;
+}
+
+.trophy-icon {
+  width: 120px;
+  height: 120px;
+  background: linear-gradient(135deg, #D2B382, #c4a571);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 48px;
+  box-shadow: 0 20px 40px rgba(210, 179, 130, 0.4);
+  position: relative;
+  z-index: 2;
+  animation: trophyPulse 2s ease-in-out infinite;
+}
+
+@keyframes trophyPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+.trophy-shine {
+  position: absolute;
+  top: -10px;
+  left: -10px;
+  right: -10px;
+  bottom: -10px;
+  background: radial-gradient(circle, rgba(210, 179, 130, 0.3) 0%, transparent 70%);
+  border-radius: 50%;
+  animation: shineRotate 4s linear infinite;
+}
+
+@keyframes shineRotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Achievement text */
+.achievement-text {
+  margin-bottom: 32px;
+}
+
+.achievement-badge {
+  display: inline-block;
+  background: rgba(210, 179, 130, 0.2);
+  color: #D2B382;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  padding: 8px 16px;
+  border-radius: 30px;
+  margin-bottom: 16px;
+  backdrop-filter: blur(5px);
+  border: 1px solid rgba(210, 179, 130, 0.3);
+  animation: glow 2s ease-in-out infinite;
+}
+
+@keyframes glow {
+  0%, 100% { box-shadow: 0 0 10px rgba(210, 179, 130, 0.3); }
+  50% { box-shadow: 0 0 30px rgba(210, 179, 130, 0.6); }
+}
+
+.achievement-title {
+  font-size: 36px;
+  font-weight: 800;
+  color: white;
+  margin: 0 0 12px 0;
+  text-shadow: 0 2px 10px rgba(210, 179, 130, 0.3);
+  background: linear-gradient(135deg, #fff, #D2B382);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.achievement-desc {
+  font-size: 16px;
+  color: #b0b0b0;
+  line-height: 1.6;
+  max-width: 300px;
+  margin: 0 auto;
+}
+
+/* Rarity badge */
+.rarity-badge-modern {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 24px;
+  border-radius: 40px;
+  margin-bottom: 32px;
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 1px;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+}
+
+.rarity-badge-modern.common {
+  background: linear-gradient(135deg, #6b7280, #4b5563);
+  color: white;
+}
+
+.rarity-badge-modern.rare {
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  color: white;
+}
+
+.rarity-badge-modern.epic {
+  background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+  color: white;
+}
+
+.rarity-badge-modern.legendary {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: white;
+}
+
+.rarity-star {
+  animation: starTwinkle 1.5s ease-in-out infinite;
+}
+
+@keyframes starTwinkle {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.8); }
+}
+
+/* Stats */
+.achievement-stats {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 24px;
+  margin-bottom: 32px;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 16px 24px;
+  border-radius: 60px;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.stat-label {
+  font-size: 24px;
+  font-weight: 800;
+  color: #D2B382;
+  animation: countUp 2s ease-out;
+}
+
+.stat-desc {
+  font-size: 12px;
+  color: #b0b0b0;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.stat-divider {
+  width: 2px;
+  height: 30px;
+  background: rgba(210, 179, 130, 0.3);
+}
+
+@keyframes countUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Continue button */
+.celebration-continue-btn {
+  background: linear-gradient(135deg, #D2B382, #c4a571);
+  color: white;
+  border: none;
+  border-radius: 50px;
+  padding: 16px 48px;
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(210, 179, 130, 0.4);
+}
+
+.celebration-continue-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 20px 40px rgba(210, 179, 130, 0.6);
+}
+
+.celebration-continue-btn:active {
+  transform: translateY(0);
+}
+
+.btn-shine {
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: left 0.5s ease;
+}
+
+.celebration-continue-btn:hover .btn-shine {
+  left: 100%;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .celebration-modal-modern {
+    padding: 32px;
+  }
+  
+  .achievement-title {
+    font-size: 28px;
+  }
+  
+  .celebration-trophy {
+    width: 80px;
+    height: 80px;
+  }
+  
+  .trophy-icon {
+    width: 80px;
+    height: 80px;
+    font-size: 36px;
+  }
+  
+  .achievement-stats {
+    flex-direction: column;
+    gap: 12px;
+    border-radius: 30px;
+  }
+  
+  .stat-divider {
+    width: 50px;
+    height: 2px;
+  }
+}
+
+@media (max-width: 480px) {
+  .celebration-modal-modern {
+    padding: 24px;
+  }
+  
+  .achievement-title {
+    font-size: 24px;
+  }
+  
+  .celebration-continue-btn {
+    padding: 12px 32px;
+    font-size: 16px;
+  }
+}

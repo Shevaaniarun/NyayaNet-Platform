@@ -148,6 +148,37 @@ export function ChatbotPage() {
       )
     );
 
+    // Persist AI query to local activity log so dashboard can pick it up
+    try {
+      const aiLogStr = localStorage.getItem('ai_activity_log');
+      const aiLog = aiLogStr ? JSON.parse(aiLogStr) : [];
+      // Try to get current user id
+      let currentUserId = null;
+      try {
+        const u = JSON.parse(localStorage.getItem('user') || 'null');
+        currentUserId = u?.id || null;
+      } catch {}
+
+      const aiEntry = {
+        id: `ai-${Date.now()}`,
+        userId: currentUserId,
+        title: inputMessage.trim(),
+        content: '',
+        postType: 'AI_QUERY',
+        createdAt: new Date().toISOString(),
+        metadata: {
+          // crude detection for constitution-themed queries
+          queryType: /constitution|article|fundamental rights|article\s*21/i.test(inputMessage) ? 'CONSTITUTION' : undefined
+        }
+      };
+      aiLog.push(aiEntry);
+      // keep only last 200 entries to avoid growing indefinitely
+      const trimmed = aiLog.slice(-200);
+      localStorage.setItem('ai_activity_log', JSON.stringify(trimmed));
+    } catch (err) {
+      console.warn('Failed to persist AI activity locally', err);
+    }
+
     setInputMessage('');
     setIsLoading(true);
 
