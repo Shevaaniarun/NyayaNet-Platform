@@ -65,7 +65,6 @@ app.use('/api/posts', postRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use("/api", authRoutes);
 app.use("/api/notes", noteRoutes);
-app.use('/api/profile', profileRoutes);
 app.use('/api/network', networkRoutes);
 
 app.use('/api/messages', messagesRoutes);

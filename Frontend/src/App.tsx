@@ -12,8 +12,8 @@ import { PostsPage } from './pages/PostsPage';
 import RegisterPage from "./pages/RegisterPage";
 import LoginPage from "./pages/LoginPage";
 import { ProfilePage } from './pages/ProfilePage';
-import  NotesPage  from './pages/NotesPage';
-import NotificationsPage from './pages/NotificationsPage'; 
+import NotesPage from './pages/NotesPage';
+import NotificationsPage from './pages/NotificationsPage';
 import { ChatbotPage } from './pages/ChatbotPage';
 import ChatWithUsPage from './pages/ChatWithUsPage';
 import MessagesPage from './pages/MessagesPage';
@@ -42,7 +42,7 @@ type ViewType =
     | 'connectionRequests'
     | 'createDiscussion'
     | "chat"
-;
+    ;
 
 const getCurrentUser = () => {
     const userStr = localStorage.getItem('user');
@@ -118,6 +118,7 @@ export default function App() {
     const [currentView, setCurrentView] = useState<ViewType>('dashboard');
     const [currentPath, setCurrentPath] = useState(window.location.pathname);
     const [selectedProfileUserId, setSelectedProfileUserId] = useState<string | null>(null);
+    const [messagesPageUrlId, setMessagesPageUrlId] = useState<string | null>(null);
 
     const currentUser = getCurrentUser();
 
@@ -131,6 +132,24 @@ export default function App() {
             console.error('Failed to load connection requests:', error);
             setPendingConnectionCount(Math.floor(Math.random() * 5));
         }
+    };
+
+    const viewMap: Record<string, ViewType> = {
+        '/': 'dashboard',
+        '/feed': 'feed',
+        '/cases': 'cases',
+        '/notes': 'notes',
+        '/ai': 'ai',
+        '/chatbot': 'chatbot',
+        '/chat-with-us': 'chat-with-us',
+        '/messages': 'messages',
+        '/discussions': 'discussions',
+        '/profile': 'profile',
+        '/notifications': 'notifications',
+        '/network': 'network',
+        '/connection-requests': 'connectionRequests',
+        '/create-discussion': 'createDiscussion',
+        "/chat": "chat",
     };
 
     useEffect(() => {
@@ -150,25 +169,8 @@ export default function App() {
             else if (currentPath === '/dashboard') {
                 setCurrentView('dashboard');
             } else {
-                const viewMap: Record<string, ViewType> = {
-                '/': 'dashboard',
-                '/feed': 'feed',
-                '/cases': 'cases',
-                '/notes': 'notes',
-                '/ai': 'ai',
-                '/chatbot': 'chatbot',
-                '/chat-with-us': 'chat-with-us',
-                '/messages': 'messages',
-                '/discussions': 'discussions',
-                '/profile': 'profile',
-                '/notifications': 'notifications',
-                '/network': 'network',
-                '/connection-requests': 'connectionRequests',
-                '/create-discussion': 'createDiscussion',
-                "/chat": "chat",
-                };
-
-                const newView = viewMap[currentPath] || 'profile';
+                const normalizedPath = currentPath.endsWith('/') && currentPath.length > 1 ? currentPath.slice(0, -1) : currentPath;
+                const newView = normalizedPath.startsWith('/messages') ? 'messages' : (viewMap[normalizedPath] || 'dashboard');
                 setCurrentView(newView);
             }
 
@@ -251,12 +253,12 @@ export default function App() {
     };
 
     const handleLoginSuccess = () => {
-    setIsAuthenticated(true);
+        setIsAuthenticated(true);
 
-    setCurrentView("dashboard");
-    setCurrentPath("/");
+        setCurrentView("dashboard");
+        setCurrentPath("/");
 
-    window.history.replaceState({ view: "dashboard" }, "", "/");
+        window.history.replaceState({ view: "dashboard" }, "", "/");
     };
 
 
@@ -272,50 +274,42 @@ export default function App() {
     };
 
     const handleNavigation = (path: string, pushToHistory = true) => {
-    const viewMap: Record<string, ViewType> = {
-        '/': 'dashboard',
-        '/feed': 'feed',
-        '/cases': 'cases',
-        '/ai': 'ai',
-        '/chatbot': 'chatbot',
-        '/chat-with-us': 'chat-with-us',
-        '/discussions': 'discussions',
-        '/profile': 'profile',
-        '/notes': 'notes',
-        '/notifications': 'notifications',
-        '/network': 'network',
-        '/connection-requests': 'connectionRequests',
-        '/create-discussion': 'createDiscussion',
-    };
-
-    // Handle messages with user ID
-    if (path.startsWith('/messages/')) {
-        setCurrentView('messages');
-        if (pushToHistory) {
-        window.history.pushState({ view: 'messages', path }, '', path);
+        const token = localStorage.getItem("token");
+        if (!token) {
+            setAuthView('login');
+            setCurrentPath(path);
+            return;
         }
-        return;
-    }
 
-    // ✅ Keep only this
-    const newView = viewMap[path] || 'dashboard';
+        // Handle messages with user ID
+        if (path.startsWith('/messages/')) {
+            setCurrentView('messages');
+            setCurrentPath(path);
+            if (pushToHistory) {
+                window.history.pushState({ view: 'messages', path }, '', path);
+            }
+            return;
+        }
 
-    setCurrentView(newView);
-    setCurrentPath(path);
+        // ✅ Keep only this
+        const newView = viewMap[path] || 'dashboard';
 
-    if (newView !== 'profile') setSelectedProfileUserId(null);
+        setCurrentView(newView);
+        setCurrentPath(path);
 
-    if (newView !== 'notifications') {
-        setTimeout(() => refetchNotificationCount(), 1000);
-    }
+        if (newView !== 'profile') setSelectedProfileUserId(null);
 
-    if (pushToHistory) {
-        window.history.pushState({ view: newView }, '', path);
-    }
+        if (newView !== 'notifications') {
+            setTimeout(() => refetchNotificationCount(), 1000);
+        }
 
-    if (newView === 'feed' || newView === 'dashboard') {
-        refreshPosts();
-    }
+        if (pushToHistory) {
+            window.history.pushState({ view: newView }, '', path);
+        }
+
+        if (newView === 'feed' || newView === 'dashboard') {
+            refreshPosts();
+        }
     };
 
 
@@ -351,11 +345,11 @@ export default function App() {
         <div className="flex min-h-screen bg-justice-black">
             <MobileNotice />
             <Sidebar
-            currentPath={currentPath}
-            onNavigate={handleNavigation}
-            pendingConnectionCount={pendingConnectionCount}
-            notificationCount={unreadCount}
-            onLogout={handleLogout}
+                currentPath={currentPath}
+                onNavigate={handleNavigation}
+                pendingConnectionCount={pendingConnectionCount}
+                notificationCount={unreadCount}
+                onLogout={handleLogout}
             />
 
 
@@ -380,7 +374,12 @@ export default function App() {
                 {currentView === 'ai' && <AIAssistant />}
                 {currentView === 'chatbot' && <ChatbotPage />}
                 {currentView === 'chat-with-us' && <ChatWithUsPage onNavigate={handleNavigation} />}
-                {currentView === 'messages' && <MessagesPage onNavigate={handleNavigation} />}
+                {currentView === 'messages' && (
+                    <MessagesPage
+                        onNavigate={handleNavigation}
+                        urlId={currentPath.match(/\/messages\/([^\/]+)/)?.[1]}
+                    />
+                )}
                 {currentView === 'discussions' && <DiscussionsPage onNavigateToProfile={handleDiscussionProfileClick} />}
                 {currentView === 'notes' && <NotesPage />}
 
@@ -403,7 +402,12 @@ export default function App() {
                 )}
 
                 {currentView === 'notifications' && <NotificationsPage />}
-                {currentView === "chat" && <MessagesPage onNavigate={handleNavigation} />}
+                {currentView === "chat" && (
+                    <MessagesPage
+                        onNavigate={handleNavigation}
+                        urlId={currentPath.match(/\/messages\/([^\/]+)/)?.[1]}
+                    />
+                )}
                 {currentView === 'createDiscussion' && (
                     <div className="max-w-3xl mx-auto p-8">
                         <div className="aged-paper rounded-lg p-8">

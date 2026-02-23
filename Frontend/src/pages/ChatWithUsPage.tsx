@@ -59,7 +59,7 @@ const ChatWithUsPage: React.FC<ChatWithUsPageProps> = ({ onNavigate }) => {
     // Filter by search term
     if (searchTerm) {
       filtered = filtered.filter(expert =>
-        expert.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        expert.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         expert.designation?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         expert.area_of_interest?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         expert.organization?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -181,7 +181,7 @@ const ChatWithUsPage: React.FC<ChatWithUsPageProps> = ({ onNavigate }) => {
                   onChange={(e) => setSearchTerm(e.target.value)}
                   placeholder="Search by name, specialization, or organization..."
                   className="w-full pl-12 pr-4 py-3 bg-constitution-gold/10 border border-constitution-gold/20 text-constitution-gold rounded-xl  placeholder-ink-gray/40 focus:outline-none focus:border-constitution-gold transition-colors font-bold"
-                
+
                 />
               </div>
 
@@ -192,7 +192,7 @@ const ChatWithUsPage: React.FC<ChatWithUsPageProps> = ({ onNavigate }) => {
                   onChange={(e) => setSelectedRole(e.target.value)}
                   className="w-full px-4 py-3 bg-constitution-gold/10 border border-constitution-gold/20 text-constitution-gold rounded-xl  focus:outline-none focus:border-constitution-gold transition-colors appearance-none font-bold"
                 >
-                 
+
                   <option value="all">All Legal Roles</option>
                   <option value="JUDGE">Judges</option>
                   <option value="LAWYER">Lawyers</option>
@@ -214,132 +214,105 @@ const ChatWithUsPage: React.FC<ChatWithUsPageProps> = ({ onNavigate }) => {
           </div>
         </div>
 
-        {/* Experts Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Experts List */}
+        <div className="flex flex-col gap-4">
           {filteredExperts.map((expert) => (
             <div
               key={expert.id}
-              className="group relative overflow-hidden"
+              className="group relative"
             >
-              {/* Online Indicator */}
-              {expert.is_online && (
-                <div className="absolute top-4 right-4 z-20">
-                  <div className="relative">
-                    <div className="w-3 h-3 bg-emerald-500 rounded-full animate-ping absolute"></div>
-                    <div className="w-3 h-3 bg-emerald-500 rounded-full relative border border-justice-black"></div>
-                  </div>
-                </div>
-              )}
-
-              <div className="aged-paper rounded-2xl p-6 border border-constitution-gold/20 hover:border-constitution-gold/40 transition-all cursor-pointer hover:shadow-xl hover:shadow-constitution-gold/5 h-full flex flex-col">
-                {/* Profile Header */}
-                <div className="flex items-start gap-4 mb-6">
-                  <div className="relative">
-                    <div className="w-16 h-16 rounded-full border-2 border-constitution-gold overflow-hidden bg-parchment-cream flex-shrink-0">
-                      {expert.profile_photo_url ? (
-                        <img
-                          src={expert.profile_photo_url}
-                          alt={expert.full_name}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-constitution-gold/10 flex items-center justify-center">
-                          <User className="w-8 h-8 text-constitution-gold" />
-                        </div>
-                      )}
-                    </div>
-                    {expert.is_online && (
-                      <div className="absolute bottom-0 right-0 w-4 h-4 bg-emerald-500 rounded-full border-2 border-parchment-cream"></div>
+              <div
+                className="aged-paper rounded-2xl p-5 border border-constitution-gold/20 hover:border-constitution-gold/40 transition-all cursor-pointer hover:shadow-lg hover:shadow-constitution-gold/5 flex flex-col md:flex-row items-center gap-6"
+                onClick={() => handleMessageExpert(expert.id)}
+              >
+                {/* Profile Avatar */}
+                <div className="relative flex-shrink-0">
+                  <div className="w-20 h-20 rounded-full border-2 border-constitution-gold overflow-hidden bg-parchment-cream relative z-10">
+                    {expert.profile_photo_url ? (
+                      <img
+                        src={expert.profile_photo_url}
+                        alt={expert.full_name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-constitution-gold/10 flex items-center justify-center">
+                        <User className="w-10 h-10 text-constitution-gold" />
+                      </div>
                     )}
                   </div>
-                  
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <h3 className="font-heading font-bold text-ink-gray text-lg leading-tight mb-1">
-                          {expert.full_name}
-                        </h3>
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-bold uppercase tracking-wider border ${getRoleBadgeColor(expert.role)}`}>
-                            {getRoleIcon(expert.role)}
-                            {getRoleDisplayName(expert.role)}
+                  {expert.is_online && (
+                    <div className="absolute top-0 right-0 z-20">
+                      <div className="relative">
+                        <div className="w-4 h-4 bg-emerald-500 rounded-full animate-ping absolute"></div>
+                        <div className="w-4 h-4 bg-emerald-500 rounded-full relative border-2 border-justice-black"></div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Expert Info - Main Section */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                      <h3 className="font-heading font-bold text-ink-gray text-xl leading-tight mb-2">
+                        {expert.full_name}
+                      </h3>
+                      <div className="flex items-center gap-2 flex-wrap mb-3">
+                        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border ${getRoleBadgeColor(expert.role)}`}>
+                          {getRoleIcon(expert.role)}
+                          {getRoleDisplayName(expert.role)}
+                        </span>
+                        {expert.rating && (
+                          <span className="inline-flex items-center gap-1 px-3 py-1 bg-constitution-gold/10 text-constitution-gold rounded-full text-xs font-bold">
+                            <Star className="w-3 h-3 fill-current" />
+                            {expert.rating.toFixed(1)}
                           </span>
-                          {expert.rating && (
-                            <span className="inline-flex items-center gap-1 px-2 py-1 bg-constitution-gold/10 text-constitution-gold rounded-full text-xs font-bold">
-                              <Star className="w-3 h-3 fill-current" />
-                              {expert.rating.toFixed(1)}
-                            </span>
-                          )}
+                        )}
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-ink-gray/5 text-ink-gray/60 rounded-full text-xs font-bold">
+                          <Briefcase className="w-3 h-3" />
+                          {expert.experience_years} Years Exp.
+                        </span>
+                      </div>
+
+                      <p className="text-ink-gray/80 text-sm flex items-center gap-2 mb-1">
+                        <Award className="w-4 h-4 text-constitution-gold flex-shrink-0" />
+                        <span className="font-bold">Specialty:</span> {expert.area_of_interest}
+                      </p>
+                      {expert.designation && (
+                        <p className="text-ink-gray/60 text-xs pl-6 italic">
+                          {expert.designation} {expert.organization ? `at ${expert.organization}` : ''}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Compact Stats & Action */}
+                    <div className="flex items-center gap-6 self-end md:self-center">
+                      <div className="hidden lg:flex items-center gap-8 px-6 border-l border-constitution-gold/10">
+                        <div className="text-center">
+                          <p className="text-constitution-gold font-bold text-lg">{expert.cases_handled || '50+'}</p>
+                          <p className="text-ink-gray/40 text-[10px] uppercase font-bold tracking-tighter">Cases</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-constitution-gold font-bold text-lg">{expert.response_time || '2h'}</p>
+                          <p className="text-ink-gray/40 text-[10px] uppercase font-bold tracking-tighter">Reply</p>
                         </div>
                       </div>
+
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleMessageExpert(expert.id);
+                        }}
+                        className={`px-6 py-3 rounded-xl font-bold text-sm uppercase tracking-wider flex items-center justify-center gap-3 transition-all ${expert.is_online
+                          ? 'bg-constitution-gold text-justice-black hover:bg-constitution-gold/90 shadow-lg shadow-constitution-gold/10'
+                          : 'bg-ink-gray/10 text-ink-gray/60 border border-ink-gray/20 hover:border-constitution-gold/30'
+                          }`}
+                      >
+                        <MessageCircle className="w-5 h-5" />
+                        {expert.is_online ? 'Chat Now' : 'Message'}
+                      </button>
                     </div>
                   </div>
-                </div>
-
-                {/* Details */}
-                <div className="space-y-4 flex-1">
-                  {expert.designation && (
-                    <div className="flex items-start gap-3">
-                      <div className="w-8 h-8 bg-constitution-gold/10 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <Briefcase className="w-4 h-4 text-constitution-gold" />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-ink-gray text-sm font-bold leading-tight">{expert.designation}</p>
-                        {expert.organization && (
-                          <p className="text-ink-gray/60 text-xs mt-1">{expert.organization}</p>
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  {expert.area_of_interest && (
-                    <div className="flex items-start gap-3">
-                      <div className="w-8 h-8 bg-constitution-gold/10 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <Award className="w-4 h-4 text-constitution-gold" />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-ink-gray/60 text-xs font-bold uppercase tracking-wider mb-1">Specialization</p>
-                        <p className="text-ink-gray text-sm leading-tight">{expert.area_of_interest}</p>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Stats */}
-                  <div className="grid grid-cols-3 gap-2 pt-4 border-t border-constitution-gold/10">
-                    <div className="text-center">
-                      <div className="text-constitution-gold font-heading font-bold text-xl">
-                        {expert.experience_years}
-                      </div>
-                      <p className="text-ink-gray/60 text-[10px] uppercase font-bold tracking-wider">Years</p>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-constitution-gold font-heading font-bold text-xl">
-                        {expert.cases_handled || '50+'}
-                      </div>
-                      <p className="text-ink-gray/60 text-[10px] uppercase font-bold tracking-wider">Cases</p>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-constitution-gold font-heading font-bold text-xl">
-                        {expert.response_time || '2h'}
-                      </div>
-                      <p className="text-ink-gray/60 text-[10px] uppercase font-bold tracking-wider">Response</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Action Button */}
-                <div className="pt-6 mt-6 border-t border-constitution-gold/10">
-                  <button
-                    onClick={() => handleMessageExpert(expert.id)}
-                    className={`w-full py-3 rounded-xl font-bold text-sm uppercase tracking-wider flex items-center justify-center gap-3 transition-all ${
-                      expert.is_online
-                        ? 'bg-constitution-gold text-justice-black hover:bg-constitution-gold/90'
-                        : 'bg-ink-gray/10 text-ink-gray/60 border border-ink-gray/20 hover:border-constitution-gold/30'
-                    }`}
-                  >
-                    <MessageCircle className="w-5 h-5" />
-                    {expert.is_online ? 'Chat Now' : 'Send Message'}
-                  </button>
                 </div>
               </div>
             </div>
@@ -355,7 +328,7 @@ const ChatWithUsPage: React.FC<ChatWithUsPageProps> = ({ onNavigate }) => {
               No experts found
             </h3>
             <p className="text-ink-gray/60 mb-6 max-w-md mx-auto">
-              {searchTerm || selectedRole !== 'all' 
+              {searchTerm || selectedRole !== 'all'
                 ? 'Try adjusting your search terms or filters'
                 : 'No legal experts are available at the moment. Please check back later.'}
             </p>
