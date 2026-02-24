@@ -262,11 +262,13 @@ CREATE TABLE post_media (
     
     -- Media Details
     media_type media_type NOT NULL,
-    media_url TEXT NOT NULL,
+    media_url TEXT, -- Made NULLABLE for DB storage
+    media_data BYTEA, -- Binary file data
+    media_mime_type VARCHAR(100), -- Explicit mime type for DB storage
     thumbnail_url TEXT,
     file_name VARCHAR(255),
     file_size BIGINT,
-    mime_type VARCHAR(100),
+    mime_type VARCHAR(100), -- Kept for backward compatibility
     
     -- Display
     display_order INTEGER DEFAULT 0,

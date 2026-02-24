@@ -89,13 +89,7 @@ export function CreatePost({ onPostCreated }: CreatePostProps) {
     setIsPublishing(true);
 
     try {
-      const { createPost, uploadFiles } = await import('../../api/postsAPI');
-
-      let media: any[] = [];
-      if (attachedFiles.length > 0) {
-        toast.info('Uploading files...');
-        media = await uploadFiles(attachedFiles.map(af => af.file));
-      }
+      const { createPostWithMedia } = await import('../../api/postsAPI');
 
       // Process manual hashtags
       const hashtagsArray = hashtags.split(',')
@@ -103,14 +97,13 @@ export function CreatePost({ onPostCreated }: CreatePostProps) {
         .filter(tag => tag.length > 0)
         .map(tag => tag.startsWith('#') ? tag.slice(1) : tag);
 
-      await createPost({
+      await createPostWithMedia({
         title: postTitle.trim(),
         content: postContent.trim(),
         postType,
         tags: hashtagsArray,
         isPublic: true,
-        media
-      });
+      }, attachedFiles.map(af => af.file));
 
       // Success - reset form
       setPostContent('');

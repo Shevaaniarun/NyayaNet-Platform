@@ -5,12 +5,19 @@ import { upload } from '../utils/upload';
 
 const router = Router();
 
-// Routes
-router.post('/upload', authenticate, upload.array('files', 5), PostController.uploadFiles);
-router.get('/feed', optionalAuthenticate, PostController.getFeed);
-router.get('/all', optionalAuthenticate, PostController.getPosts); // New route for filtered posts
-router.get('/:postId', optionalAuthenticate, PostController.getPost);
+// Media serving endpoint — serves binary from DB (no auth required for viewing)
+router.get('/media/:mediaId', PostController.getMedia);
 
+// Upload files (returns media data for subsequent post creation)
+router.post('/upload', authenticate, upload.array('files', 5), PostController.uploadFiles);
+
+// Create post with media in a single request (multipart form)
+router.post('/with-media', authenticate, upload.array('files', 5), PostController.createPostWithMedia);
+
+// Feed & listing
+router.get('/feed', optionalAuthenticate, PostController.getFeed);
+router.get('/all', optionalAuthenticate, PostController.getPosts);
+router.get('/:postId', optionalAuthenticate, PostController.getPost);
 
 // Protected routes (require authentication)
 router.post('/', authenticate, PostController.createPost);
