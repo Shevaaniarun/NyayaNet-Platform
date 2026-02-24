@@ -26,9 +26,12 @@ import {
   X,
   Image as ImageIcon
 } from 'lucide-react';
-import { likePost, savePost, createComment, getComments, deletePost, updatePost, uploadFiles } from '../../api/postsAPI';
+import { likePost, savePost, createComment, getComments, deletePost, updatePost, uploadFiles, getMediaUrl } from '../../api/postsAPI';
 import { toast } from 'react-toastify';
 import { CommentCard } from './CommentCard';
+
+const API_BASE_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3000/api';
+const ASSETS_BASE_URL = API_BASE_URL.replace('/api', '');
 
 export interface Post {
   id: string;
@@ -49,12 +52,14 @@ export interface Post {
   tags?: string[];
   media?: Array<{
     id: string;
-    url: string;
-    type: string;
-    mimeType?: string;
-    mediaUrl?: string;
+    mediaUrl?: string; // Legacy
     mediaType?: string;
+    mediaMimeType?: string;
     fileName?: string;
+    displayOrder?: number;
+    url?: string; // Alternative legacy
+    type?: string; // Alternative legacy
+    mimeType?: string; // Alternative legacy
   }>;
   isLiked?: boolean;
   isSaved?: boolean;
@@ -231,17 +236,28 @@ export function PostCard({ post, currentUserId, onDelete, onAuthorClick }: PostC
   };
 
   const renderMedia = (media: any) => {
-    const mediaUrl = media?.url || media?.mediaUrl || '';
-    const mimeType = media?.mimeType || media?.mediaType || media?.type || '';
-    const fileName = media?.fileName || '';
+    // Determine the actual URL to use
+    // If we have an ID, we use the new media endpoint.
+    // If we have a legacy mediaUrl/url, we use that as fallback.
+    let fullMediaUrl = '';
+    if (media.id && !media.mediaUrl && !media.url) {
+      fullMediaUrl = getMediaUrl(media.id);
+    } else {
+      const legacyUrl = media.mediaUrl || media.url || '';
+      if (legacyUrl) {
+        if (legacyUrl.startsWith('http') || legacyUrl.startsWith('data:')) {
+          fullMediaUrl = legacyUrl;
+        } else {
+          fullMediaUrl = `${ASSETS_BASE_URL}${legacyUrl}`;
+        }
+      }
+    }
+
+    const mimeType = media.mediaMimeType || media.mimeType || media.mediaType || media.type || '';
+    const fileName = media.fileName || '';
 
     const isImage = mimeType.includes('image/') ||
-      (mediaUrl && mediaUrl.match(/\.(jpg|jpeg|png|gif|webp|svg|bmp|jfif)$/i));
-
-    let fullMediaUrl = mediaUrl;
-    if (mediaUrl && !mediaUrl.startsWith('http') && !mediaUrl.startsWith('data:')) {
-      fullMediaUrl = `${ASSETS_BASE_URL}${mediaUrl}`;
-    }
+      (fullMediaUrl && fullMediaUrl.match(/\.(jpg|jpeg|png|gif|webp|svg|bmp|jfif)$/i));
 
     if (isImage) {
       return (
@@ -351,7 +367,7 @@ export function PostCard({ post, currentUserId, onDelete, onAuthorClick }: PostC
               <h3
                 className="font-heading font-semibold text-ink-gray hover:text-constitution-gold cursor-pointer"
                 onClick={(e) => {
-                  e.stopPropagation(); 
+                  e.stopPropagation();
                   onAuthorClick?.(post.userId);
                 }}
               >
@@ -380,22 +396,22 @@ export function PostCard({ post, currentUserId, onDelete, onAuthorClick }: PostC
             </span>
           </div>
           {post.title && post.title.trim() && (
-  <div className="mb-8 text-center">
-    {/* Clean, professional headline - center aligned */}
-    <h2 className="text-3xl md:text-4xl font-heading font-bold text-justice-black mb-6 leading-tight mx-auto max-w-4xl">
-      {post.title}
-    </h2>
-    
-    {/* Simple but elegant separator - center aligned */}
-    <div className="flex items-center justify-center mb-4">
-      <div className="h-0.5 w-16 bg-justice-black/10"></div>
-      <div className="mx-4">
-        <Scale className="w-5 h-5 text-constitution-gold" />
-      </div>
-      <div className="h-0.5 w-16 bg-justice-black/10"></div>
-    </div>
-  </div>
-)}
+            <div className="mb-8 text-center">
+              {/* Clean, professional headline - center aligned */}
+              <h2 className="text-3xl md:text-4xl font-heading font-bold text-justice-black mb-6 leading-tight mx-auto max-w-4xl">
+                {post.title}
+              </h2>
+
+              {/* Simple but elegant separator - center aligned */}
+              <div className="flex items-center justify-center mb-4">
+                <div className="h-0.5 w-16 bg-justice-black/10"></div>
+                <div className="mx-4">
+                  <Scale className="w-5 h-5 text-constitution-gold" />
+                </div>
+                <div className="h-0.5 w-16 bg-justice-black/10"></div>
+              </div>
+            </div>
+          )}
 
           <div className="constitution-texture p-6 rounded">
             <p className="text-ink-gray leading-relaxed font-body whitespace-pre-wrap">

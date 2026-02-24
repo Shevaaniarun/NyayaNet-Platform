@@ -2,12 +2,14 @@
  * Messages API - Handle messaging operations
  */
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
 // Get authorization token
 const getAuthToken = (): string | null => {
   return localStorage.getItem('token');
 };
+
+// --- EXPERT APIs ---
 
 // Get all legal experts
 export const getExperts = async () => {
@@ -18,89 +20,14 @@ export const getExperts = async () => {
       'Content-Type': 'application/json'
     }
   });
-  
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error('Get experts error:', errorText);
-    throw new Error('Failed to fetch experts');
-  }
-  
+
+  if (!response.ok) throw new Error('Failed to fetch experts');
   return response.json();
 };
 
-// Get conversation with a specific user
-export const getConversationWithUser = async (userId: string) => {
-  const token = getAuthToken();
-  console.log('Fetching conversation for user:', userId, 'with token:', token ? 'Present' : 'Missing');
-  
-  const response = await fetch(`${API_BASE_URL}/messages/conversation/${userId}`, {
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    }
-  });
-  
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error('Get conversation error:', response.status, errorText);
-    throw new Error(`Failed to fetch conversation: ${response.status} ${errorText}`);
-  }
-  
-  const data = await response.json();
-  console.log('Conversation data received:', data);
-  return data;
-};
+// --- CONVERSATION APIs ---
 
-// Mark all messages as read for a conversation with a user
-export const markMessagesAsRead = async (userId: string) => {
-  const token = getAuthToken();
-  console.log('Marking messages as read for conversation with:', userId);
-  
-  try {
-    const response = await fetch(`${API_BASE_URL}/messages/conversation/${userId}/read`, {
-      method: 'PUT',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      }
-    });
-    
-    if (!response.ok) {
-      console.warn('Failed to mark messages as read:', response.status);
-      // Don't throw error - this is non-critical
-    }
-    
-    return response.ok ? response.json() : null;
-  } catch (error) {
-    console.warn('Error marking messages as read:', error);
-    return null;
-  }
-};
-
-// Send a message
-export const sendMessage = async (recipientId: string, message: string) => {
-  const token = getAuthToken();
-  console.log('Sending message to:', recipientId);
-  
-  const response = await fetch(`${API_BASE_URL}/messages/send`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ recipientId, message })
-  });
-  
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error('Send message error:', errorText);
-    throw new Error('Failed to send message');
-  }
-  
-  return response.json();
-};
-
-// Additional API functions...
+// Get all conversations for current user
 export const getConversations = async () => {
   const token = getAuthToken();
   const response = await fetch(`${API_BASE_URL}/messages/conversations`, {
@@ -109,29 +36,258 @@ export const getConversations = async () => {
       'Content-Type': 'application/json'
     }
   });
-  
-  if (!response.ok) {
-    throw new Error('Failed to fetch conversations');
-  }
-  
+
+  if (!response.ok) throw new Error('Failed to fetch conversations');
   return response.json();
 };
 
-export const markMessageAsRead = async (messageId: string) => {
+// Get conversation details
+export const getConversationDetails = async (conversationId: string) => {
   const token = getAuthToken();
-  const response = await fetch(`${API_BASE_URL}/messages/${messageId}/read`, {
-    method: 'PUT',
+  const response = await fetch(`${API_BASE_URL}/messages/conversations/${conversationId}`, {
     headers: {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json'
     }
   });
-  
-  if (!response.ok) {
-    throw new Error('Failed to mark message as read');
-  }
-  
+
+  if (!response.ok) throw new Error('Failed to fetch conversation details');
   return response.json();
+};
+
+// Start or get a private conversation
+export const startPrivateConversation = async (userId: string) => {
+  const token = getAuthToken();
+  const response = await fetch(`${API_BASE_URL}/messages/conversations/private`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ userId })
+  });
+
+  if (!response.ok) throw new Error('Failed to start conversation');
+  return response.json();
+};
+
+// Create a group
+export const createGroup = async (title: string, memberIds: string[]) => {
+  const token = getAuthToken();
+  const response = await fetch(`${API_BASE_URL}/messages/conversations/group`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ title, memberIds })
+  });
+
+  if (!response.ok) throw new Error('Failed to create group');
+  return response.json();
+};
+
+// Delete conversation
+export const deleteConversation = async (conversationId: string) => {
+  const token = getAuthToken();
+  const response = await fetch(`${API_BASE_URL}/messages/conversations/${conversationId}`, {
+    method: 'DELETE',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    }
+  });
+
+  if (!response.ok) throw new Error('Failed to delete conversation');
+  return response.json();
+};
+
+// --- MESSAGE APIs ---
+
+// Get messages for a conversation (paginated)
+export const getMessages = async (conversationId: string, page = 1, limit = 20) => {
+  const token = getAuthToken();
+  const response = await fetch(`${API_BASE_URL}/messages/${conversationId}?page=${page}&limit=${limit}`, {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    }
+  });
+
+  if (!response.ok) throw new Error('Failed to fetch messages');
+  return response.json();
+};
+
+// Send text message
+export const sendMessage = async (conversationId: string, content: string, messageType = 'TEXT') => {
+  const token = getAuthToken();
+  const response = await fetch(`${API_BASE_URL}/messages/send`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ conversationId, content, messageType })
+  });
+
+  if (!response.ok) throw new Error('Failed to send message');
+  return response.json();
+};
+
+// Send media message
+export const sendMedia = async (conversationId: string, file: File, messageType: 'IMAGE' | 'PDF', content?: string) => {
+  const token = getAuthToken();
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('conversationId', conversationId);
+  formData.append('messageType', messageType);
+  if (content) formData.append('content', content);
+
+  const response = await fetch(`${API_BASE_URL}/messages/send-media`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`
+      // Don't set Content-Type, fetch will set it for FormData
+    },
+    body: formData
+  });
+
+  if (!response.ok) throw new Error('Failed to send media');
+  return response.json();
+};
+
+// Edit message
+export const editMessage = async (messageId: string, content: string) => {
+  const token = getAuthToken();
+  const response = await fetch(`${API_BASE_URL}/messages/${messageId}`, {
+    method: 'PUT',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ content })
+  });
+
+  if (!response.ok) throw new Error('Failed to edit message');
+  return response.json();
+};
+
+// Delete message
+export const deleteMessage = async (messageId: string) => {
+  const token = getAuthToken();
+  const response = await fetch(`${API_BASE_URL}/messages/${messageId}`, {
+    method: 'DELETE',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    }
+  });
+
+  if (!response.ok) throw new Error('Failed to delete message');
+  return response.json();
+};
+
+// --- GROUP MANAGEMENT APIs ---
+
+export const addGroupMember = async (conversationId: string, userId: string) => {
+  const token = getAuthToken();
+  const response = await fetch(`${API_BASE_URL}/messages/group/${conversationId}/add`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ userId })
+  });
+  return response.ok;
+};
+
+export const removeGroupMember = async (conversationId: string, userId: string) => {
+  const token = getAuthToken();
+  const response = await fetch(`${API_BASE_URL}/messages/group/${conversationId}/remove/${userId}`, {
+    method: 'DELETE',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    }
+  });
+  return response.ok;
+};
+
+export const leaveGroup = async (conversationId: string) => {
+  const token = getAuthToken();
+  const response = await fetch(`${API_BASE_URL}/messages/group/${conversationId}/leave`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    }
+  });
+  return response.ok;
+};
+
+// --- BLOCK APIs ---
+
+export const blockUser = async (userId: string) => {
+  const token = getAuthToken();
+  const response = await fetch(`${API_BASE_URL}/messages/block`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ userId })
+  });
+  return response.ok;
+};
+
+export const unblockUser = async (userId: string) => {
+  const token = getAuthToken();
+  const response = await fetch(`${API_BASE_URL}/messages/block/${userId}`, {
+    method: 'DELETE',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    }
+  });
+  return response.ok;
+};
+
+export const getBlockedUsers = async () => {
+  const token = getAuthToken();
+  const response = await fetch(`${API_BASE_URL}/messages/blocked`, {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    }
+  });
+  return response.json();
+};
+
+// --- READ RECEIPT & UTILITY APIs ---
+
+export const markAsRead = async (messageId: string) => {
+  const token = getAuthToken();
+  const response = await fetch(`${API_BASE_URL}/messages/read/${messageId}`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    }
+  });
+  return response.ok;
+};
+
+export const markConversationRead = async (conversationId: string) => {
+  const token = getAuthToken();
+  const response = await fetch(`${API_BASE_URL}/messages/read/conversation/${conversationId}`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    }
+  });
+  return response.ok;
 };
 
 export const getUnreadCount = async () => {
@@ -142,28 +298,17 @@ export const getUnreadCount = async () => {
       'Content-Type': 'application/json'
     }
   });
-  
-  if (!response.ok) {
-    throw new Error('Failed to fetch unread count');
-  }
-  
+  if (!response.ok) return { count: 0 };
   return response.json();
 };
 
-export const startConversation = async (otherUserId: string) => {
-  const token = getAuthToken();
-  const response = await fetch(`${API_BASE_URL}/messages/conversation/start`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ otherUserId })
-  });
-  
-  if (!response.ok) {
-    throw new Error('Failed to start conversation');
-  }
-  
-  return response.json();
+// --- LEGACY COMPATIBILITY ---
+export const getConversationWithUser = async (userId: string) => {
+  // Use startPrivateConversation to get the ID, then fetch messages
+  const { conversationId } = await startPrivateConversation(userId);
+  return getMessages(conversationId, 1, 50);
 };
+
+export const startConversation = startPrivateConversation;
+export const markMessagesAsRead = markConversationRead;
+export const markMessageAsRead = markAsRead;

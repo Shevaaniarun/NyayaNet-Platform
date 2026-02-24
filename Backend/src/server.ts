@@ -1,7 +1,9 @@
+import dotenv from 'dotenv';
+dotenv.config();
+
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
-import dotenv from 'dotenv';
 import discussionRoutes from './routes/discussionRoutes';
 import profileRoutes from './routes/profileRoutes';
 import postRoutes from './routes/postRoutes';
@@ -36,7 +38,11 @@ app.use(express.urlencoded({ extended: true }));
 
 // Request logging for debugging
 app.use((req, res, next) => {
-    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+    const start = Date.now();
+    res.on('finish', () => {
+        const duration = Date.now() - start;
+        console.log(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl} ${res.statusCode} - ${duration}ms`);
+    });
     next();
 });
 
@@ -65,7 +71,6 @@ app.use('/api/posts', postRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use("/api", authRoutes);
 app.use("/api/notes", noteRoutes);
-app.use('/api/profile', profileRoutes);
 app.use('/api/network', networkRoutes);
 
 app.use('/api/messages', messagesRoutes);
