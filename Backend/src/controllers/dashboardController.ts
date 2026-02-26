@@ -92,7 +92,7 @@ export const getActivityFeed = async (req: AuthRequest, res: Response) => {
 
 /**
  * GET /api/dashboard/breakdown
- * Returns contribution breakdown counts
+ * Returns contribution breakdown
  */
 export const getContributionBreakdown = async (
   req: AuthRequest,
@@ -106,9 +106,21 @@ export const getContributionBreakdown = async (
 
     const breakdown = await dashboardService.fetchContributionBreakdown(userId);
 
+    // Map the data to match what your component expects
+    const mappedBreakdown = {
+      posts: breakdown.posts_count,
+      discussions: breakdown.discussions_count,
+      replies: breakdown.replies_count,
+      bestAnswers: breakdown.best_answers_count,
+      aiQueries: breakdown.ai_queries_count,
+      bookmarks: breakdown.bookmarks_count,
+      followers: breakdown.followers_count,
+      postLikesReceived: breakdown.post_likes_received
+    };
+
     return res.status(200).json({
       success: true,
-      data: breakdown,
+      data: mappedBreakdown,
     });
   } catch (error) {
     console.error('Contribution Breakdown Error:', error);
@@ -141,6 +153,37 @@ export const getUserBadges = async (req: AuthRequest, res: Response) => {
     return res.status(500).json({
       success: false,
       message: 'Failed to load badges',
+    });
+  }
+};
+
+/**
+ * POST /api/dashboard/check-badges
+ * Manually trigger badge check for the current user
+ * ADD THIS NEW FUNCTION
+ */
+export const checkUserBadges = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ success: false, message: 'Authentication required' });
+    }
+
+    await dashboardService.checkAndAwardBadges(userId);
+
+    // Get updated badges after checking
+    const updatedBadges = await dashboardService.fetchUserBadges(userId);
+
+    return res.status(200).json({
+      success: true,
+      message: 'Badges checked and awarded successfully',
+      data: updatedBadges
+    });
+  } catch (error) {
+    console.error('Check Badges Error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to check badges',
     });
   }
 };

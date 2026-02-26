@@ -1,6 +1,6 @@
 import React from 'react';
 import './ContributionBreakdown.css';
-import { FileText, MessageCircle, Reply, Trophy, Bot, Bookmark, BarChart3 } from 'lucide-react';
+import { FileText, MessageCircle, Reply, Trophy, Users, Heart, BarChart3 } from 'lucide-react';
 
 // Types
 interface ContributionBreakdownData {
@@ -8,8 +8,8 @@ interface ContributionBreakdownData {
   discussions: number;
   replies: number;
   bestAnswers: number;
-  aiQueries: number;
-  lawBookmarks: number;
+  followers: number;        // Changed from aiQueries
+  postLikesReceived: number; // Changed from lawBookmarks
 }
 
 interface Props {
@@ -37,14 +37,14 @@ const ContributionBreakdown: React.FC<Props> = ({
     discussions: 0,
     replies: 0,
     bestAnswers: 0,
-    aiQueries: 0,
-    lawBookmarks: 0
+    followers: 0,
+    postLikesReceived: 0
   };
 
   // Use provided data or default
   const safeData = data || defaultData;
 
-  // Stat card configuration with Lucide icons
+  // Stat card configuration with Lucide icons - Updated with new metrics
   const statCardsConfig: StatCardConfig[] = [
     {
       key: 'posts',
@@ -91,35 +91,49 @@ const ContributionBreakdown: React.FC<Props> = ({
       color: 'var(--stat-best-answers, #f59e0b)'
     },
     {
-      key: 'aiQueries',
-      label: 'AI Queries',
-      description: 'Legal AI interactions',
-      icon: <Bot
+      key: 'followers',
+      label: 'Followers',
+      description: 'Users who follow you',
+      icon: <Users
         size={20}
         strokeWidth={2}
         className="text-constitution-gold"
       />,
-      color: 'var(--stat-ai, #ec4899)'
+      color: 'var(--stat-followers, #ec4899)'
     },
     {
-      key: 'lawBookmarks',
-      label: 'Law Bookmarks',
-      description: 'Saved legal sections',
-      icon: <Bookmark
+      key: 'postLikesReceived',
+      label: 'Post Likes',
+      description: 'Likes received on your posts',
+      icon: <Heart
         size={20}
         strokeWidth={2}
         className="text-constitution-gold"
       />,
-      color: 'var(--stat-bookmarks, #06b6d4)'
+      color: 'var(--stat-likes, #ef4444)'
     }
   ];
 
-  // Calculate total contributions
-  const totalContributions = Object.values(safeData).reduce((sum, val) => sum + (val || 0), 0);
+  // Calculate total contributions — include likes received as part of contributions
+  const calculateTotalContributions = () => {
+    const contributionMetrics = [
+      safeData.posts,
+      safeData.discussions,
+      safeData.replies,
+      safeData.bestAnswers,
+      // Treat post likes as a contribution metric so they count toward totals
+      safeData.postLikesReceived
+    ];
+    return contributionMetrics.reduce((sum, val) => sum + (val || 0), 0);
+  };
 
-  // Format large numbers - FIXED: Ensure we have a valid number
+  const totalContributions = calculateTotalContributions();
+
+  // Calculate total engagement (followers only)
+  const totalEngagement = (safeData.followers || 0);
+
+  // Format large numbers
   const formatNumber = (num: number | undefined): string => {
-    // Handle undefined or null values
     const safeNum = num || 0;
     
     if (safeNum >= 1000000) {
@@ -134,7 +148,7 @@ const ContributionBreakdown: React.FC<Props> = ({
   // Render loading state
   if (loading) {
     return (
-      <div className="breakdown-container">
+      <div className="breakdown-container aged-paper rounded-xl p-6 border border-constitution-gold/20">
         <div className="breakdown-header">
           <h2 className="breakdown-title">Contribution Breakdown</h2>
           <div className="breakdown-subtitle">
@@ -161,7 +175,7 @@ const ContributionBreakdown: React.FC<Props> = ({
   }
 
   // Render empty state (new user or error)
-  const isEmpty = !data || totalContributions === 0;
+  const hasNoContributions = totalContributions === 0 && totalEngagement === 0;
 
   return (
     <div className="aged-paper rounded-xl p-6 border border-constitution-gold/20">
@@ -169,11 +183,11 @@ const ContributionBreakdown: React.FC<Props> = ({
         <div className="breakdown-title-section">
           <h2 className="breakdown-title">Contribution Breakdown</h2>
           <div className="breakdown-subtitle">
-            How you contribute to NyayaNet
+            Your impact on NyayaNet
           </div>
         </div>
         
-        {!isEmpty && !error && (
+        {!hasNoContributions && !error && (
           <div className="breakdown-total">
             <span className="total-label">Total Contributions:</span>
             <span className="total-value">{formatNumber(totalContributions)}</span>
@@ -187,7 +201,7 @@ const ContributionBreakdown: React.FC<Props> = ({
         </div>
       )}
 
-      {isEmpty && !error ? (
+      {hasNoContributions && !error ? (
         <div className="empty-state">
           <div className="empty-state-icon">
             <BarChart3
@@ -199,7 +213,7 @@ const ContributionBreakdown: React.FC<Props> = ({
           <h3 className="empty-state-title">No contributions yet</h3>
           <p className="empty-state-description">
             Your contribution breakdown will appear here as you participate in discussions, 
-            create content, and use legal resources.
+            create content, and build your community.
           </p>
           <div className="empty-state-tips">
             <div className="tip">
@@ -208,7 +222,7 @@ const ContributionBreakdown: React.FC<Props> = ({
                 strokeWidth={2}
                 className="text-constitution-gold"
               />
-              Start by joining a discussion
+              Join a discussion
             </div>
             <div className="tip">
               <FileText
@@ -219,70 +233,98 @@ const ContributionBreakdown: React.FC<Props> = ({
               Create your first post
             </div>
             <div className="tip">
-              <Bot
+              <Users
                 size={20}
                 strokeWidth={2}
                 className="text-constitution-gold"
               />
-              Try our Legal AI assistant
+              Connect with others
             </div>
           </div>
         </div>
       ) : (
-        <div className="stats-grid">
-          {statCardsConfig.map((config) => {
-            const value = safeData[config.key];
-            const percentage = totalContributions > 0 
-              ? Math.round((value / totalContributions) * 100) 
-              : 0;
-            
-            return (
-              <div 
-                key={config.key}
-                className="stat-card"
-                style={{ 
-                  '--stat-color': config.color 
-                } as React.CSSProperties}
-              >
-                <div className="stat-header">
-                  <div 
-                    className="stat-icon-wrapper"
-                    style={{ backgroundColor: `${config.color}15` }}
-                  >
-                    <div className="stat-icon" style={{ color: config.color }}>
-                      {config.icon}
+        <>
+          <div className="stats-grid">
+            {statCardsConfig.map((config) => {
+              const value = safeData[config.key] || 0;
+              
+              // Calculate percentage differently for engagement vs contribution metrics
+              let percentage = 0;
+              if (config.key === 'followers') {
+                // followers are engagement; base percentage on engagement total
+                percentage = totalEngagement > 0 
+                  ? Math.round((value / totalEngagement) * 100) 
+                  : 0;
+              } else {
+                // everything else (including postLikesReceived) is treated as contribution
+                percentage = totalContributions > 0 
+                  ? Math.round((value / totalContributions) * 100) 
+                  : 0;
+              }
+              
+              return (
+                <div 
+                  key={config.key}
+                  className="stat-card"
+                  style={{ 
+                    '--stat-color': config.color 
+                  } as React.CSSProperties}
+                >
+                  <div className="stat-header">
+                    <div 
+                      className="stat-icon-wrapper"
+                      style={{ backgroundColor: `${config.color}15` }}
+                    >
+                      <div className="stat-icon" style={{ color: config.color }}>
+                        {config.icon}
+                      </div>
+                    </div>
+                    
+                    <div className="stat-value-wrapper">
+                      <div className="stat-value">{formatNumber(value)}</div>
+                      {percentage > 0 && (
+                        <div className="stat-percentage">
+                          {percentage}% of total {config.key === 'followers' || config.key === 'postLikesReceived' ? 'engagement' : 'contributions'}
+                        </div>
+                      )}
                     </div>
                   </div>
                   
-                  <div className="stat-value-wrapper">
-                    <div className="stat-value">{formatNumber(value)}</div>
-                    {percentage > 0 && (
-                      <div className="stat-percentage">
-                        {percentage}% of total
-                      </div>
-                    )}
-                  </div>
+                  <h3 className="stat-label">{config.label}</h3>
+                  <p className="stat-description">{config.description}</p>
+                  
+                  {/* Visual indicator bar */}
+                  {percentage > 0 && (
+                    <div className="stat-bar-container">
+                      <div 
+                        className="stat-bar"
+                        style={{ 
+                          width: `${Math.min(percentage, 100)}%`,
+                          backgroundColor: config.color
+                        }}
+                      />
+                    </div>
+                  )}
                 </div>
-                
-                <h3 className="stat-label">{config.label}</h3>
-                <p className="stat-description">{config.description}</p>
-                
-                {/* Visual indicator bar */}
-                {percentage > 0 && (
-                  <div className="stat-bar-container">
-                    <div 
-                      className="stat-bar"
-                      style={{ 
-                        width: `${Math.min(percentage, 100)}%`,
-                        backgroundColor: config.color
-                      }}
-                    />
-                  </div>
-                )}
+              );
+            })}
+          </div>
+
+          {/* Engagement Summary */}
+          {totalEngagement > 0 && (
+            <div className="engagement-summary">
+              <div className="engagement-summary-content">
+                <Users size={16} className="engagement-icon" />
+                <span className="engagement-text">
+                  You have <strong>{formatNumber(totalEngagement)}</strong> followers
+                  {totalContributions > 0 && (
+                    <>, and <strong>{formatNumber(safeData.postLikesReceived || 0)}</strong> post likes counted as contributions</>
+                  )}
+                </span>
               </div>
-            );
-          })}
-        </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

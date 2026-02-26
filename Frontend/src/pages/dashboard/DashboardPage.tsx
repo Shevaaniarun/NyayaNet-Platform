@@ -13,11 +13,9 @@ import {
   getDashboardOverview,
   getContributionHeatmap,
   getContributionBreakdown,
-  getUserBadges
+  getUserBadges,
+  getActivityFeed
 } from "../../api/dashboardAPI";
-
-// For activity feed
-import { getFeed } from '../../api/postsAPI';
 
 const DashboardPage: React.FC = () => {
   // State for dashboard data
@@ -39,23 +37,42 @@ const DashboardPage: React.FC = () => {
       try {
         const currentYear = new Date().getFullYear();
         
-        // Fetch all data in parallel
-        const [overviewData, heatmapData, breakdownData, badgesData] = 
-          await Promise.all([
-            getDashboardOverview(),
-            getContributionHeatmap(currentYear),
-            getContributionBreakdown(),
-            getUserBadges()
-          ]);
+        // Fetch overview, heatmap and breakdown first
+        const [overviewData, heatmapData, breakdownData] = await Promise.all([
+          getDashboardOverview(),
+          getContributionHeatmap(currentYear),
+          getContributionBreakdown()
+        ]);
+
+        // Trigger badge evaluation on the backend (awards badges if thresholds met), then fetch badges
+        // Import placed dynamically to avoid circular imports at top-level during build
+        const { checkUserBadges, getUserBadges } = await import('../../api/dashboardAPI');
+        try {
+          await checkUserBadges();
+        } catch (e) {
+          console.warn('Badge check failed (non-fatal):', e);
+        }
+        const badgesData = await getUserBadges();
         
-        // For activities, use the feed API
+        // For activities, use the user-scoped activity feed (dashboard endpoint)
         let activitiesData: any[] = []; // Explicitly type as any[]
         try {
-          const feedData = await getFeed(1, 10);
-          activitiesData = feedData.posts || [];
+          const feedItems = await getActivityFeed(1, 10);
+
+          // Map backend activity items to the ActivityTimeline's expected shape
+          activitiesData = (Array.isArray(feedItems) ? feedItems : []).map((f: any) => ({
+            id: f.id,
+            userId: f.user_id || f.userId || '',
+            title: f.contributionType || f.entityType || (f.entity_id ? `${f.entity_type || 'ITEM'} ${f.entity_id}` : 'Activity'),
+            content: f.summary || f.content || `${f.contributionType || ''}`,
+            postType: f.entityType || f.entity_type || 'POST',
+            createdAt: f.createdAt || f.created_at || new Date().toISOString(),
+            points: Number(f.points || 0),
+            entityType: f.entityType || f.entity_type,
+            entityId: f.entityId || f.entity_id
+          }));
         } catch (feedError) {
-          console.warn('Could not fetch activities from feed:', feedError);
-          // Fallback: use heatmap data or empty array
+          console.warn('Could not fetch user activity feed:', feedError);
           activitiesData = [];
         }
         

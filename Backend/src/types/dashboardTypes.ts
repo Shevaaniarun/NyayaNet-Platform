@@ -1,35 +1,32 @@
 /* =========================================
-   DASHBOARD TYPES — NyayaNet
+   DASHBOARD TYPES — NyayaNet (UPDATED)
    ========================================= */
 
 /* ---------- OVERVIEW ---------- */
-
 export interface DashboardOverview {
   total_points: number;
   total_contributions: number;
-
   current_streak: number;
   longest_streak: number;
   last_active_at: string | null;
-
   posts_count: number;
   discussions_count: number;
   replies_count: number;
   best_answers_count: number;
   ai_queries_count: number;
   bookmarks_count: number;
+  followers_count: number;        // ADD THIS
+  post_likes_received: number;    // ADD THIS
 }
 
 /* ---------- HEATMAP ---------- */
-
 export interface ContributionHeatmapDay {
-  date: string;        // YYYY-MM-DD
-  count: number;       // number of activities
-  points: number;      // total points earned that day
+  date: string;
+  count: number;
+  points: number;
 }
 
 /* ---------- ACTIVITY FEED ---------- */
-
 export type ContributionType =
   | 'POST_CREATED'
   | 'DISCUSSION_CREATED'
@@ -46,8 +43,7 @@ export interface ActivityFeedItem {
   created_at: string;
 }
 
-/* ---------- BREAKDOWN ---------- */
-
+/* ---------- BREAKDOWN (UPDATED) ---------- */
 export interface ContributionBreakdown {
   posts_count: number;
   discussions_count: number;
@@ -55,10 +51,11 @@ export interface ContributionBreakdown {
   best_answers_count: number;
   ai_queries_count: number;
   bookmarks_count: number;
+  followers_count: number;        // ADD THIS
+  post_likes_received: number;    // ADD THIS
 }
 
 /* ---------- BADGES ---------- */
-
 export interface Badge {
   id: string;
   code: string;
@@ -66,9 +63,6 @@ export interface Badge {
   description: string;
   icon: string | null;
   threshold: number | null;
-
   earned: boolean;
   earned_at: string | null;
 }
-
-

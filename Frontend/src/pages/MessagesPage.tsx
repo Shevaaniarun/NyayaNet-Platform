@@ -1,623 +1,557 @@
 /**
- * Messages Page - View and send messages to legal experts
- * Updated with better error handling
+ * Messages Page - WhatsApp/Instagram-style split-pane view
  */
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { getConversationWithUser, sendMessage, markMessagesAsRead } from '../api/messagesAPI';
-import { ArrowLeft, Send, User, Clock, Calendar, Shield, Paperclip, Mic, MoreVertical, Check, CheckCheck, Info, VolumeX, MessageCircle, AlertCircle } from 'lucide-react';
+import {
+  getConversations,
+  getMessages,
+  sendMessage,
+  sendMedia,
+  getConversationDetails,
+  startPrivateConversation,
+  createGroup,
+  editMessage,
+  deleteMessage,
+  markConversationRead,
+  blockUser,
+  unblockUser,
+  getBlockedUsers,
+  API_BASE_URL
+} from '../api/messagesAPI';
+import {
+  ArrowLeft, Send, User, Clock, Calendar, Shield, Paperclip,
+  Mic, MoreVertical, Check, CheckCheck, Info, VolumeX,
+  MessageCircle, AlertCircle, Search, Gavel, Plus, X, Trash2, Edit2, Ban, Image as ImageIcon, FileText
+} from 'lucide-react';
 import { toast } from 'react-toastify';
 
 interface Message {
   id: string;
   sender_id: string;
-  recipient_id?: string;
-  message: string;
-  content?: string; // Some APIs might use 'content' instead of 'message'
-  is_read: boolean;
+  message_type: 'TEXT' | 'IMAGE' | 'PDF' | 'SYSTEM';
+  content: string;
+  is_edited: boolean;
+  is_deleted: boolean;
   created_at: string;
   sender_name: string;
   sender_photo: string;
-  recipient_name?: string;
-  recipient_photo?: string;
-  sender_role?: string;
+  sender_role: string;
+}
+
+interface Conversation {
+  id: string;
+  conversation_type: 'PRIVATE' | 'GROUP';
+  display_name: string;
+  avatar_url: string | null;
+  last_message: string;
+  last_message_at: string;
+  unread_count: number;
+  other_user_id?: string;
 }
 
 interface MessagesPageProps {
   onNavigate: (path: string) => void;
+  urlId?: string | null;
 }
 
-const MessagesPage: React.FC<MessagesPageProps> = ({ onNavigate }) => {
-  // Extract userId from URL
-  const getUserIdFromUrl = () => {
-    const path = window.location.pathname;
-    const match = path.match(/\/messages\/([^\/]+)/);
-    return match ? match[1] : null;
-  };
-
-  const userId = getUserIdFromUrl();
+const MessagesPage: React.FC<MessagesPageProps> = ({ onNavigate, urlId: propId }) => {
+  const urlId = propId || null;
+  const [activeConvId, setActiveConvId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [activeConvDetails, setActiveConvDetails] = useState<any | null>(null);
+
   const [newMessage, setNewMessage] = useState('');
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [loadingConv, setLoadingConv] = useState(true);
   const [sending, setSending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [otherUser, setOtherUser] = useState<{ name: string; photo: string; role?: string; isOnline?: boolean } | null>(null);
+  const [sidebarSearch, setSidebarSearch] = useState('');
+
+  // Group creation state
+  const [showCreateGroup, setShowCreateGroup] = useState(false);
+  const [groupTitle, setGroupTitle] = useState('');
+
+  // Message edit state
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  const [editContent, setEditContent] = useState('');
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const messagesContainerRef = useRef<HTMLDivElement>(null);
-  
-  // Get current user from localStorage
-  const getCurrentUser = () => {
-    try {
-      const userStr = localStorage.getItem('user');
-      if (!userStr) {
-        console.error('No user found in localStorage');
-        return null;
-      }
-      return JSON.parse(userStr);
-    } catch (error) {
-      console.error('Error parsing user from localStorage:', error);
-      return null;
-    }
-  };
-  
-  const currentUser = getCurrentUser();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
   const currentUserId = currentUser?.id;
 
-  // Fetch messages
-  const fetchMessages = useCallback(async () => {
-    if (!userId) {
-      console.error('No userId provided in URL');
-      setError('No user selected for conversation');
-      setLoading(false);
-      return;
-    }
-    
+  // 1. Fetch Conversations
+  const fetchConversations = useCallback(async () => {
     try {
-      setLoading(true);
-      
-      const data = await getConversationWithUser(userId);
-      
-      // Normalize message data
-      const normalizedMessages = Array.isArray(data) ? data.map((msg: any) => ({
-        id: msg.id,
-        sender_id: msg.sender_id,
-        recipient_id: msg.recipient_id,
-        message: msg.message || msg.content || '', // Handle both 'message' and 'content' fields
-        is_read: msg.is_read || false,
-        created_at: msg.created_at,
-        sender_name: msg.sender_name || 'Unknown',
-        sender_photo: msg.sender_photo || '',
-        recipient_name: msg.recipient_name,
-        recipient_photo: msg.recipient_photo,
-        sender_role: msg.sender_role
-      })) : [];
-      
-      setMessages(normalizedMessages);
-      
-      // Determine other user info
-      if (normalizedMessages.length > 0) {
-        const firstMessage = normalizedMessages[0];
-        
-        const otherUserInfo = firstMessage.sender_id === currentUserId 
-          ? { 
-              name: firstMessage.recipient_name || 'Legal Expert', 
-              photo: firstMessage.recipient_photo || '',
-              role: firstMessage.sender_role
-            }
-          : { 
-              name: firstMessage.sender_name || 'Legal Expert', 
-              photo: firstMessage.sender_photo || '',
-              role: firstMessage.sender_role
-            };
-        
-        setOtherUser(otherUserInfo);
-      } else {
-        // If no messages, we need to get expert info from somewhere else
-        // For now, set a placeholder
-        setOtherUser({
-          name: 'Legal Expert',
-          photo: '',
-          role: 'LAWYER'
-        });
-      }
-      
-      // Mark messages as read
-      if (normalizedMessages.length > 0) {
-        const unreadMessages = normalizedMessages.filter((msg: Message) => 
-          !msg.is_read && msg.sender_id !== currentUserId
-        );
-        if (unreadMessages.length > 0) {
-          await markMessagesAsRead(userId);
-        }
-      }
-      
-      setError(null);
-    } catch (err: any) {
-      console.error('Error fetching messages:', err);
-      const errorMessage = err.message || 'Failed to load messages';
-      setError(errorMessage);
-      
-      // Show toast only for non-404 errors (404 might mean no conversation yet)
-      if (!err.message?.includes('404') && !err.message?.includes('Not Found')) {
-        toast.error(`Failed to load conversation: ${errorMessage}`);
-      }
-      
-      // Set empty messages array
-      setMessages([]);
+      setLoadingConv(true);
+      const data = await getConversations();
+      setConversations(data);
+    } catch (err) {
+      console.error('Error fetching conversations:', err);
     } finally {
-      setLoading(false);
+      setLoadingConv(false);
     }
-  }, [userId, currentUserId]);
+  }, []);
+
+  // 2. Resolve Active Conversation
+  useEffect(() => {
+    const resolveChat = async () => {
+      if (!urlId) {
+        setActiveConvId(null);
+        setMessages([]);
+        setActiveConvDetails(null);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        // Try getting details (assuming urlId is conversationId)
+        try {
+          const details = await getConversationDetails(urlId);
+          if (details) {
+            setActiveConvId(urlId);
+            setActiveConvDetails(details);
+            const msgs = await getMessages(urlId);
+            setMessages(msgs);
+            return;
+          }
+        } catch (e) {
+          // If 404/error, it might be a userId
+          const { conversationId } = await startPrivateConversation(urlId);
+          onNavigate(`/messages/${conversationId}`); // Redirect to canonical convo URL
+        }
+      } catch (err) {
+        toast.error('Failed to load chat');
+        onNavigate('/messages');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    resolveChat();
+  }, [urlId]);
+
+  // 3. Polling for messages
+  useEffect(() => {
+    if (!activeConvId) return;
+
+    const interval = setInterval(async () => {
+      try {
+        const msgs = await getMessages(activeConvId);
+        setMessages(msgs);
+        // Also update unread count for this convo in sidebar if needed
+      } catch (e) { }
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [activeConvId]);
 
   useEffect(() => {
-    if (userId) {
-      fetchMessages();
-      
-      // Set up polling for new messages
-      const interval = setInterval(fetchMessages, 10000); // Poll every 10 seconds
-      return () => clearInterval(interval);
-    } else {
-      setError('No conversation selected');
-      setLoading(false);
-    }
-  }, [userId, fetchMessages]);
+    fetchConversations();
+    const interval = setInterval(fetchConversations, 30000);
+    return () => clearInterval(interval);
+  }, [fetchConversations]);
 
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
 
   const scrollToBottom = () => {
-    setTimeout(() => {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, 100);
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
+
+  // --- ACTIONS ---
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!newMessage.trim() || !userId) {
-      toast.error('Please enter a message');
-      return;
-    }
-    
+    if (!newMessage.trim() || !activeConvId) return;
+
     try {
       setSending(true);
-      await sendMessage(userId, newMessage);
+      await sendMessage(activeConvId, newMessage);
       setNewMessage('');
-      
-      // Refresh messages
-      await fetchMessages();
-      
-      toast.success('Message sent!');
+      const msgs = await getMessages(activeConvId);
+      setMessages(msgs);
+      fetchConversations();
     } catch (err: any) {
-      console.error('Error sending message:', err);
-      const errorMessage = err.message || 'Failed to send message';
-      setError(errorMessage);
-      toast.error(`Failed to send message: ${errorMessage}`);
+      toast.error(err.message || 'Failed to send');
     } finally {
       setSending(false);
     }
   };
 
-  const handleBack = () => {
-    onNavigate('/chat-with-us');
-  };
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !activeConvId) return;
 
-  const formatMessageTime = (timestamp: string) => {
+    const type = file.type.startsWith('image/') ? 'IMAGE' : 'PDF';
+    if (type === 'PDF' && file.type !== 'application/pdf') {
+      toast.warn('Only images and PDFs are supported');
+      return;
+    }
+
     try {
-      const date = new Date(timestamp);
-      const now = new Date();
-      const diff = now.getTime() - date.getTime();
-      const minutes = Math.floor(diff / 60000);
-      const hours = Math.floor(minutes / 60);
-      const days = Math.floor(hours / 24);
-
-      if (minutes < 1) return 'Just now';
-      if (minutes < 60) return `${minutes}m ago`;
-      if (hours < 24) return `${hours}h ago`;
-      if (days < 7) return `${days}d ago`;
-      
-      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-    } catch (error) {
-      return 'Unknown time';
+      setSending(true);
+      await sendMedia(activeConvId, file, type);
+      const msgs = await getMessages(activeConvId);
+      setMessages(msgs);
+      fetchConversations();
+    } catch (err: any) {
+      toast.error('Upload failed');
+    } finally {
+      setSending(false);
     }
   };
 
-  const formatHeaderDate = (timestamp: string) => {
+  const handleEditMessage = async (id: string, content: string) => {
     try {
-      const date = new Date(timestamp);
-      const today = new Date();
-      const yesterday = new Date(today);
-      yesterday.setDate(yesterday.getDate() - 1);
-
-      if (date.toDateString() === today.toDateString()) {
-        return 'Today';
-      } else if (date.toDateString() === yesterday.toDateString()) {
-        return 'Yesterday';
-      } else if (date.getFullYear() === today.getFullYear()) {
-        return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
-      } else {
-        return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-      }
-    } catch (error) {
-      return 'Unknown date';
+      await editMessage(id, content);
+      setEditingMessageId(null);
+      const msgs = await getMessages(activeConvId!);
+      setMessages(msgs);
+      toast.success('Message updated');
+    } catch (e) {
+      toast.error('Failed to edit');
     }
   };
 
-  const groupMessagesByDate = () => {
-    const groups: { [key: string]: Message[] } = {};
-    
-    messages.forEach((message: Message) => {
-      try {
-        const date = formatHeaderDate(message.created_at);
-        if (!groups[date]) {
-          groups[date] = [];
-        }
-        groups[date].push(message);
-      } catch (error) {
-        console.error('Error grouping message:', error);
-      }
-    });
-    
-    return groups;
+  const handleDeleteMessage = async (id: string) => {
+    if (!window.confirm('Delete this message?')) return;
+    try {
+      await deleteMessage(id);
+      const msgs = await getMessages(activeConvId!);
+      setMessages(msgs);
+    } catch (e) {
+      toast.error('Failed to delete');
+    }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-justice-black p-8">
-        <div className="max-w-5xl mx-auto">
-          <div className="flex justify-center items-center h-64 flex-col gap-4">
-            <div className="relative">
-              <div className="w-16 h-16 border-4 border-constitution-gold/20 border-t-constitution-gold rounded-full animate-spin"></div>
-              <MessageCircle className="w-8 h-8 text-constitution-gold absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" />
-            </div>
-            <p className="text-judge-ivory/60">Loading conversation...</p>
-            <p className="text-judge-ivory/40 text-sm">User ID: {userId}</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const handleCreateGroup = async () => {
+    if (!groupTitle.trim()) return;
+    try {
+      const { conversationId } = await createGroup(groupTitle, []);
+      setShowCreateGroup(false);
+      setGroupTitle('');
+      onNavigate(`/messages/${conversationId}`);
+      fetchConversations();
+    } catch (e) {
+      toast.error('Failed to create group');
+    }
+  };
 
-  const messageGroups = groupMessagesByDate();
+  const formatTime = (ts: string) => {
+    try {
+      const d = new Date(ts);
+      return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } catch { return ''; }
+  };
+
+  const filteredConversations = conversations.filter(c => {
+    const name = c.display_name || 'Unnamed Conversation';
+    return name.toLowerCase().includes(sidebarSearch.toLowerCase());
+  });
 
   return (
-    <div className="flex flex-col h-screen bg-justice-black">
-      {/* Header */}
-      <div className="bg-justice-black/80 border-b border-constitution-gold/20 px-6 py-4 flex items-center justify-between backdrop-blur-sm">
-        <div className="flex items-center gap-4">
-          <button
-            onClick={handleBack}
-            className="p-2 rounded-full hover:bg-constitution-gold/10 transition-colors group"
-            title="Back to experts"
-          >
-            <ArrowLeft className="w-5 h-5 text-constitution-gold group-hover:-translate-x-1 transition-transform" />
-          </button>
-          
-          <div className="flex items-center gap-3">
-            <div className="relative">
-              <div className="w-12 h-12 rounded-full border-2 border-constitution-gold overflow-hidden bg-constitution-gold/10">
-                {otherUser?.photo ? (
-                  <img 
-                    src={otherUser.photo} 
-                    alt={otherUser.name} 
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).style.display = 'none';
-                      const parent = (e.target as HTMLImageElement).parentElement;
-                      if (parent) {
-                        parent.innerHTML = `
-                          <div class="w-full h-full bg-constitution-gold/10 flex items-center justify-center">
-                            <svg class="w-6 h-6 text-constitution-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-                            </svg>
-                          </div>
-                        `;
-                      }
-                    }}
-                  />
-                ) : (
-                  <div className="w-full h-full bg-constitution-gold/10 flex items-center justify-center">
-                    <User className="w-6 h-6 text-constitution-gold" />
-                  </div>
-                )}
-              </div>
-              {/* Online indicator */}
-              {otherUser?.isOnline && (
-                <div className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 rounded-full border-2 border-justice-black"></div>
-              )}
-            </div>
-            
-            <div>
-              <h2 className="font-heading font-bold text-judge-ivory text-lg">{otherUser?.name || 'Legal Expert'}</h2>
-              <div className="flex items-center gap-2">
-                {otherUser?.role && (
-                  <span className="px-2 py-0.5 bg-constitution-gold/10 text-judge-ivory border border-constitution-gold/20 rounded-full text-[10px] font-bold uppercase tracking-wider">
-                    {otherUser.role.replace('_', ' ')}
-                  </span>
-                )}
-                <span className="text-judge-ivory/60 text-xs flex items-center gap-1">
-                  <Clock className="w-3 h-3" />
-                  Usually replies within 2 hours
-                </span>
-              </div>
+    <div className="flex h-screen bg-justice-black overflow-hidden font-sans">
+      {/* Sidebar */}
+      <div className={`w-full md:w-80 lg:w-96 flex-shrink-0 border-r border-constitution-gold/20 flex flex-col bg-justice-black/40 ${urlId ? 'hidden md:flex' : 'flex'}`}>
+        <div className="p-6 border-b border-constitution-gold/20 flex flex-col gap-4">
+          <div className="flex items-center justify-between">
+            <h1 className="font-bold text-judge-ivory text-xl tracking-tight">Legal Chambers</h1>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowCreateGroup(true)}
+                className="p-2 text-constitution-gold hover:bg-constitution-gold/10 rounded-lg transition-all"
+                title="Create Group"
+              >
+                <Plus className="w-5 h-5" />
+              </button>
+              <button
+                onClick={() => onNavigate('/chat-with-us')}
+                className="p-2 text-constitution-gold hover:bg-constitution-gold/10 rounded-lg transition-all"
+                title="New Chat"
+              >
+                <MessageCircle className="w-5 h-5" />
+              </button>
             </div>
           </div>
-        </div>
-        
-        <div className="flex items-center gap-2">
-          <button className="p-2 rounded-full hover:bg-constitution-gold/10 transition-colors" title="Conversation info">
-            <Info className="w-5 h-5 text-constitution-gold" />
-          </button>
-          <button className="p-2 rounded-full hover:bg-constitution-gold/10 transition-colors" title="Mute notifications">
-            <VolumeX className="w-5 h-5 text-constitution-gold" />
-          </button>
-          <button className="p-2 rounded-full hover:bg-constitution-gold/10 transition-colors" title="More options">
-            <MoreVertical className="w-5 h-5 text-constitution-gold" />
-          </button>
-        </div>
-      </div>
 
-      {/* Messages Container */}
-      <div 
-        ref={messagesContainerRef}
-        className="flex-1 overflow-y-auto bg-justice-black/50"
-      >
-        <div className="max-w-3xl mx-auto px-4 md:px-8 py-8">
-          {error && messages.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="w-20 h-20 mx-auto mb-6 rounded-full border-2 border-constitution-gold/20 flex items-center justify-center bg-constitution-gold/10">
-                <AlertCircle className="w-10 h-10 text-seal-red" />
-              </div>
-              <h3 className="font-heading font-bold text-judge-ivory text-xl mb-2">
-                {error.includes('404') || error.includes('Not Found') 
-                  ? 'Start a Conversation' 
-                  : 'Error Loading Messages'}
-              </h3>
-              <p className="text-judge-ivory/70 mb-6 max-w-md mx-auto">
-                {error.includes('404') || error.includes('Not Found') 
-                  ? 'No conversation found. Send a message to start chatting!'
-                  : error}
-              </p>
-              <div className="flex flex-col gap-3 max-w-sm mx-auto">
-                <p className="text-judge-ivory/40 text-sm">
-                  Current User: {currentUserId || 'Not logged in'}
-                </p>
-                <p className="text-judge-ivory/40 text-sm">
-                  Other User: {userId || 'No user selected'}
-                </p>
-              </div>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-constitution-gold/40" />
+            <input
+              type="text"
+              placeholder="Search conversations..."
+              value={sidebarSearch}
+              onChange={(e) => setSidebarSearch(e.target.value)}
+              className="w-full pl-10 pr-4 py-2.5 bg-constitution-gold/5 border border-constitution-gold/10 rounded-xl text-sm text-judge-ivory placeholder-judge-ivory/20 focus:outline-none focus:border-constitution-gold/30 transition-all"
+            />
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto custom-scrollbar">
+          {loadingConv ? (
+            <div className="p-10 flex flex-col items-center gap-4">
+              <div className="w-6 h-6 border-2 border-constitution-gold/20 border-t-constitution-gold rounded-full animate-spin"></div>
             </div>
-          ) : Object.keys(messageGroups).length === 0 ? (
-            <div className="text-center py-12">
-              <div className="w-20 h-20 mx-auto mb-6 rounded-full border-2 border-constitution-gold/20 flex items-center justify-center bg-constitution-gold/10">
-                <MessageCircle className="w-10 h-10 text-constitution-gold" />
-              </div>
-              <h3 className="font-heading font-bold text-judge-ivory text-xl mb-2">
-                No messages yet
-              </h3>
-              <p className="text-judge-ivory/70 mb-6 max-w-md mx-auto">
-                Start the conversation with your legal expert
-              </p>
-              <p className="text-judge-ivory/40 text-sm mb-4">
-                Send a message to begin your consultation
-              </p>
+          ) : filteredConversations.length === 0 ? (
+            <div className="p-10 text-center opacity-40">
+              <Gavel className="w-12 h-12 mx-auto mb-4" />
+              <p className="text-sm">No active case files</p>
             </div>
           ) : (
-            Object.entries(messageGroups).map(([date, dateMessages]) => (
-              <div key={date} className="mb-8">
-                {/* Date Header */}
-                <div className="flex items-center justify-center mb-6">
-                  <div className="px-4 py-1.5 bg-constitution-gold/10 text-judge-ivory border border-constitution-gold/20 rounded-full">
-                    <span className="text-xs font-bold uppercase tracking-wider flex items-center gap-2">
-                      <Calendar className="w-3 h-3" />
-                      {date}
+            filteredConversations.map(conv => (
+              <div
+                key={conv.id}
+                onClick={() => onNavigate(`/messages/${conv.id}`)}
+                className={`p-4 flex gap-4 cursor-pointer transition-all border-l-4 hover:bg-white/5 ${activeConvId === conv.id ? 'bg-white/10 border-constitution-gold' : 'border-transparent'}`}
+              >
+                <div className="relative flex-shrink-0">
+                  <div className="w-12 h-12 rounded-full border border-constitution-gold/20 overflow-hidden bg-constitution-gold/10 flex items-center justify-center">
+                    {conv.avatar_url ? (
+                      <img src={conv.avatar_url} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <User className="w-6 h-6 text-constitution-gold/30" />
+                    )}
+                  </div>
+                  {conv.unread_count > 0 && (
+                    <div className="absolute -top-1 -right-1 w-5 h-5 bg-constitution-gold rounded-full flex items-center justify-center text-[10px] font-bold text-justice-black shadow-lg">
+                      {conv.unread_count}
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex justify-between items-start mb-1">
+                    <h4 className="font-bold text-judge-ivory text-sm truncate">{conv.display_name}</h4>
+                    <span className="text-[10px] text-judge-ivory/30 whitespace-nowrap ml-2">
+                      {conv.last_message_at ? formatTime(conv.last_message_at) : ''}
                     </span>
                   </div>
-                </div>
-
-                {/* Messages */}
-                <div className="space-y-6">
-                  {dateMessages.map((msg: Message) => {
-                    const isSent = msg.sender_id === currentUserId;
-                    const showAvatar = true;
-                    const messageText = msg.message || msg.content || '';
-                    
-                    return (
-                      <div
-                        key={msg.id}
-                        className={`flex ${isSent ? 'justify-end' : 'justify-start'}`}
-                      >
-                        <div className={`max-w-xs md:max-w-md lg:max-w-lg ${isSent ? 'order-2' : 'order-1'} flex gap-3`}>
-                          {/* Avatar for received messages */}
-                          {!isSent && showAvatar && (
-                            <div className="w-8 h-8 rounded-full border border-constitution-gold/20 overflow-hidden bg-constitution-gold/10 flex-shrink-0">
-                              {msg.sender_photo ? (
-                                <img
-                                  src={msg.sender_photo}
-                                  alt={msg.sender_name}
-                                  className="w-full h-full object-cover"
-                                  onError={(e) => {
-                                    (e.target as HTMLImageElement).style.display = 'none';
-                                    const parent = (e.target as HTMLImageElement).parentElement;
-                                    if (parent) {
-                                      parent.innerHTML = `
-                                        <div class="w-full h-full bg-constitution-gold/10 flex items-center justify-center">
-                                          <svg class="w-4 h-4 text-constitution-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-                                          </svg>
-                                        </div>
-                                      `;
-                                    }
-                                  }}
-                                />
-                              ) : (
-                                <div className="w-full h-full bg-constitution-gold/10 flex items-center justify-center">
-                                  <User className="w-4 h-4 text-constitution-gold" />
-                                </div>
-                              )}
-                            </div>
-                          )}
-
-                          <div className={`${isSent ? 'ml-auto' : ''}`}>
-                            {/* Sender name for received messages */}
-                            {!isSent && (
-                              <p className="text-xs font-bold text-judge-ivory mb-1 ml-1">
-                                {msg.sender_name}
-                              </p>
-                            )}
-                            
-                            {/* Message bubble */}
-                            <div
-                              className={`rounded-2xl px-4 py-3 ${isSent
-                                ? 'bg-constitution-gold text-justice-black rounded-br-none shadow-lg shadow-constitution-gold/20'
-                                : 'bg-justice-black/80 text-judge-ivory border border-constitution-gold/20 rounded-bl-none'
-                              }`}
-                            >
-                              <p className="text-sm md:text-base leading-relaxed whitespace-pre-wrap break-words">
-                                {messageText || '(Empty message)'}
-                              </p>
-                            </div>
-                            
-                            {/* Timestamp and read status */}
-                            <div className={`flex items-center gap-2 mt-1 ${isSent ? 'justify-end' : 'justify-start'}`}>
-                              <span className="text-judge-ivory/40 text-[10px] font-medium uppercase tracking-wider">
-                                {formatMessageTime(msg.created_at)}
-                              </span>
-                              {isSent && (
-                                <span className={`${msg.is_read ? 'text-emerald-500' : 'text-judge-ivory/30'}`}>
-                                  {msg.is_read ? (
-                                    <CheckCheck className="w-3 h-3" />
-                                  ) : (
-                                    <Check className="w-3 h-3" />
-                                  )}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* Avatar for sent messages */}
-                          {isSent && showAvatar && (
-                            <div className="w-8 h-8 rounded-full border border-constitution-gold/20 overflow-hidden bg-constitution-gold/10 flex-shrink-0">
-                              {currentUser?.profilePhotoUrl ? (
-                                <img
-                                  src={currentUser.profilePhotoUrl}
-                                  alt="You"
-                                  className="w-full h-full object-cover"
-                                  onError={(e) => {
-                                    (e.target as HTMLImageElement).style.display = 'none';
-                                    const parent = (e.target as HTMLImageElement).parentElement;
-                                    if (parent) {
-                                      parent.innerHTML = `
-                                        <div class="w-full h-full bg-constitution-gold/10 flex items-center justify-center">
-                                          <svg class="w-4 h-4 text-constitution-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-                                          </svg>
-                                        </div>
-                                      `;
-                                    }
-                                  }}
-                                />
-                              ) : (
-                                <div className="w-full h-full bg-constitution-gold/10 flex items-center justify-center">
-                                  <User className="w-4 h-4 text-constitution-gold" />
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
+                  <p className="text-xs text-judge-ivory/50 truncate italic">
+                    {conv.last_message || 'Start a new consultation...'}
+                  </p>
                 </div>
               </div>
             ))
           )}
-          <div ref={messagesEndRef} />
         </div>
       </div>
 
-      {/* Message Input */}
-      <div className="bg-justice-black/80 border-t border-constitution-gold/20 p-4 md:p-6 backdrop-blur-sm">
-        {error && !error.includes('404') && !error.includes('Not Found') && (
-          <div className="mb-4 px-4 py-2 bg-seal-red/10 text-judge-ivory border border-seal-red/30 rounded-xl text-sm flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 flex-shrink-0 text-seal-red" />
-            <span>{error}</span>
+      {/* Main Chat area */}
+      <div className={`flex-1 flex flex-col bg-justice-black/30 ${!urlId ? 'hidden md:flex' : 'flex'}`}>
+        {!activeConvId ? (
+          <div className="flex-1 flex flex-col items-center justify-center text-center p-12 opacity-50">
+            <Shield className="w-16 h-16 mb-6 text-constitution-gold/10" />
+            <h2 className="text-2xl font-bold text-judge-ivory mb-2">Secure Communiqué</h2>
+            <p className="max-w-xs text-sm">Select a legal consultation or initiate a new brief with an expert.</p>
           </div>
-        )}
-        
-        <form onSubmit={handleSendMessage} className="relative">
-          <div className="flex items-center gap-3">
-            {/* Attachment Button */}
-            <button
-              type="button"
-              className="p-3 rounded-full hover:bg-constitution-gold/10 transition-colors group"
-              title="Attach file"
-            >
-              <Paperclip className="w-5 h-5 text-constitution-gold group-hover:rotate-12 transition-transform" />
-            </button>
-            
-            {/* Voice Message Button */}
-            <button
-              type="button"
-              className="p-3 rounded-full hover:bg-constitution-gold/10 transition-colors group"
-              title="Voice message"
-            >
-              <Mic className="w-5 h-5 text-constitution-gold" />
-            </button>
-            
-            {/* Message Input */}
-            <div className="flex-1 relative">
-              <textarea
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                placeholder="Type your legal query or message..."
-                className="w-full px-5 py-4 bg-justice-black/50 border-2 border-constitution-gold/20 rounded-2xl text-judge-ivory placeholder-judge-ivory/40 focus:outline-none focus:border-constitution-gold focus:bg-justice-black/70 resize-none text-base leading-relaxed pr-24 transition-all"
-                rows={1}
-                onInput={(e) => {
-                  const target = e.target as HTMLTextAreaElement;
-                  target.style.height = 'auto';
-                  target.style.height = Math.min(target.scrollHeight, 120) + 'px';
-                }}
-                disabled={sending || !userId}
-              />
-              
-              {/* Character count */}
-              <div className="absolute right-4 bottom-4 text-xs text-judge-ivory/30">
-                {newMessage.length}/2000
+        ) : (
+          <>
+            {/* Chat Header */}
+            <div className="px-6 py-4 border-b border-constitution-gold/20 flex items-center justify-between bg-justice-black/20 backdrop-blur-md sticky top-0 z-10">
+              <div className="flex items-center gap-4">
+                <button onClick={() => onNavigate('/messages')} className="md:hidden p-2 text-constitution-gold"><ArrowLeft /></button>
+                <div className="w-10 h-10 rounded-full border border-constitution-gold/30 overflow-hidden flex items-center justify-center bg-constitution-gold/5 text-constitution-gold/40">
+                  <User />
+                </div>
+                <div>
+                  <h3 className="font-bold text-judge-ivory leading-tight">{activeConvDetails?.display_name || 'Loading...'}</h3>
+                  <p className="text-[10px] text-constitution-gold/60 uppercase font-black tracking-widest">
+                    {activeConvDetails?.conversation_type || 'CONSULTATION'}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <button className="p-2 text-constitution-gold/60 hover:text-constitution-gold transition-colors"><Info className="w-5 h-5" /></button>
+                <button className="p-2 text-constitution-gold/60 hover:text-constitution-gold transition-colors"><MoreVertical className="w-5 h-5" /></button>
               </div>
             </div>
-            
-            {/* Send Button */}
-            <button
-              type="submit"
-              disabled={sending || !newMessage.trim() || !userId}
-              className={`p-4 rounded-2xl font-bold transition-all flex items-center justify-center ${sending || !newMessage.trim() || !userId
-                ? 'bg-constitution-gold/10 text-judge-ivory/30 cursor-not-allowed border border-constitution-gold/20'
-                : 'bg-constitution-gold text-justice-black hover:bg-constitution-gold/90 hover:scale-105 active:scale-95 border border-constitution-gold shadow-lg shadow-constitution-gold/20'
-              }`}
-              title={!userId ? "Select a user to message" : "Send message"}
-            >
-              {sending ? (
-                <div className="w-5 h-5 border-2 border-justice-black/30 border-t-justice-black rounded-full animate-spin"></div>
+
+            {/* Messages */}
+            <div className="flex-1 overflow-y-auto p-6 md:p-10 space-y-8 custom-scrollbar bg-[url('https://www.transparenttextures.com/patterns/dark-matter.png')]">
+              {loading && messages.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-full gap-4 opacity-50">
+                  <div className="w-8 h-8 border-2 border-constitution-gold/20 border-t-constitution-gold rounded-full animate-spin"></div>
+                  <p className="text-[10px] uppercase font-bold tracking-widest text-constitution-gold">Reviewing Dossier</p>
+                </div>
+              ) : messages.length === 0 ? (
+                <div className="text-center py-20 opacity-30 flex flex-col items-center">
+                  <MessageCircle className="w-12 h-12 mb-4" />
+                  <p className="text-sm font-medium">This consultation record is currently empty.</p>
+                </div>
               ) : (
-                <Send className="w-5 h-5" />
+                messages.map((msg, idx) => {
+                  const isSent = msg.sender_id === currentUserId;
+                  const showAvatar = idx === 0 || messages[idx - 1].sender_id !== msg.sender_id;
+
+                  return (
+                    <div key={msg.id} className={`flex ${isSent ? 'justify-end' : 'justify-start'}`}>
+                      <div className={`max-w-[85%] md:max-w-[70%] flex gap-3 ${isSent ? 'flex-row-reverse' : 'flex-row'}`}>
+                        <div className="flex-shrink-0 w-8">
+                          {!isSent && showAvatar && (
+                            <div className="w-8 h-8 rounded-full border border-constitution-gold/20 overflow-hidden bg-constitution-gold/10 flex items-center justify-center">
+                              <User className="w-4 h-4 text-constitution-gold/30" />
+                            </div>
+                          )}
+                        </div>
+
+                        <div className={`group flex flex-col ${isSent ? 'items-end' : 'items-start'}`}>
+                          {!isSent && showAvatar && (
+                            <span className="text-[10px] font-bold text-constitution-gold/40 mb-1 ml-1">{msg.sender_name}</span>
+                          )}
+
+                          <div className="relative">
+                            <div className={`px-4 py-3 rounded-2xl text-sm transition-all shadow-sm ${isSent
+                              ? 'bg-constitution-gold text-justice-black rounded-tr-none'
+                              : 'bg-judge-ivory/5 text-judge-ivory border border-white/10 rounded-tl-none'
+                              }`}>
+                              {editingMessageId === msg.id ? (
+                                <div className="flex flex-col gap-2 min-w-[200px]">
+                                  <textarea
+                                    className="bg-black/20 p-2 rounded border border-white/20 text-white outline-none w-full"
+                                    value={editContent}
+                                    onChange={(e) => setEditContent(e.target.value)}
+                                  />
+                                  <div className="flex justify-end gap-2">
+                                    <button onClick={() => setEditingMessageId(null)} className="text-[10px] opacity-70">Cancel</button>
+                                    <button onClick={() => handleEditMessage(msg.id, editContent)} className="text-[10px] font-bold">Save</button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <>
+                                  {msg.message_type === 'IMAGE' && (
+                                    <img
+                                      src={`${API_BASE_URL.replace('/api', '')}/api/messages/media/${msg.id}`}
+                                      alt="Attachment"
+                                      className="max-w-xs rounded-lg mb-2 border border-white/10 cursor-pointer hover:opacity-90 active:scale-[0.99] transition-all"
+                                      onClick={() => window.open(`${API_BASE_URL.replace('/api', '')}/api/messages/media/${msg.id}`, '_blank')}
+                                    />
+                                  )}
+                                  {msg.message_type === 'PDF' && (
+                                    <div
+                                      className="flex items-center gap-3 p-3 bg-black/20 rounded-xl mb-2 cursor-pointer border border-white/5 hover:bg-black/30 transition-all"
+                                      onClick={() => window.open(`${API_BASE_URL.replace('/api', '')}/api/messages/media/${msg.id}`, '_blank')}
+                                    >
+                                      <FileText className="w-8 h-8 text-red-400" />
+                                      <div className="flex-1 overflow-hidden">
+                                        <p className="text-xs font-bold truncate">Legal Document.pdf</p>
+                                        <p className="text-[10px] opacity-50 uppercase">Open PDF</p>
+                                      </div>
+                                    </div>
+                                  )}
+                                  <span className="leading-relaxed whitespace-pre-wrap">{msg.content}</span>
+                                </>
+                              )}
+                            </div>
+
+                            {/* Message Actions */}
+                            {isSent && !editingMessageId && (
+                              <div className="absolute top-0 right-full mr-2 opacity-0 group-hover:opacity-100 flex items-center gap-1 transition-opacity self-center h-full">
+                                <button onClick={() => { setEditingMessageId(msg.id); setEditContent(msg.content); }} className="p-1.5 hover:bg-white/10 rounded-md"><Edit2 className="w-3.5 h-3.5" /></button>
+                                <button onClick={() => handleDeleteMessage(msg.id)} className="p-1.5 hover:bg-red-500/20 text-red-400 rounded-md"><Trash2 className="w-3.5 h-3.5" /></button>
+                              </div>
+                            )}
+                          </div>
+
+                          <div className={`flex items-center gap-2 mt-1 px-1 ${isSent ? 'justify-end' : 'justify-start'}`}>
+                            <span className="text-[9px] text-judge-ivory/20 font-bold uppercase">{formatTime(msg.created_at)}</span>
+                            {msg.is_edited && <span className="text-[9px] text-judge-ivory/20 italic">(edited)</span>}
+                            {isSent && (
+                              <CheckCheck className="w-3 h-3 text-emerald-500 opacity-50" />
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
               )}
+              <div ref={messagesEndRef} />
+            </div>
+
+            {/* Input */}
+            <div className="p-6 bg-justice-black/60 border-t border-constitution-gold/10 backdrop-blur-xl">
+              <form onSubmit={handleSendMessage} className="max-w-4xl mx-auto flex items-end gap-3 translate-y-0 active:translate-y-0 transition-transform">
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="p-4 bg-white/5 border border-white/10 rounded-2xl text-constitution-gold hover:bg-white/10 transition-all active:scale-90"
+                >
+                  <Paperclip className="w-5 h-5" />
+                </button>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileUpload}
+                  className="hidden"
+                  accept="image/*,application/pdf"
+                />
+
+                <div className="flex-1 relative">
+                  <textarea
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    placeholder="Brief your expert..."
+                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm text-judge-ivory placeholder-judge-ivory/20 focus:outline-none focus:border-constitution-gold/40 transition-all resize-none min-h-[56px] max-h-40 shadow-inner"
+                    rows={1}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        handleSendMessage(e as any);
+                      }
+                    }}
+                    onInput={(e) => {
+                      const t = e.target as HTMLTextAreaElement;
+                      t.style.height = 'auto';
+                      t.style.height = t.scrollHeight + 'px';
+                    }}
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={sending || !newMessage.trim()}
+                  className={`p-4 rounded-2xl transition-all ${!newMessage.trim() || sending ? 'opacity-20 grayscale' : 'bg-constitution-gold text-justice-black shadow-[0_0_20px_rgba(184,134,11,0.3)] hover:scale-105 active:scale-95'}`}
+                >
+                  {sending ? (
+                    <div className="w-5 h-5 border-2 border-black/20 border-t-black rounded-full animate-spin"></div>
+                  ) : (
+                    <Send className="w-5 h-5" />
+                  )}
+                </button>
+              </form>
+              <p className="text-[10px] text-center mt-4 opacity-20 uppercase font-black tracking-[0.2em]">End-to-End Encrypted Privilege</p>
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Group Creation Modal */}
+      {showCreateGroup && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="bg-justice-black border border-constitution-gold/20 rounded-3xl p-8 max-w-md w-full shadow-2xl">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-bold text-judge-ivory">Establish Legal Circle</h2>
+              <button onClick={() => setShowCreateGroup(false)} className="p-1 hover:bg-white/10 rounded-full"><X /></button>
+            </div>
+            <input
+              type="text"
+              placeholder="Circle Title (e.g., Supreme Court Prep)"
+              className="w-full bg-white/5 border-2 border-white/10 rounded-xl px-4 py-3 mb-6 outline-none focus:border-constitution-gold transition-all"
+              value={groupTitle}
+              onChange={(e) => setGroupTitle(e.target.value)}
+            />
+            <button
+              onClick={handleCreateGroup}
+              disabled={!groupTitle.trim()}
+              className="w-full py-4 bg-constitution-gold text-justice-black font-black uppercase tracking-widest rounded-xl hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-30"
+            >
+              Initialize Circle
             </button>
           </div>
-          
-          {/* Helper text */}
-          <p className="text-judge-ivory/40 text-xs mt-3 ml-3 flex items-center gap-2">
-            <Shield className="w-3 h-3 text-constitution-gold" />
-            Your conversations are confidential and protected by attorney-client privilege
-          </p>
-          
-          {/* Debug info (remove in production) */}
-          <div className="text-judge-ivory/20 text-[10px] mt-2">
-            Debug: User ID: {userId} | Messages: {messages.length} | Status: {loading ? 'Loading' : 'Ready'}
-          </div>
-        </form>
-      </div>
+        </div>
+      )}
     </div>
   );
 };

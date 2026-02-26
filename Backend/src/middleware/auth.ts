@@ -68,10 +68,21 @@ export const authenticate: RequestHandler = (
       id: decoded.userId
     };
     next();
-  } catch (error) {
+  } catch (error: any) {
+    console.error(`[Auth] Authentication failed: ${error.message}`);
+
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({
+        success: false,
+        message: "Your session has expired. Please log in again.",
+        code: 'TOKEN_EXPIRED'
+      });
+    }
+
     return res.status(401).json({
       success: false,
-      message: "Invalid or expired token",
+      message: "Invalid authentication token. Please log in again.",
+      code: 'TOKEN_INVALID'
     });
   }
 };

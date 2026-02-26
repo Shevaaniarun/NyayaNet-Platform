@@ -1,7 +1,9 @@
+import dotenv from 'dotenv';
+dotenv.config();
+
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
-import dotenv from 'dotenv';
 import discussionRoutes from './routes/discussionRoutes';
 import profileRoutes from './routes/profileRoutes';
 import postRoutes from './routes/postRoutes';
@@ -36,7 +38,11 @@ app.use(express.urlencoded({ extended: true }));
 
 // Request logging for debugging
 app.use((req, res, next) => {
-    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+    const start = Date.now();
+    res.on('finish', () => {
+        const duration = Date.now() - start;
+        console.log(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl} ${res.statusCode} - ${duration}ms`);
+    });
     next();
 });
 
@@ -65,7 +71,6 @@ app.use('/api/posts', postRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use("/api", authRoutes);
 app.use("/api/notes", noteRoutes);
-app.use('/api/profile', profileRoutes);
 app.use('/api/network', networkRoutes);
 
 app.use('/api/messages', messagesRoutes);
@@ -74,6 +79,27 @@ app.use('/api/messages', messagesRoutes);
 app.post('/api/chatbot/chat', authenticate, ChatbotController.chat);
 app.get('/api/chatbot/history', authenticate, ChatbotController.getChatHistory);
 app.use('/api/dashboard', dashboardRoutes);
+
+// Development-only debug route to inspect a user's contribution summary by email
+if (process.env.NODE_ENV !== 'production') {
+    const db = require('./config/database').default;
+    app.get('/internal/debug/user_contrib', async (req, res) => {
+        const email = String(req.query.email || '').trim();
+        if (!email) return res.status(400).json({ success: false, message: 'email query param required' });
+        try {
+            const userRow = await db.query('SELECT id, email, full_name FROM users WHERE email = $1 LIMIT 1', [email]);
+            if (!userRow.rows || userRow.rows.length === 0) return res.status(404).json({ success: false, message: 'user not found' });
+            const uid = userRow.rows[0].id;
+            const summary = await db.query('SELECT * FROM user_contribution_summary WHERE user_id = $1 LIMIT 1', [uid]);
+            const likes = await db.query('SELECT COUNT(*) FROM post_likes pl JOIN posts p ON pl.post_id = p.id WHERE p.user_id = $1', [uid]);
+            return res.json({ success: true, user: userRow.rows[0], summary: summary.rows[0] || null, post_likes_count: Number(likes.rows[0].count || 0) });
+        } catch (err) {
+            console.error('Debug route error:', err);
+            const msg = (err instanceof Error) ? err.message : String(err);
+            return res.status(500).json({ success: false, message: 'internal error', error: msg });
+        }
+    });
+}
 
 app.use((req, res) => res.status(404).json({ success: false, message: 'Route not found' }));
 

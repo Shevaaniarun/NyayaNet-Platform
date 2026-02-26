@@ -262,11 +262,13 @@ CREATE TABLE post_media (
     
     -- Media Details
     media_type media_type NOT NULL,
-    media_url TEXT NOT NULL,
+    media_url TEXT, -- Made NULLABLE for DB storage
+    media_data BYTEA, -- Binary file data
+    media_mime_type VARCHAR(100), -- Explicit mime type for DB storage
     thumbnail_url TEXT,
     file_name VARCHAR(255),
     file_size BIGINT,
-    mime_type VARCHAR(100),
+    mime_type VARCHAR(100), -- Kept for backward compatibility
     
     -- Display
     display_order INTEGER DEFAULT 0,
@@ -708,7 +710,7 @@ CREATE TABLE activity_logs (
 );
 
 -- =============================================
--- CREATE ALL INDEXES
+-- CREATE ALL INDEXES (including partial indexes from constraints)
 -- =============================================
 CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_users_role ON users(role);
@@ -736,8 +738,8 @@ CREATE INDEX idx_discussion_followers_user ON discussion_followers(user_id);
 CREATE INDEX idx_discussion_views_discussion ON discussion_views(discussion_id);
 CREATE INDEX idx_post_likes_post ON post_likes(post_id);
 CREATE INDEX idx_post_likes_user ON post_likes(user_id);
-CREATE INDEX idx_discussion_upvotes_discussion ON discussion_upvotes(discussion_id) WHERE discussion_id IS NOT NULL;
-CREATE INDEX idx_discussion_upvotes_reply ON discussion_upvotes(reply_id) WHERE reply_id IS NOT NULL;
+CREATE INDEX idx_discussion_upvotes_discussion ON discussion_upvotes(discussion_id);
+CREATE INDEX idx_discussion_upvotes_reply ON discussion_upvotes(reply_id);
 CREATE INDEX idx_discussion_upvotes_user ON discussion_upvotes(user_id);
 CREATE INDEX idx_user_bookmarks_user ON user_bookmarks(user_id);
 CREATE INDEX idx_user_bookmarks_entity ON user_bookmarks(entity_type, entity_id);
@@ -786,6 +788,12 @@ CREATE INDEX idx_activity_logs_entity ON activity_logs(entity_type, entity_id);
 CREATE UNIQUE INDEX unique_discussion_upvote ON discussion_upvotes(discussion_id, user_id) WHERE discussion_id IS NOT NULL;
 CREATE UNIQUE INDEX unique_reply_upvote ON discussion_upvotes(reply_id, user_id) WHERE reply_id IS NOT NULL;
 
+
+-- Partial indexes for unique constraints with conditions
+CREATE UNIQUE INDEX idx_unique_discussion_upvote ON discussion_upvotes(discussion_id, user_id) WHERE discussion_id IS NOT NULL;
+CREATE UNIQUE INDEX idx_unique_reply_upvote ON discussion_upvotes(reply_id, user_id) WHERE reply_id IS NOT NULL;
+CREATE UNIQUE INDEX idx_unique_user_view ON discussion_views(discussion_id, user_id) WHERE user_id IS NOT NULL;
+CREATE UNIQUE INDEX idx_unique_ip_view ON discussion_views(discussion_id, ip_address) WHERE user_id IS NULL;
 
 -- =============================================
 -- TRIGGERS & FUNCTIONS

@@ -6,8 +6,17 @@ import {
   Scale, Flame, Target, Award,
   Brain, Book, Users, Zap,
   Shield, Crown, Check,
-  PartyPopper
+  PartyPopper, Star, Sparkles,
+  Medal, Gem, Lock, Clock,
+  TrendingUp, Heart, MessageCircle,
+  FileText, HelpCircle, Reply,
+  Gift, Rocket, ThumbsUp, MessageSquare,
+  GitPullRequest, StarHalf, Disc, Sun,
+  Coffee, Smile, Award as AwardIcon
 } from 'lucide-react';
+
+// Import the celebration component
+import BadgeCelebration from './BadgeCelebration';
 
 interface Badge {
   id: string;
@@ -16,35 +25,77 @@ interface Badge {
   icon: React.ReactNode;
   earned: boolean;
   earnedAt?: string;
+  category?: 'contribution' | 'streak' | 'quality' | 'engagement' | 'special';
+  rarity?: 'common' | 'rare' | 'epic' | 'legendary';
+  progress?: number;
+  progressTotal?: number;
+  code?: string;
 }
 
 interface Props {
   badges?: Badge[];
+  onBadgeClick?: (badge: Badge) => void;
 }
 
-const BadgesGrid: React.FC<Props> = ({ badges = [] }) => {
+const BadgesGrid: React.FC<Props> = ({ badges = [], onBadgeClick }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [selectedBadge, setSelectedBadge] = useState<Badge | null>(null);
   const [showCelebration, setShowCelebration] = useState(false);
   const [newlyEarnedBadge, setNewlyEarnedBadge] = useState<Badge | null>(null);
   const [previousEarnedCount, setPreviousEarnedCount] = useState(0);
+  const [hoveredBadge, setHoveredBadge] = useState<string | null>(null);
+  const [filterCategory, setFilterCategory] = useState<string>('all');
+
+  // Rarity colors and effects
+  const rarityConfig = {
+    common: {
+      bg: 'linear-gradient(135deg, #6b7280, #4b5563)',
+      shadow: '0 8px 20px rgba(107, 114, 128, 0.3)',
+      border: '#9ca3af',
+      text: 'Common'
+    },
+    rare: {
+      bg: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
+      shadow: '0 8px 20px rgba(59, 130, 246, 0.3)',
+      border: '#60a5fa',
+      text: 'Rare'
+    },
+    epic: {
+      bg: 'linear-gradient(135deg, #8b5cf6, #6d28d9)',
+      shadow: '0 8px 20px rgba(139, 92, 246, 0.3)',
+      border: '#a78bfa',
+      text: 'Epic'
+    },
+    legendary: {
+      bg: 'linear-gradient(135deg, #f59e0b, #d97706)',
+      shadow: '0 8px 20px rgba(245, 158, 11, 0.3)',
+      border: '#fbbf24',
+      text: 'Legendary'
+    }
+  };
+
+  // Category icons
+  const categoryIcons = {
+    contribution: <FileText size={14} />,
+    streak: <Flame size={14} />,
+    quality: <Star size={14} />,
+    engagement: <Heart size={14} />,
+    special: <Sparkles size={14} />
+  };
 
   // Track badge earning for celebration
   useEffect(() => {
     const earnedBadges = badges.filter(badge => badge.earned);
     const currentEarnedCount = earnedBadges.length;
     
-    // Check if a new badge was earned
     if (currentEarnedCount > previousEarnedCount) {
-      // Find the most recently earned badge (by earnedAt date)
       const newBadges = earnedBadges.filter(badge => {
         if (!badge.earnedAt) return false;
         const earnedTime = new Date(badge.earnedAt).getTime();
-        return earnedTime > Date.now() - 60000; // Earned in the last minute
+        return earnedTime > Date.now() - 60000;
       });
       
       if (newBadges.length > 0) {
-        // Sort by most recent
         const mostRecent = newBadges.sort((a, b) => 
           new Date(b.earnedAt || '').getTime() - new Date(a.earnedAt || '').getTime()
         )[0];
@@ -52,7 +103,6 @@ const BadgesGrid: React.FC<Props> = ({ badges = [] }) => {
         setNewlyEarnedBadge(mostRecent);
         setShowCelebration(true);
         
-        // Auto-hide celebration after 5 seconds
         const timer = setTimeout(() => {
           setShowCelebration(false);
         }, 5000);
@@ -69,8 +119,15 @@ const BadgesGrid: React.FC<Props> = ({ badges = [] }) => {
     new Date(b.earnedAt || '').getTime() - new Date(a.earnedAt || '').getTime()
   )[0];
 
+  // Filter badges by category
+  const filteredBadges = filterCategory === 'all' 
+    ? badges 
+    : badges.filter(b => b.category === filterCategory);
+
   const handleBadgeClick = (badge: Badge) => {
+    if (!badge.earned) return;
     setSelectedBadge(badge);
+    if (onBadgeClick) onBadgeClick(badge);
   };
 
   const closeModal = () => {
@@ -85,156 +142,125 @@ const BadgesGrid: React.FC<Props> = ({ badges = [] }) => {
     setIsExpanded(!isExpanded);
   };
 
-  // Celebration content
-  const renderCelebration = () => {
-    if (!showCelebration || !newlyEarnedBadge) return null;
+  // Get icon based on badge code/title
+  const getBadgeIcon = (badge: any) => {
+    if (badge.icon && React.isValidElement(badge.icon)) return badge.icon;
+    
+    const title = badge.title?.toLowerCase() || '';
+    const code = badge.code?.toLowerCase() || '';
+    
+    // Contribution Badges
+    if (code.includes('first_contribution')) return <Gift size={32} />;
+    if (code.includes('contributor_10')) return <Star size={32} />;
+    if (code.includes('contributor_50')) return <AwardIcon size={32} />;
+    if (code.includes('contributor_100')) return <Medal size={32} />;
+    if (code.includes('contributor_500')) return <Crown size={32} />;
+    
+    // Streak Badges
+    if (code.includes('streak_7')) return <Flame size={32} />;
+    if (code.includes('streak_30')) return <Zap size={32} />;
+    if (code.includes('streak_100')) return <Rocket size={32} />;
+    
+    // Quality Badges
+    if (code.includes('best_answer_5')) return <ThumbsUp size={32} />;
+    if (code.includes('best_answer_10')) return <Trophy size={32} />;
+    if (code.includes('best_answer_25')) return <Crown size={32} />;
+    
+    // Engagement Badges
+    if (code.includes('followers_10')) return <Users size={32} />;
+    if (code.includes('followers_50')) return <Users size={32} />;
+    if (code.includes('followers_100')) return <Users size={32} />;
+    if (code.includes('followers_500')) return <Users size={32} />;
+    
+    // Popularity Badges
+    if (code.includes('post_likes_10')) return <Heart size={32} />;
+    if (code.includes('post_likes_50')) return <Heart size={32} />;
+    if (code.includes('post_likes_100')) return <Heart size={32} />;
+    if (code.includes('post_likes_500')) return <Heart size={32} />;
+    if (code.includes('post_likes_1000')) return <Heart size={32} />;
+    
+    // Special Badges
+    if (code.includes('ai_pioneer')) return <Brain size={32} />;
+    if (code.includes('bookworm')) return <Book size={32} />;
+    
+    // Fallback to category-based icons
+    if (badge.category === 'streak') return <Flame size={32} />;
+    if (badge.category === 'quality') return <Trophy size={32} />;
+    if (badge.category === 'engagement') return <Heart size={32} />;
+    if (badge.category === 'special') return <Sparkles size={32} />;
+    
+    return <Medal size={32} />;
+  };
+
+  // Category filter tabs
+  const renderCategoryTabs = () => {
+    const categories = [
+      { id: 'all', label: 'All', icon: <Star size={14} /> },
+      { id: 'contribution', label: 'Contributions', icon: <FileText size={14} /> },
+      { id: 'streak', label: 'Streaks', icon: <Flame size={14} /> },
+      { id: 'quality', label: 'Quality', icon: <Trophy size={14} /> },
+      { id: 'engagement', label: 'Engagement', icon: <Heart size={14} /> },
+      { id: 'special', label: 'Special', icon: <Sparkles size={14} /> }
+    ];
 
     return (
-      <div className="celebration-overlay" onClick={closeCelebration}>
-        <div className="celebration-modal" onClick={(e) => e.stopPropagation()}>
-          <div className="celebration-content">
-            <div className="celebration-icon">
-              <PartyPopper size={48} />
-            </div>
-            <h3 className="celebration-title">Congratulations!</h3>
-            <p className="celebration-message">
-              You've earned the <strong>{newlyEarnedBadge.title}</strong> badge!
-            </p>
-            <div className="celebration-badge-preview">
-              <div className="celebration-badge-icon">
-                {newlyEarnedBadge.icon}
-              </div>
-              <div className="celebration-badge-name">
-                {newlyEarnedBadge.title}
-              </div>
-            </div>
-            <button className="celebration-close-btn" onClick={closeCelebration}>
-              Awesome!
-            </button>
-          </div>
-        </div>
+      <div className="category-tabs">
+        {categories.map(cat => (
+          <button
+            key={cat.id}
+            className={`category-tab ${filterCategory === cat.id ? 'active' : ''}`}
+            onClick={() => setFilterCategory(cat.id)}
+          >
+            {cat.icon}
+            <span>{cat.label}</span>
+          </button>
+        ))}
       </div>
     );
   };
 
-  // If there are very few badges, show some nice placeholders so the grid looks full
-  const iconPool = [
-    <Award size={28} />, <Flame size={28} />, <Target size={28} />, <Brain size={28} />,
-    <Book size={28} />, <Users size={28} />, <Zap size={28} />, <Shield size={28} />,
-    <Crown size={28} />
-  ];
-
-  const normalizedBadges = React.useMemo(() => {
-    const list = [...badges];
-    const minCount = 8; // Fixed to always show 8 badges
-    const existingTitles = new Set(list.map(b => b.title));
-    const placeholderTitles = [
-      'Community Helper', 'Researcher', 'Top Commentator', 'Legal Scholar',
-      'Contributor Mentor', 'Content Curator', 'Trusted Reviewer', 'Policy Advocate'
-    ];
-
-    // helper: map string/icon-less badges to a lucide icon element
-    const iconMap: Record<string, JSX.Element> = {
-      'trophy': <Trophy size={28} />,
-      'calendar': <Calendar size={28} />,
-      'scale': <Scale size={28} />,
-      'flame': <Flame size={28} />,
-      'target': <Target size={28} />,
-      'award': <Award size={28} />,
-      'brain': <Brain size={28} />,
-      'book': <Book size={28} />,
-      'users': <Users size={28} />,
-      'zap': <Zap size={28} />,
-      'shield': <Shield size={28} />,
-      'crown': <Crown size={28} />,
-      'check': <Check size={28} />
-    };
-
-    // normalize existing badges first: ensure each has a React icon element
-    for (let idx = 0; idx < list.length; idx++) {
-      const b = list[idx] as any;
-      // If icon is already a valid React element, leave it
-      const provided = b.icon;
-      if (provided && React.isValidElement(provided)) continue;
-
-      // If icon is a string, try to map by name
-      if (typeof provided === 'string') {
-        const key = provided.toLowerCase();
-        b.icon = iconMap[key] ?? iconPool[idx % iconPool.length];
-        continue;
-      }
-
-      // If no icon provided, pick based on title keywords or fall back to pool
-      const title = (b.title || '').toLowerCase();
-      if (title.includes('community') || title.includes('contributor')) b.icon = <Users size={28} />;
-      else if (title.includes('research') || title.includes('scholar')) b.icon = <Brain size={28} />;
-      else if (title.includes('comment') || title.includes('commentator')) b.icon = <Zap size={28} />;
-      else if (title.includes('legal') || title.includes('policy') || title.includes('law')) b.icon = <Scale size={28} />;
-      else if (title.includes('trusted') || title.includes('review')) b.icon = <Shield size={28} />;
-      else if (title.includes('top') || title.includes('award')) b.icon = <Award size={28} />;
-      else b.icon = iconPool[idx % iconPool.length];
-    }
-
-    // Ensure we have EXACTLY 8 badges
-    let i = 0;
-    while (list.length < minCount) {
-      const idx = list.length;
-      // pick a placeholder title that doesn't collide with existing titles
-      const titleBase = placeholderTitles[i % placeholderTitles.length];
-      let title = titleBase;
-      let suffix = 1;
-      while (existingTitles.has(title)) {
-        title = `${titleBase} ${suffix}`;
-        suffix++;
-      }
-      existingTitles.add(title);
-
-      list.push({
-        id: `placeholder-${idx}`,
-        title,
-        description: 'Locked — contribute more to unlock',
-        icon: iconPool[i % iconPool.length],
-        earned: false
-      } as any);
-      i++;
-    }
-
-    // If we somehow have more than 8, trim to exactly 8
-    if (list.length > minCount) {
-      return list.slice(0, minCount);
-    }
-
-    return list;
-  }, [badges]);
-
   return (
     <div className="badges-container">
-      {/* Celebration Popup */}
-      {renderCelebration()}
+      {/* Celebration Popup - Using the new BadgeCelebration component */}
+      {showCelebration && newlyEarnedBadge && (
+        <BadgeCelebration 
+          badge={{
+            title: newlyEarnedBadge.title,
+            description: newlyEarnedBadge.description,
+            icon: getBadgeIcon(newlyEarnedBadge),
+            rarity: newlyEarnedBadge.rarity || 'common'
+          }}
+          onClose={closeCelebration}
+        />
+      )}
 
-      {/* Compact View (Default) */}
+      {/* Compact View */}
       <div className="compact-view">
         <div className="badges-header">
           <div className="header-left">
             <Trophy size={18} className="badge-icon" />
-            <span className="badges-label">Badges</span>
+            <span className="badges-label">Achievement Badges</span>
             <span className="badges-count">{earnedBadges.length}</span>
           </div>
           <button 
-            className="expand-btn"
+            className={`expand-btn ${isExpanded ? 'expanded' : ''}`}
             onClick={toggleExpanded}
+            aria-label={isExpanded ? 'Collapse' : 'Expand'}
           >
             {isExpanded ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
           </button>
         </div>
 
         {mostRecentBadge && (
-          <div className="most-recent-badge">
+          <div className="most-recent-badge" onClick={() => handleBadgeClick(mostRecentBadge)}>
             <div className="recent-badge-icon">
-              {mostRecentBadge.icon}
+              {getBadgeIcon(mostRecentBadge)}
             </div>
             <div className="recent-badge-info">
-              <div className="recent-badge-label">Most Recent Badge</div>
+              <div className="recent-badge-label">
+                <Clock size={12} />
+                <span>Most Recent</span>
+              </div>
               <div className="recent-badge-title">{mostRecentBadge.title}</div>
               <div className="recent-badge-date">
                 {mostRecentBadge.earnedAt ? 
@@ -246,44 +272,107 @@ const BadgesGrid: React.FC<Props> = ({ badges = [] }) => {
                 }
               </div>
             </div>
+            <div className="recent-badge-arrow">
+              <ChevronRight size={16} />
+            </div>
           </div>
         )}
       </div>
 
-      {/* Expanded View - Conditionally Rendered */}
+      {/* Expanded View */}
       {isExpanded && (
         <div className="expanded-view">
           <div className="expanded-header">
-            <h3>All Badges</h3>
-            <div className="badges-summary">
-              <span className="earned-count">{earnedBadges.length} earned</span>
-              <span className="total-count">/ {normalizedBadges.length} total</span>
+            <div className="header-content">
+              <h3>All Badges</h3>
+              <div className="badges-summary">
+                <span className="earned-count">{earnedBadges.length}</span>
+                <span className="total-count">/{badges.length} earned</span>
+              </div>
+            </div>
+            <div className="progress-bar">
+              <div 
+                className="progress-fill"
+                style={{ width: `${(earnedBadges.length / badges.length) * 100}%` }}
+              />
             </div>
           </div>
 
+          {renderCategoryTabs()}
+
           <div className="badges-grid">
-            {normalizedBadges.map((badge) => (
-              <div 
-                key={badge.id}
-                className={`badge-item ${badge.earned ? 'earned' : 'locked'}`}
-                onClick={() => badge.earned && handleBadgeClick(badge)}
-              >
-                <div className="badge-icon-wrapper">
-                  <div className="badge-icon-bg">
-                    {badge.icon}
-                  </div>
-                  {badge.earned && (
-                    <div className="badge-earned-indicator">
-                      <Check size={12} />
+            {filteredBadges.map((badge) => {
+              const isEarned = badge.earned;
+              const rarity = badge.rarity || 'common';
+              const config = rarityConfig[rarity];
+              
+              return (
+                <div 
+                  key={badge.id}
+                  className={`badge-item ${isEarned ? 'earned' : 'locked'} ${rarity} ${hoveredBadge === badge.id ? 'hovered' : ''}`}
+                  onClick={() => handleBadgeClick(badge)}
+                  onMouseEnter={() => setHoveredBadge(badge.id)}
+                  onMouseLeave={() => setHoveredBadge(null)}
+                >
+                  <div className="badge-inner">
+                    <div className="badge-icon-wrapper">
+                      <div 
+                        className="badge-icon-bg"
+                        style={isEarned ? { background: config.bg } : undefined}
+                      >
+                        {getBadgeIcon(badge)}
+                      </div>
+                      {isEarned && (
+                        <div className="badge-earned-indicator">
+                          <Check size={12} />
+                        </div>
+                      )}
+                      {!isEarned && (
+                        <div className="badge-lock">
+                          <Lock size={16} />
+                        </div>
+                      )}
                     </div>
-                  )}
+                    
+                    <div className="badge-content">
+                      <h4 className="badge-title">{badge.title}</h4>
+                      <p className="badge-description">{badge.description}</p>
+                      
+                      {badge.progress !== undefined && badge.progressTotal && (
+                        <div className="badge-progress">
+                          <div className="progress-bar-small">
+                            <div 
+                              className="progress-fill-small"
+                              style={{ width: `${(badge.progress / badge.progressTotal) * 100}%` }}
+                            />
+                          </div>
+                          <span className="progress-text">
+                            {badge.progress}/{badge.progressTotal}
+                          </span>
+                        </div>
+                      )}
+                      
+                      <div className="badge-footer">
+                        <span className={`badge-rarity ${rarity}`}>
+                          {rarityConfig[rarity].text}
+                        </span>
+                        <span className="badge-status">
+                          {isEarned ? 'Earned' : 'Locked'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Hover effect overlay */}
+                    {hoveredBadge === badge.id && isEarned && (
+                      <div className="badge-hover-effect">
+                        <Sparkles size={20} />
+                        <span>Click to view details</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <div className="badge-title">{badge.title}</div>
-                <div className="badge-status">
-                  {badge.earned ? 'Earned' : 'Locked'}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
@@ -296,30 +385,87 @@ const BadgesGrid: React.FC<Props> = ({ badges = [] }) => {
               <X size={20} />
             </button>
             
-            <div className="modal-badge-icon">
-              <div className="modal-icon-wrapper">
-                {selectedBadge.icon}
+            <div className="modal-header">
+              <div 
+                className="modal-badge-icon"
+                style={{ 
+                  background: selectedBadge.rarity 
+                    ? rarityConfig[selectedBadge.rarity].bg 
+                    : 'linear-gradient(135deg, #D2B382, #c4a571)'
+                }}
+              >
+                {getBadgeIcon(selectedBadge)}
+              </div>
+              <div className="modal-header-info">
+                {selectedBadge.rarity && (
+                  <span className={`modal-rarity ${selectedBadge.rarity}`}>
+                    {rarityConfig[selectedBadge.rarity].text}
+                  </span>
+                )}
+                <h3 className="modal-badge-title">{selectedBadge.title}</h3>
               </div>
             </div>
             
-            <h3 className="modal-badge-title">{selectedBadge.title}</h3>
             <p className="modal-badge-description">{selectedBadge.description}</p>
             
             <div className="modal-badge-meta">
+              {selectedBadge.category && (
+                <div className="meta-item">
+                  <span className="meta-label">Category:</span>
+                  <span className="meta-value category">
+                    {categoryIcons[selectedBadge.category]}
+                    <span>{selectedBadge.category.charAt(0).toUpperCase() + selectedBadge.category.slice(1)}</span>
+                  </span>
+                </div>
+              )}
+              
               <div className="meta-item">
-                <span className="meta-label">Earned on:</span>
-                <span className="meta-value">
-                  {selectedBadge.earnedAt ? 
-                    new Date(selectedBadge.earnedAt).toLocaleDateString('en-US', {
+                <span className="meta-label">Status:</span>
+                <span className={`meta-value status ${selectedBadge.earned ? 'earned' : 'locked'}`}>
+                  {selectedBadge.earned ? 'Earned' : 'Not yet earned'}
+                </span>
+              </div>
+              
+              {selectedBadge.earned && selectedBadge.earnedAt && (
+                <div className="meta-item">
+                  <span className="meta-label">Earned on:</span>
+                  <span className="meta-value date">
+                    <Calendar size={14} />
+                    {new Date(selectedBadge.earnedAt).toLocaleDateString('en-US', {
                       weekday: 'long',
                       month: 'long',
                       day: 'numeric',
                       year: 'numeric'
-                    }) : 'Not earned yet'
-                  }
-                </span>
-              </div>
+                    })}
+                  </span>
+                </div>
+              )}
+              
+              {selectedBadge.progress !== undefined && selectedBadge.progressTotal && (
+                <div className="meta-item progress-item">
+                  <span className="meta-label">Progress:</span>
+                  <div className="meta-progress">
+                    <div className="progress-bar-modal">
+                      <div 
+                        className="progress-fill-modal"
+                        style={{ width: `${(selectedBadge.progress / selectedBadge.progressTotal) * 100}%` }}
+                      />
+                    </div>
+                    <span className="progress-text-modal">
+                      {selectedBadge.progress}/{selectedBadge.progressTotal}
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
+
+            {!selectedBadge.earned && (
+              <div className="modal-cta">
+                <button className="cta-button">
+                  Learn How to Earn
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}

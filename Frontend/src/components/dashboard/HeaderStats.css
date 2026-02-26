@@ -34,6 +34,9 @@
 .stat-icon {
   font-size: 1.25rem;
   opacity: 0.8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .stat-title {
@@ -60,13 +63,14 @@
 }
 
 .stat-value.streak-value {
-  color: #dc2626; /* Subtle red for streak */
+  color: #dc2626;
 }
 
 .stat-description {
   font-size: 0.875rem;
   color: var(--text-tertiary, #9ca3af);
   line-height: 1.4;
+  margin: 0;
 }
 
 /* Loading state */
@@ -114,6 +118,24 @@
   font-size: 0.875rem;
 }
 
+.error-message svg {
+  flex-shrink: 0;
+}
+
+/* Empty state */
+.stat-card.empty-state {
+  opacity: 0.9;
+  background: var(--card-bg, #ffffff);
+}
+
+.stat-card.empty-state .stat-value {
+  color: var(--text-tertiary, #9ca3af);
+}
+
+.stat-card.empty-state .stat-icon {
+  opacity: 0.5;
+}
+
 /* Responsive design */
 @media (max-width: 1200px) {
   .header-stats-container {
@@ -145,13 +167,73 @@
   .stat-card {
     padding: 1rem;
   }
+  
+  .stat-value {
+    font-size: 1.5rem;
+  }
+  
+  .stat-header {
+    margin-bottom: 0.75rem;
+  }
 }
 
-/* Empty state adjustments */
-.stat-card:empty-state {
-  opacity: 0.9;
+/* Animation for stat cards */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-.stat-card:empty-state .stat-value {
-  color: var(--text-tertiary, #9ca3af);
+.stat-card {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Custom color themes - add these classes to your container */
+.theme-constitution {
+  --card-bg: #F1E8D7;
+  --border-color: rgba(210, 179, 130, 0.2);
+  --primary-color: rgba(210, 179, 130, 0.8);
+  --primary-color-light: rgba(210, 179, 130, 0.3);
+  --text-primary: #111827;
+  --text-secondary: #4b5563;
+  --text-tertiary: #6b7280;
+  --loading-bg: #e5e7eb;
+  --loading-shimmer: #d1d5db;
+}
+
+/* Dark theme support */
+@media (prefers-color-scheme: dark) {
+  .stat-card {
+    --card-bg: #1f2937;
+    --border-color: #374151;
+    --text-primary: #f9fafb;
+    --text-secondary: #9ca3af;
+    --text-tertiary: #6b7280;
+    --loading-bg: #374151;
+    --loading-shimmer: #4b5563;
+  }
+  
+  .error-message {
+    background: #451a1a;
+    border-color: #7f1d1d;
+    color: #fca5a5;
+  }
+}
+
+/* Print styles */
+@media print {
+  .stat-card {
+    break-inside: avoid;
+    border: 1px solid #000;
+    box-shadow: none;
+  }
+  
+  .stat-card:hover {
+    transform: none;
+  }
 }

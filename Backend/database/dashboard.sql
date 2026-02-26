@@ -309,3 +309,21 @@ INSERT INTO badges (code, title, description, threshold) VALUES
 ('CONTRIBUTOR_100', '100 Contributions', 'Completed 100 contributions', 100),
 ('BEST_ANSWER_10', 'Best Answer ×10', '10 answers marked as best', 10)
 ON CONFLICT (code) DO NOTHING;
+-- Add followers_count and post_likes_received columns
+ALTER TABLE user_contribution_summary 
+ADD COLUMN IF NOT EXISTS followers_count INTEGER DEFAULT 0,
+ADD COLUMN IF NOT EXISTS post_likes_received INTEGER DEFAULT 0;
+
+-- Update with actual counts
+UPDATE user_contribution_summary s
+SET followers_count = (
+  SELECT COUNT(*) FROM user_follows WHERE following_id = s.user_id
+);
+
+UPDATE user_contribution_summary s
+SET post_likes_received = (
+  SELECT COUNT(*)
+  FROM post_likes pl
+  JOIN posts p ON pl.post_id = p.id
+  WHERE p.user_id = s.user_id
+);

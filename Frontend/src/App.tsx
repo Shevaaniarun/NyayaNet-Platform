@@ -50,7 +50,6 @@ type ViewType =
     | 'profile-liked-posts'
     | 'profile-liked-discussions'
     | 'profile-group-discussions';
-
 const getCurrentUser = () => {
     const userStr = localStorage.getItem('user');
     if (!userStr) return null;
@@ -125,6 +124,7 @@ export default function App() {
     const [currentView, setCurrentView] = useState<ViewType>('dashboard');
     const [currentPath, setCurrentPath] = useState(window.location.pathname);
     const [selectedProfileUserId, setSelectedProfileUserId] = useState<string | null>(null);
+    const [messagesPageUrlId, setMessagesPageUrlId] = useState<string | null>(null);
 
     const currentUser = getCurrentUser();
 
@@ -138,6 +138,24 @@ export default function App() {
             console.error('Failed to load connection requests:', error);
             setPendingConnectionCount(Math.floor(Math.random() * 5));
         }
+    };
+
+    const viewMap: Record<string, ViewType> = {
+        '/': 'dashboard',
+        '/feed': 'feed',
+        '/cases': 'cases',
+        '/notes': 'notes',
+        '/ai': 'ai',
+        '/chatbot': 'chatbot',
+        '/chat-with-us': 'chat-with-us',
+        '/messages': 'messages',
+        '/discussions': 'discussions',
+        '/profile': 'profile',
+        '/notifications': 'notifications',
+        '/network': 'network',
+        '/connection-requests': 'connectionRequests',
+        '/create-discussion': 'createDiscussion',
+        "/chat": "chat",
     };
 
     useEffect(() => {
@@ -183,7 +201,8 @@ export default function App() {
                     "/chat": "chat",
                 };
 
-                const newView = viewMap[currentPath] || 'profile';
+                const normalizedPath = currentPath.endsWith('/') && currentPath.length > 1 ? currentPath.slice(0, -1) : currentPath;
+                const newView = normalizedPath.startsWith('/messages') ? 'messages' : (viewMap[normalizedPath] || 'dashboard');
                 setCurrentView(newView);
             }
 
@@ -287,6 +306,13 @@ export default function App() {
     };
 
     const handleNavigation = (path: string, pushToHistory = true) => {
+        const token = localStorage.getItem("token");
+        if (!token) {
+            setAuthView('login');
+            setCurrentPath(path);
+            return;
+        }
+
         const viewMap: Record<string, ViewType> = {
             '/': 'dashboard',
             '/feed': 'feed',
@@ -314,6 +340,7 @@ export default function App() {
         // Handle messages with user ID
         if (path.startsWith('/messages/')) {
             setCurrentView('messages');
+            setCurrentPath(path);
             if (pushToHistory) {
                 window.history.pushState({ view: 'messages', path }, '', path);
             }
@@ -335,7 +362,6 @@ export default function App() {
         if (pushToHistory) {
             window.history.pushState({ view: newView }, '', path);
         }
-
         if (newView === 'feed' || newView === 'dashboard') {
             refreshPosts();
         }
@@ -403,7 +429,12 @@ export default function App() {
                 {currentView === 'ai' && <AIAssistant />}
                 {currentView === 'chatbot' && <ChatbotPage />}
                 {currentView === 'chat-with-us' && <ChatWithUsPage onNavigate={handleNavigation} />}
-                {currentView === 'messages' && <MessagesPage onNavigate={handleNavigation} />}
+                {currentView === 'messages' && (
+                    <MessagesPage
+                        onNavigate={handleNavigation}
+                        urlId={currentPath.match(/\/messages\/([^\/]+)/)?.[1]}
+                    />
+                )}
                 {currentView === 'discussions' && <DiscussionsPage onNavigateToProfile={handleDiscussionProfileClick} />}
                 {currentView === 'notes' && <NotesPage />}
 
@@ -428,7 +459,12 @@ export default function App() {
                 )}
 
                 {currentView === 'notifications' && <NotificationsPage />}
-                {currentView === "chat" && <MessagesPage onNavigate={handleNavigation} />}
+                {currentView === "chat" && (
+                    <MessagesPage
+                        onNavigate={handleNavigation}
+                        urlId={currentPath.match(/\/messages\/([^\/]+)/)?.[1]}
+                    />
+                )}
                 {currentView === 'createDiscussion' && (
                     <div className="max-w-3xl mx-auto p-8">
                         <div className="aged-paper rounded-lg p-8">

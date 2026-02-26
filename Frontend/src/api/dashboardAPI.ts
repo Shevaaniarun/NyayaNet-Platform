@@ -52,7 +52,13 @@ export interface ContributionBreakdown {
   bestAnswers: number;
   aiQueries: number;
   bookmarks: number;
+  followers: number;        // ADD THIS
+  postLikesReceived: number; // ADD THIS
 }
+
+// In api/dashboardAPI.ts - Update the Badge interface
+type BadgeCategory = 'contribution' | 'streak' | 'quality' | 'engagement' | 'special';
+type BadgeRarity = 'common' | 'rare' | 'epic' | 'legendary';
 
 export interface Badge {
   id: string;
@@ -60,9 +66,13 @@ export interface Badge {
   title: string;
   description: string;
   icon?: string;
+  earned: boolean;
   earnedAt?: string;
+  category?: BadgeCategory;  // Use the specific type
+  rarity?: BadgeRarity;      // Use the specific type
+  progress?: number;
+  progressTotal?: number;
 }
-
 /* =========================================================
    API CALLS
    ========================================================= */
@@ -129,35 +139,67 @@ export const getActivityFeed = async (
 };
 
 /**
- * 4️⃣ Contribution Breakdown
+ * 4️⃣ Contribution Breakdown - UPDATED with followers and likes
  */
 export const getContributionBreakdown = async (): Promise<any> => {
     const res = await api.get("/dashboard/breakdown");
     const payload = res.data && res.data.data ? res.data.data : res.data;
-    // Map backend snake_case to frontend expected keys
+    
+    console.log('Raw breakdown payload:', payload); // Debug log
+    
     return {
-      posts: payload.posts_count ?? payload.posts ?? 0,
-      discussions: payload.discussions_count ?? payload.discussions ?? 0,
-      replies: payload.replies_count ?? payload.replies ?? 0,
-      bestAnswers: payload.best_answers_count ?? payload.bestAnswers ?? 0,
-      aiQueries: payload.ai_queries_count ?? payload.aiQueries ?? 0,
-      bookmarks: payload.bookmarks_count ?? payload.bookmarks ?? 0,
-      // legacy frontend used lawBookmarks in some components — keep it for compatibility
-      lawBookmarks: payload.bookmarks_count ?? payload.bookmarks ?? 0,
+      posts: payload.posts ?? payload.posts_count ?? 0,
+      discussions: payload.discussions ?? payload.discussions_count ?? 0,
+      replies: payload.replies ?? payload.replies_count ?? 0,
+      bestAnswers: payload.bestAnswers ?? payload.best_answers_count ?? 0,
+      aiQueries: payload.aiQueries ?? payload.ai_queries_count ?? 0,
+      bookmarks: payload.bookmarks ?? payload.bookmarks_count ?? 0,
+      followers: payload.followers ?? payload.followers_count ?? 0,
+      postLikesReceived: payload.postLikesReceived ?? payload.post_likes_received ?? 0,
     };
 };
 /**
- * 5️⃣ Badges & Achievements
+ * 5️⃣ Badges & Achievements - UPDATED with rich data
  */
 export const getUserBadges = async (): Promise<Badge[]> => {
   const res = await api.get("/dashboard/badges");
   const payload = res.data && res.data.data ? res.data.data : res.data;
+  
   return (Array.isArray(payload) ? payload : []).map((b: any) => ({
     id: b.id,
     code: b.code,
     title: b.title,
     description: b.description,
     icon: b.icon,
+    earned: b.earned || false,
     earnedAt: b.earned_at ?? b.earnedAt ?? null,
+    category: determineCategory(b.code, b.title) as BadgeCategory,  // Cast to specific type
+    rarity: determineRarity(b.code, b.threshold) as BadgeRarity,    // Cast to specific type
+    progress: b.progress || 0,
+    progressTotal: b.threshold || 100
   }));
+};
+
+// Helper functions to determine category and rarity - with proper return types
+const determineCategory = (code: string, title: string): BadgeCategory => {
+  const str = (code + title).toLowerCase();
+  if (str.includes('streak')) return 'streak';
+  if (str.includes('best') || str.includes('quality')) return 'quality';
+  if (str.includes('follower') || str.includes('like')) return 'engagement';
+  if (str.includes('first') || str.includes('special')) return 'special';
+  return 'contribution';  // Default
+};
+
+const determineRarity = (code: string, threshold: number): BadgeRarity => {
+  if (threshold >= 500) return 'legendary';
+  if (threshold >= 100) return 'epic';
+  if (threshold >= 50) return 'rare';
+  return 'common';  // Default
+};
+
+/**
+ * POST /dashboard/check-badges - manually trigger badge evaluation/awarding for current user
+ */
+export const checkUserBadges = async (): Promise<void> => {
+  await api.post('/dashboard/check-badges');
 };

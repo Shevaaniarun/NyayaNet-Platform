@@ -28,8 +28,11 @@ if (!urlMatch) {
 
 const [_, user, password, host, port, database] = urlMatch;
 
+// Decode percent-encoded password (e.g. %40 -> @) to support DATABASE_URL encoding
+const decodedPassword = decodeURIComponent(password);
+
 // Set environment variable for psql
-process.env.PGPASSWORD = password;
+process.env.PGPASSWORD = decodedPassword;
 
 function runCommand(command, ignoreErrors = false) {
     console.log(`\n> ${command.substring(0, 100)}...`);
@@ -166,6 +169,26 @@ async function runDashboardSql() {
     return true;
 }
 
+async function runChatSql() {
+    console.log('\n3.c Running chat schema...');
+
+    const chatPath = path.join(__dirname, '..', 'database', 'chat.sql');
+    if (!fs.existsSync(chatPath)) {
+        console.warn(`⚠️ Chat SQL not found: ${chatPath} — skipping chat schema`);
+        return true;
+    }
+
+    const chatCmd = `psql -h ${host} -p ${port} -U ${user} -d ${database} -f "${chatPath}"`;
+    const result = runCommand(chatCmd, true);
+
+    if (!result) {
+        console.error('❌ Failed to run chat.sql');
+        return false;
+    }
+
+    return true;
+}
+
 async function verifyDatabase() {
     console.log('\n4. Verifying database setup...');
 
@@ -216,6 +239,11 @@ async function main() {
 
         // Run dashboard-specific SQL (triggers, contribution tables)
         if (!await runDashboardSql()) {
+            process.exit(1);
+        }
+
+        // Run chat-specific SQL (conversations, messages, blocks)
+        if (!await runChatSql()) {
             process.exit(1);
         }
 

@@ -273,8 +273,51 @@
   border-radius: 8px;
 }
 
-.tip-icon {
-  font-size: 1rem;
+/* Engagement Summary */
+.engagement-summary {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background: linear-gradient(135deg, #fdf6e3 0%, #f5e8c8 100%);
+  border-radius: 8px;
+  border: 1px solid rgba(210, 179, 130, 0.3);
+}
+
+.engagement-summary-content {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.engagement-icon {
+  color: #ef4444;
+  animation: heartBeat 1.5s ease-in-out infinite;
+}
+
+.engagement-text {
+  font-size: 0.95rem;
+  color: #5D4037;
+}
+
+.engagement-text strong {
+  color: #8B4513;
+  font-weight: 700;
+}
+
+@keyframes heartBeat {
+  0%, 100% {
+    transform: scale(1);
+  }
+  25% {
+    transform: scale(1.1);
+  }
+  40% {
+    transform: scale(1);
+  }
+  60% {
+    transform: scale(1.05);
+  }
 }
 
 /* Color variables */
@@ -283,8 +326,8 @@
   --stat-discussions: #10b981;
   --stat-replies: #8b5cf6;
   --stat-best-answers: #f59e0b;
-  --stat-ai: #ec4899;
-  --stat-bookmarks: #06b6d4;
+  --stat-followers: #ec4899;
+  --stat-likes: #ef4444;
 }
 
 /* Responsive design */
@@ -359,5 +402,10 @@
   
   .empty-state-title {
     font-size: 1.125rem;
+  }
+  
+  .engagement-summary-content {
+    flex-direction: column;
+    text-align: center;
   }
 }
