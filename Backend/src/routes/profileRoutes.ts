@@ -41,6 +41,9 @@ router.get('/:userId/following', authenticate, ((req, res) => {
 
 /* ---- PROFILE CORE (MUST BE LAST) ---- */
 
+router.post('/upload/profile-photo', authenticate, ProfileController.uploadProfilePhoto as RequestHandler);
+router.post('/upload/cover-photo', authenticate, ProfileController.uploadCoverPhoto as RequestHandler);
+
 router.get('/:userId', authenticate, ProfileController.getProfile as RequestHandler);
 router.put('/', authenticate, ProfileController.updateProfile as RequestHandler);
 

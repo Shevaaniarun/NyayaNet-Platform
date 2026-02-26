@@ -68,18 +68,12 @@ export const updateProfile = async (data: any) => {
 export const uploadProfilePhoto = async (file: File) => {
   try {
     const formData = new FormData();
-    formData.append('file', file);
+    formData.append('photo', file);
 
-    const uploadResponse = await fetch('/api/upload', {
-      method: 'POST',
-      body: formData,
-    });
-
-    const uploadResult = await uploadResponse.json();
-
-    const response = await profileApi.post('/profile/upload/profile-photo', {
-      photoUrl: uploadResult.url,
-      thumbnailUrl: uploadResult.thumbnailUrl,
+    const response = await profileApi.post('/upload/profile-photo', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
     });
 
     return response.data.data;
@@ -92,17 +86,12 @@ export const uploadProfilePhoto = async (file: File) => {
 export const uploadCoverPhoto = async (file: File) => {
   try {
     const formData = new FormData();
-    formData.append('file', file);
+    formData.append('photo', file);
 
-    const uploadResponse = await fetch('/api/upload', {
-      method: 'POST',
-      body: formData,
-    });
-
-    const uploadResult = await uploadResponse.json();
-
-    const response = await profileApi.post('/profile/upload/cover-photo', {
-      coverPhotoUrl: uploadResult.url,
+    const response = await profileApi.post('/upload/cover-photo', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
     });
 
     return response.data.data;

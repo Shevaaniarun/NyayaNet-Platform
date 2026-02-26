@@ -473,18 +473,28 @@ export function ProfilePage({
     previewUrl: string
   ) => {
     try {
+      let updatedUrl = previewUrl;
       if (type === "profile") {
         const result = await profileApi.uploadProfilePhoto(file);
+        updatedUrl = result?.profilePhotoUrl ?? previewUrl;
         setProfile((prev: any) => ({
           ...(prev ?? {}),
-          profilePhotoUrl: result?.profilePhotoUrl ?? previewUrl,
+          profilePhotoUrl: updatedUrl,
         }));
       } else {
         const result = await profileApi.uploadCoverPhoto(file);
+        updatedUrl = result?.coverPhotoUrl ?? previewUrl;
         setProfile((prev: any) => ({
           ...(prev ?? {}),
-          coverPhotoUrl: result?.coverPhotoUrl ?? previewUrl,
+          coverPhotoUrl: updatedUrl,
         }));
+      }
+
+      if (profile) {
+        await profileApi.updateProfile({
+          ...profile,
+          [type === "profile" ? "profilePhotoUrl" : "coverPhotoUrl"]: updatedUrl,
+        });
       }
     } catch (err) {
       setProfile((prev: any) => ({
@@ -771,11 +781,11 @@ export function ProfilePage({
               <h3 className="font-heading font-bold text-xl text-judge-ivory mb-4">Profile Content</h3>
               <ProfileMenuGrid
                 menuStats={{
-                  posts: profileStats.posts,
-                  discussions: profileStats.discussions,
-                  followingDiscussions: profileStats.followingDiscussions,
-                  followers: profileStats.followers,
-                  following: profileStats.following,
+                  posts: posts.length,
+                  discussions: discussions.length,
+                  followingDiscussions: followingDiscussions.length,
+                  followers: followers.length,
+                  following: following.length,
                   bookmarks: bookmarks.length,
                   likedPosts: likedPosts.length,
                   likedDiscussions: likedDiscussions.length
@@ -892,16 +902,16 @@ export function ProfilePage({
 
       {/* Edit Profile Modal */}
       {showEditModal && (
-        <div className="fixed inset-0 bg-justice-black/80 flex items-center justify-center z-50 p-4">
-          <div className="bg-aged-paper rounded-lg border border-constitution-gold/20 shadow-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="aged-paper rounded-lg border border-constitution-gold/30 shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="font-heading font-bold text-2xl text-judge-ivory">
+                <h2 className="font-heading font-bold text-2xl text-ink-gray">
                   Edit Profile
                 </h2>
                 <button
                   onClick={() => setShowEditModal(false)}
-                  className="p-2 hover:bg-constitution-gold/10 rounded"
+                  className="p-2 hover:bg-black/10 rounded-full transition-colors"
                   type="button"
                 >
                   <X className="w-5 h-5 text-ink-gray" />
@@ -910,7 +920,7 @@ export function ProfilePage({
 
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-ink-gray mb-2">
+                  <label className="block text-sm font-semibold text-ink-gray mb-2">
                     Full Name *
                   </label>
                   <input
@@ -919,12 +929,12 @@ export function ProfilePage({
                     onChange={(e) =>
                       setEditForm({ ...editForm, fullName: e.target.value })
                     }
-                    className="w-full px-4 py-2 bg-justice-black border border-constitution-gold/20 rounded-lg text-judge-ivory focus:outline-none focus:border-constitution-gold/50"
+                    className="w-full px-4 py-2 bg-justice-black border border-constitution-gold/30 rounded-lg text-judge-ivory placeholder-ink-gray/60 focus:outline-none focus:border-constitution-gold shadow-inner"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-ink-gray mb-2">
+                  <label className="block text-sm font-semibold text-ink-gray mb-2">
                     Designation
                   </label>
                   <input
@@ -933,12 +943,12 @@ export function ProfilePage({
                     onChange={(e) =>
                       setEditForm({ ...editForm, designation: e.target.value })
                     }
-                    className="w-full px-4 py-2 bg-justice-black border border-constitution-gold/20 rounded-lg text-judge-ivory focus:outline-none focus:border-constitution-gold/50"
+                    className="w-full px-4 py-2 bg-justice-black border border-constitution-gold/30 rounded-lg text-judge-ivory placeholder-ink-gray/60 focus:outline-none focus:border-constitution-gold shadow-inner"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-ink-gray mb-2">
+                  <label className="block text-sm font-semibold text-ink-gray mb-2">
                     Organization
                   </label>
                   <input
@@ -947,13 +957,13 @@ export function ProfilePage({
                     onChange={(e) =>
                       setEditForm({ ...editForm, organization: e.target.value })
                     }
-                    className="w-full px-4 py-2 bg-justice-black border border-constitution-gold/20 rounded-lg text-judge-ivory focus:outline-none focus:border-constitution-gold/50"
+                    className="w-full px-4 py-2 bg-justice-black border border-constitution-gold/30 rounded-lg text-judge-ivory placeholder-ink-gray/60 focus:outline-none focus:border-constitution-gold shadow-inner"
                   />
                 </div>
 
                 {["LAWYER", "JUDGE", "ADVOCATE"].includes(editForm.role) && (
                   <div>
-                    <label className="block text-sm font-medium text-ink-gray mb-2">
+                    <label className="block text-sm font-semibold text-ink-gray mb-2">
                       Bar Council Number *
                     </label>
                     <input
@@ -965,14 +975,14 @@ export function ProfilePage({
                           barCouncilNumber: e.target.value,
                         })
                       }
-                      className="w-full px-4 py-2 bg-justice-black border border-constitution-gold/20 rounded-lg text-judge-ivory focus:outline-none focus:border-constitution-gold/50"
+                      className="w-full px-4 py-2 bg-justice-black border border-constitution-gold/30 rounded-lg text-judge-ivory placeholder-ink-gray/60 focus:outline-none focus:border-constitution-gold shadow-inner"
                       placeholder="Required for your role"
                     />
                   </div>
                 )}
 
                 <div>
-                  <label className="block text-sm font-medium text-ink-gray mb-2">
+                  <label className="block text-sm font-semibold text-ink-gray mb-2">
                     Years of Experience
                   </label>
                   <input
@@ -985,12 +995,12 @@ export function ProfilePage({
                         experienceYears: parseInt(e.target.value) || 0,
                       })
                     }
-                    className="w-full px-4 py-2 bg-justice-black border border-constitution-gold/20 rounded-lg text-judge-ivory focus:outline-none focus:border-constitution-gold/50"
+                    className="w-full px-4 py-2 bg-justice-black border border-constitution-gold/30 rounded-lg text-judge-ivory placeholder-ink-gray/60 focus:outline-none focus:border-constitution-gold shadow-inner"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-ink-gray mb-2">
+                  <label className="block text-sm font-semibold text-ink-gray mb-2">
                     Location
                   </label>
                   <input
@@ -999,12 +1009,12 @@ export function ProfilePage({
                     onChange={(e) =>
                       setEditForm({ ...editForm, location: e.target.value })
                     }
-                    className="w-full px-4 py-2 bg-justice-black border border-constitution-gold/20 rounded-lg text-judge-ivory focus:outline-none focus:border-constitution-gold/50"
+                    className="w-full px-4 py-2 bg-justice-black border border-constitution-gold/30 rounded-lg text-judge-ivory placeholder-ink-gray/60 focus:outline-none focus:border-constitution-gold shadow-inner"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-ink-gray mb-2">
+                  <label className="block text-sm font-semibold text-ink-gray mb-2">
                     Bio
                   </label>
                   <textarea
@@ -1013,12 +1023,12 @@ export function ProfilePage({
                       setEditForm({ ...editForm, bio: e.target.value })
                     }
                     rows={4}
-                    className="w-full px-4 py-2 bg-justice-black border border-constitution-gold/20 rounded-lg text-judge-ivory focus:outline-none focus:border-constitution-gold/50"
+                    className="w-full px-4 py-2 bg-justice-black border border-constitution-gold/30 rounded-lg text-judge-ivory placeholder-ink-gray/60 focus:outline-none focus:border-constitution-gold shadow-inner"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-ink-gray mb-2">
+                  <label className="block text-sm font-semibold text-ink-gray mb-2">
                     Website URL
                   </label>
                   <input
@@ -1027,12 +1037,12 @@ export function ProfilePage({
                     onChange={(e) =>
                       setEditForm({ ...editForm, websiteUrl: e.target.value })
                     }
-                    className="w-full px-4 py-2 bg-justice-black border border-constitution-gold/20 rounded-lg text-judge-ivory focus:outline-none focus:border-constitution-gold/50"
+                    className="w-full px-4 py-2 bg-justice-black border border-constitution-gold/30 rounded-lg text-judge-ivory placeholder-ink-gray/60 focus:outline-none focus:border-constitution-gold shadow-inner"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-ink-gray mb-2">
+                  <label className="block text-sm font-semibold text-ink-gray mb-2">
                     LinkedIn URL
                   </label>
                   <input
@@ -1041,7 +1051,7 @@ export function ProfilePage({
                     onChange={(e) =>
                       setEditForm({ ...editForm, linkedinUrl: e.target.value })
                     }
-                    className="w-full px-4 py-2 bg-justice-black border border-constitution-gold/20 rounded-lg text-judge-ivory focus:outline-none focus:border-constitution-gold/50"
+                    className="w-full px-4 py-2 bg-justice-black border border-constitution-gold/30 rounded-lg text-judge-ivory placeholder-ink-gray/60 focus:outline-none focus:border-constitution-gold shadow-inner"
                   />
                 </div>
               </div>
@@ -1049,7 +1059,7 @@ export function ProfilePage({
               <div className="flex justify-end gap-3 mt-8">
                 <button
                   onClick={() => setShowEditModal(false)}
-                  className="px-4 py-2 border border-constitution-gold/30 text-constitution-gold rounded-lg hover:bg-constitution-gold/5"
+                  className="px-4 py-2 border border-constitution-gold/40 text-constitution-gold rounded-lg hover:bg-justice-black/30 transition-colors"
                   type="button"
                 >
                   Cancel
@@ -1069,16 +1079,16 @@ export function ProfilePage({
 
       {/* Add Certification Modal */}
       {showAddCertModal && (
-        <div className="fixed inset-0 bg-justice-black/80 flex items-center justify-center z-50 p-4">
-          <div className="bg-aged-paper rounded-lg border border-constitution-gold/20 shadow-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="aged-paper rounded-lg border border-constitution-gold/30 shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="font-heading font-bold text-2xl text-judge-ivory">
+                <h2 className="font-heading font-bold text-2xl text-ink-gray">
                   Add Certification
                 </h2>
                 <button
                   onClick={() => setShowAddCertModal(false)}
-                  className="p-2 hover:bg-constitution-gold/10 rounded"
+                  className="p-2 hover:bg-black/10 rounded-full transition-colors"
                   type="button"
                 >
                   <X className="w-5 h-5 text-ink-gray" />

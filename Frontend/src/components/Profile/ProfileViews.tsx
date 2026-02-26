@@ -31,11 +31,11 @@ export const renderPostCard = (post: any, onClick: (id: string) => void, showAut
         className="p-4 bg-justice-black/20 rounded-lg border border-constitution-gold/10 hover:border-constitution-gold/30 cursor-pointer transition"
     >
         {showAuthor && post.authorName && (
-            <p className="text-xs text-ink-gray/60 mb-1">by {post.authorName}</p>
+            <p className="text-xs text-judge-ivory/60 mb-1">by {post.authorName}</p>
         )}
-        <h3 className="font-medium text-ink-gray mb-2">{post.title || 'Untitled Post'}</h3>
-        <p className="text-sm text-ink-gray/70 line-clamp-2">{post.content}</p>
-        <div className="flex gap-4 mt-3 text-xs text-ink-gray/50">
+        <h3 className="font-medium text-judge-ivory mb-2">{post.title || 'Untitled Post'}</h3>
+        <p className="text-sm text-judge-ivory/80 line-clamp-2">{post.content}</p>
+        <div className="flex gap-4 mt-3 text-xs text-judge-ivory/60">
             <span>❤️ {post.likeCount || 0}</span>
             <span>💬 {post.commentCount || 0}</span>
         </div>
@@ -57,11 +57,11 @@ export const renderDiscussionCard = (d: any, onClick: (id: string) => void, show
             {d.isResolved && <span className="text-green-400">✓ Resolved</span>}
         </div>
         {showAuthor && d.authorName && (
-            <p className="text-xs text-ink-gray/60 mb-1">by {d.authorName}</p>
+            <p className="text-xs text-judge-ivory/60 mb-1">by {d.authorName}</p>
         )}
-        <h3 className="font-medium text-ink-gray mb-1">{d.title}</h3>
-        <p className="text-sm text-ink-gray/70 line-clamp-2 italic">"{d.description}"</p>
-        <div className="flex gap-4 mt-3 text-xs text-ink-gray/50">
+        <h3 className="font-medium text-judge-ivory mb-1">{d.title}</h3>
+        <p className="text-sm text-judge-ivory/80 line-clamp-2 italic">"{d.description}"</p>
+        <div className="flex gap-4 mt-3 text-xs text-judge-ivory/60">
             <span>💬 {d.replyCount || 0}</span>
             <span>👍 {d.upvoteCount || 0}</span>
         </div>
@@ -95,10 +95,10 @@ export const renderUserCard = (
                     )}
                 </div>
                 <div className="flex-1">
-                    <h3 className="font-medium text-ink-gray">{user.fullName}</h3>
-                    <p className="text-sm text-ink-gray/60">{user.designation || user.role}</p>
+                    <h3 className="font-medium text-judge-ivory">{user.fullName}</h3>
+                    <p className="text-sm text-judge-ivory/80">{user.designation || user.role}</p>
                     {user.organization && (
-                        <p className="text-xs text-ink-gray/50">{user.organization}</p>
+                        <p className="text-xs text-judge-ivory/60">{user.organization}</p>
                     )}
                 </div>
             </div>
@@ -122,7 +122,7 @@ export const renderUserCard = (
             ) : null}
         </div>
 
-        <div className="mt-3 flex gap-4 text-xs text-ink-gray/50">
+        <div className="mt-3 flex gap-4 text-xs text-judge-ivory/60">
             <span>Followers: {user.followerCount || 0}</span>
             <span>Following: {user.followingCount || 0}</span>
             {isFollowerTab && user.isFollowingBack && (
@@ -139,7 +139,7 @@ export const PostList = ({ posts, onPostClick, emptyMessage = "No posts yet" }: 
         {posts.length > 0 ? (
             posts.map(p => renderPostCard(p, onPostClick))
         ) : (
-            <div className="text-center py-12 text-ink-gray/60">{emptyMessage}</div>
+            <div className="text-center py-12 text-judge-ivory/60">{emptyMessage}</div>
         )}
     </div>
 );
@@ -149,7 +149,7 @@ export const DiscussionList = ({ discussions, onDiscussionClick, emptyMessage = 
         {discussions.length > 0 ? (
             discussions.map(d => renderDiscussionCard(d, onDiscussionClick))
         ) : (
-            <div className="text-center py-12 text-ink-gray/60">{emptyMessage}</div>
+            <div className="text-center py-12 text-judge-ivory/60">{emptyMessage}</div>
         )}
     </div>
 );
@@ -175,7 +175,7 @@ export const UserList = ({
         {users.length > 0 ? (
             users.map(u => renderUserCard(u, isOwnProfile, isFollowerTab, onUserClick, onFollow, onUnfollow))
         ) : (
-            <div className="text-center py-12 text-ink-gray/60">{emptyMessage}</div>
+            <div className="text-center py-12 text-judge-ivory/60">{emptyMessage}</div>
         )}
     </div>
 );

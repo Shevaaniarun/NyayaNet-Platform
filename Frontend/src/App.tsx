@@ -49,6 +49,7 @@ type ViewType =
     | 'profile-bookmarks'
     | 'profile-liked-posts'
     | 'profile-liked-discussions'
+    | 'profile-following-discussions'
     | 'profile-group-discussions';
 const getCurrentUser = () => {
     const userStr = localStorage.getItem('user');
@@ -88,13 +89,14 @@ const adaptPost = (apiPost: ApiPost): PostComponentType => ({
     tags: apiPost.tags || [],
     isLiked: !!apiPost.isLiked,
     isSaved: !!apiPost.isSaved,
-    media: apiPost.media?.map(m => ({
+    media: apiPost.media?.map((m: any) => ({
         id: m.id,
         url: m.mediaUrl || '',
         type: m.mediaType || '',
-        mimeType: m.mediaType || '',
+        mimeType: m.mediaMimeType || m.mediaType || '',
         mediaUrl: m.mediaUrl || '',
         mediaType: m.mediaType || '',
+        mediaMimeType: m.mediaMimeType || '',
         fileName: m.fileName || undefined
     })) || []
 });
