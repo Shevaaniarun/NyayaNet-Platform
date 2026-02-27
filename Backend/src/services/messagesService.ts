@@ -290,6 +290,7 @@ export class MessagesService {
       FROM messages m
       JOIN users u ON u.id = m.sender_id
       WHERE m.conversation_id = $1
+        AND m.is_deleted = false
       ORDER BY m.created_at DESC
       LIMIT $2 OFFSET $3
     `;

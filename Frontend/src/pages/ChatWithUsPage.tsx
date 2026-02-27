@@ -10,9 +10,10 @@ interface Expert {
   role: string;
   designation: string;
   organization: string;
-  area_of_interest: string;
+  area_of_interest: string | string[];
   profile_photo_url: string;
   experience_years: number;
+  bio?: string;
   is_online?: boolean;
   rating?: number;
   cases_handled?: number;
@@ -30,6 +31,7 @@ const ChatWithUsPage: React.FC<ChatWithUsPageProps> = ({ onNavigate }) => {
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRole, setSelectedRole] = useState<string>('all');
+  const [sortByExperience, setSortByExperience] = useState(false);
 
   useEffect(() => {
     fetchExperts();
@@ -37,7 +39,7 @@ const ChatWithUsPage: React.FC<ChatWithUsPageProps> = ({ onNavigate }) => {
 
   useEffect(() => {
     filterExperts();
-  }, [searchTerm, selectedRole, experts]);
+  }, [searchTerm, selectedRole, experts, sortByExperience]);
 
   const fetchExperts = async () => {
     try {
@@ -58,17 +60,31 @@ const ChatWithUsPage: React.FC<ChatWithUsPageProps> = ({ onNavigate }) => {
 
     // Filter by search term
     if (searchTerm) {
-      filtered = filtered.filter(expert =>
-        expert.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        expert.designation?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        expert.area_of_interest?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        expert.organization?.toLowerCase().includes(searchTerm.toLowerCase())
-      );
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter(expert => {
+        const aoi = expert.area_of_interest;
+        const aoiMatch = Array.isArray(aoi)
+          ? aoi.some((a: string) => a?.toLowerCase().includes(term))
+          : typeof aoi === 'string' && aoi.toLowerCase().includes(term);
+        return (
+          expert.full_name?.toLowerCase().includes(term) ||
+          expert.designation?.toLowerCase().includes(term) ||
+          expert.organization?.toLowerCase().includes(term) ||
+          expert.bio?.toLowerCase().includes(term) ||
+          expert.role?.toLowerCase().replace('_', ' ').includes(term) ||
+          aoiMatch
+        );
+      });
     }
 
     // Filter by role
     if (selectedRole !== 'all') {
       filtered = filtered.filter(expert => expert.role === selectedRole);
+    }
+
+    // Sort by experience
+    if (sortByExperience) {
+      filtered = [...filtered].sort((a, b) => (b.experience_years || 0) - (a.experience_years || 0));
     }
 
     setFilteredExperts(filtered);
@@ -206,7 +222,13 @@ const ChatWithUsPage: React.FC<ChatWithUsPageProps> = ({ onNavigate }) => {
               </div>
 
               {/* Sort Button */}
-              <button className="px-4 py-3 bg-constitution-gold/10 border border-constitution-gold/20 text-constitution-gold rounded-xl font-bold hover:bg-constitution-gold/20 transition-colors flex items-center justify-center gap-2">
+              <button
+                onClick={() => setSortByExperience(prev => !prev)}
+                className={`px-4 py-3 border rounded-xl font-bold transition-colors flex items-center justify-center gap-2 ${sortByExperience
+                  ? 'bg-constitution-gold text-justice-black border-constitution-gold'
+                  : 'bg-constitution-gold/10 border-constitution-gold/20 text-constitution-gold hover:bg-constitution-gold/20'
+                  }`}
+              >
                 <Crown className="w-5 h-5" />
                 Sort by Experience
               </button>
