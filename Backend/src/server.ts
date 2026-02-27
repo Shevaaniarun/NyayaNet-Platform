@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import path from 'path';
 import dotenv from 'dotenv';
+import mongoose from 'mongoose';
 import discussionRoutes from './routes/discussionRoutes';
 import profileRoutes from './routes/profileRoutes';
 import postRoutes from './routes/postRoutes';
@@ -74,6 +75,17 @@ app.use('/api/messages', messagesRoutes);
 app.post('/api/chatbot/chat', authenticate, ChatbotController.chat);
 app.get('/api/chatbot/history', authenticate, ChatbotController.getChatHistory);
 app.use('/api/dashboard', dashboardRoutes);
+
+// Connect to MongoDB for chatbot storage (mongoose)
+const mongoUri = process.env.MONGODB_URI || process.env.MONGO_URL || 'mongodb://localhost:27017/nyayanet_chats';
+mongoose.connect(mongoUri, {
+    // useNewUrlParser and useUnifiedTopology are defaults in modern mongoose
+}).then(() => {
+    console.log(`✅ Connected to MongoDB at ${mongoUri}`);
+}).catch((err) => {
+    console.error('❌ Failed to connect to MongoDB:', err && err.message ? err.message : err);
+    // Do not exit the process; chatbot endpoints will fallback (but will log errors)
+});
 
 // Development-only debug route to inspect a user's contribution summary by email
 if (process.env.NODE_ENV !== 'production') {

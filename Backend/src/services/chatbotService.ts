@@ -371,7 +371,14 @@ export class ChatbotService {
       const response = await result.response;
       return response.text();
     } catch (error: any) {
-      console.error('Gemini AI error:', error.message);
+      console.error('Gemini AI error (full):', error);
+      if (error?.response) {
+        try {
+          console.error('Gemini error response body:', JSON.stringify(error.response));
+        } catch (e) {
+          console.error('Could not stringify error.response', e);
+        }
+      }
       return null;
     }
   }
