@@ -1,27 +1,40 @@
 import { Request, Response } from "express";
 import { PostModel } from "../models/Post";
 import { AuthRequest } from "../middleware/auth";
-import { CreatePostInput } from "../types/postTypes";
+import { CreatePostInput, PostMediaInput } from "../types/postTypes";
 import pool from "../config/database";
 import { NotificationModel } from "../models/Notification";
 
 export class PostController {
+  /**
+   * Upload files — reads file buffers from multer memoryStorage,
+   * stores them directly in the database as BYTEA, and returns media IDs.
+   */
   static async uploadFiles(req: Request, res: Response) {
     try {
       const authReq = req as AuthRequest;
-      const files = authReq.files;
+      const userId = authReq.user?.id || authReq.user?.userId;
+      if (!userId)
+        return res
+          .status(401)
+          .json({ success: false, message: "Authentication required" });
+
+      const files = authReq.files as Express.Multer.File[];
       if (!files || files.length === 0) {
         return res
           .status(400)
           .json({ success: false, message: "No files uploaded" });
       }
 
-      const media = files.map((file: any) => ({
-        mediaType: file.mimetype.startsWith("image/") ? "IMAGE" : "DOCUMENT",
-        mediaUrl: `/uploads/${file.filename}`,
+      // Build media array with binary data from memory buffers
+      const media: PostMediaInput[] = files.map((file) => ({
+        mediaType: file.mimetype.startsWith("image/") ? "IMAGE" as const
+          : file.mimetype === "application/pdf" ? "PDF" as const
+            : "DOCUMENT" as const,
+        mediaData: file.buffer.toString('base64'),
+        mediaMimeType: file.mimetype,
         fileName: file.originalname,
         fileSize: file.size,
-        mimeType: file.mimetype,
       }));
 
       return res.json({ success: true, data: { media } });
@@ -29,6 +42,34 @@ export class PostController {
       return res.status(500).json({
         success: false,
         message: "Error uploading files",
+        error: error.message,
+      });
+    }
+  }
+
+  /**
+   * Serve media binary data from DB by media ID.
+   * GET /api/posts/media/:mediaId
+   */
+  static async getMedia(req: Request, res: Response) {
+    try {
+      const { mediaId } = req.params;
+
+      const mediaData = await PostModel.getMediaData(mediaId);
+      if (!mediaData) {
+        return res.status(404).json({ success: false, message: "Media not found" });
+      }
+
+      // Set appropriate headers
+      res.set('Content-Type', mediaData.mediaMimeType);
+      res.set('Content-Disposition', `inline; filename="${mediaData.fileName || 'file'}"`);
+      res.set('Cache-Control', 'public, max-age=86400'); // Cache for 24h
+
+      return res.send(mediaData.mediaData);
+    } catch (error: any) {
+      return res.status(500).json({
+        success: false,
+        message: "Error fetching media",
         error: error.message,
       });
     }
@@ -59,13 +100,26 @@ export class PostController {
         new Set([...(tags || []), ...extractedHashtags]),
       );
 
+      // Convert base64 media data back to Buffers if sent via JSON
+      const processedMedia: PostMediaInput[] = (media || []).map((m: any) => ({
+        mediaType: m.mediaType,
+        mediaData: m.mediaData ? (
+          typeof m.mediaData === 'string'
+            ? Buffer.from(m.mediaData, 'base64')
+            : (m.mediaData.type === 'Buffer' ? Buffer.from(m.mediaData.data) : m.mediaData)
+        ) : Buffer.alloc(0),
+        mediaMimeType: m.mediaMimeType || m.mimeType || 'application/octet-stream',
+        fileName: m.fileName || 'unnamed',
+        fileSize: m.fileSize || 0,
+      }));
+
       const postData: CreatePostInput = {
         content: content.trim(),
         title: title?.trim() || undefined,
         postType: postType || "POST",
         tags: finalTags,
         isPublic: isPublic !== false,
-        media: media || [],
+        media: processedMedia,
       };
 
       const post = await PostModel.create(userId, postData);
@@ -73,6 +127,75 @@ export class PostController {
       return res.status(201).json({ success: true, data: { post } });
     } catch (error: any) {
       console.error("Create post error:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Error creating post",
+        error: error.message,
+      });
+    }
+  }
+
+  /**
+   * Create a post with files uploaded via multipart form data.
+   * POST /api/posts/with-media (multipart)
+   */
+  static async createPostWithMedia(req: Request, res: Response) {
+    try {
+      const authReq = req as AuthRequest;
+      const userId = authReq.user?.id || authReq.user?.userId;
+      if (!userId)
+        return res
+          .status(401)
+          .json({ success: false, message: "Authentication required" });
+
+      const { content, title, postType, tags, isPublic } = req.body;
+      const files = (authReq.files as Express.Multer.File[]) || [];
+
+      if (!content && files.length === 0) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Content or files required" });
+      }
+
+      // Extract hashtags
+      const hashtagRegex = /#(\w+)/g;
+      const extractedHashtags =
+        (content || '').match(hashtagRegex)?.map((h: string) => h.slice(1)) || [];
+
+      let parsedTags: string[] = [];
+      if (tags) {
+        parsedTags = typeof tags === 'string' ? JSON.parse(tags) : tags;
+      }
+
+      const finalTags = Array.from(
+        new Set([...parsedTags, ...extractedHashtags]),
+      );
+
+      // Build media from uploaded files
+      const media: PostMediaInput[] = files.map((file) => ({
+        mediaType: file.mimetype.startsWith("image/") ? "IMAGE" as const
+          : file.mimetype === "application/pdf" ? "PDF" as const
+            : "DOCUMENT" as const,
+        mediaData: file.buffer,
+        mediaMimeType: file.mimetype,
+        fileName: file.originalname,
+        fileSize: file.size,
+      }));
+
+      const postData: CreatePostInput = {
+        content: (content || '').trim(),
+        title: title?.trim() || undefined,
+        postType: postType || "POST",
+        tags: finalTags,
+        isPublic: isPublic !== 'false' && isPublic !== false,
+        media,
+      };
+
+      const post = await PostModel.create(userId, postData);
+
+      return res.status(201).json({ success: true, data: { post } });
+    } catch (error: any) {
+      console.error("Create post with media error:", error);
       return res.status(500).json({
         success: false,
         message: "Error creating post",

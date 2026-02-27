@@ -12,13 +12,21 @@ const createHeaders = (includeAuth = false): Record<string, string> => {
     return headers;
 };
 
+export interface PostMediaItem {
+    id: string;
+    mediaType: string;
+    mediaMimeType: string;
+    fileName: string | null;
+    fileSize: number | null;
+    displayOrder: number;
+}
+
 export interface PostMediaInput {
     mediaType: 'IMAGE' | 'PDF' | 'DOCUMENT';
-    mediaUrl: string;
-    thumbnailUrl?: string;
-    fileName?: string;
-    fileSize?: number;
-    mimeType?: string;
+    mediaData: string; // base64
+    mediaMimeType: string;
+    fileName: string;
+    fileSize: number;
 }
 
 export interface CreatePostData {
@@ -33,9 +41,9 @@ export interface CreatePostData {
 export interface PostMedia {
     id: string;
     mediaType: string;
-    mediaUrl: string;
-    thumbnailUrl: string | null;
+    mediaMimeType: string;
     fileName: string | null;
+    fileSize: number | null;
     displayOrder: number;
 }
 
@@ -96,6 +104,40 @@ export async function createPost(data: CreatePostData): Promise<Post> {
     return result.data.post;
 }
 
+/**
+ * Create a post with files in a single multipart request.
+ * Files are sent as FormData and stored as BYTEA in the DB.
+ */
+export async function createPostWithMedia(
+    data: { content: string; title?: string; postType?: string; tags?: string[]; isPublic?: boolean },
+    files: File[]
+): Promise<Post> {
+    const formData = new FormData();
+    formData.append('content', data.content);
+    if (data.title) formData.append('title', data.title);
+    if (data.postType) formData.append('postType', data.postType);
+    if (data.tags && data.tags.length > 0) formData.append('tags', JSON.stringify(data.tags));
+    if (data.isPublic !== undefined) formData.append('isPublic', String(data.isPublic));
+
+    files.forEach(file => formData.append('files', file));
+
+    const response = await fetch(`${API_BASE_URL}/posts/with-media`, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${getAuthToken()}`
+        },
+        body: formData
+    });
+
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to create post');
+    }
+
+    const result = await response.json();
+    return result.data.post;
+}
+
 export async function getPost(postId: string): Promise<Post> {
     const response = await fetch(`${API_BASE_URL}/posts/${postId}`, {
         headers: createHeaders(true)
@@ -134,7 +176,14 @@ export async function deletePost(postId: string): Promise<void> {
     }
 }
 
+/**
+ * Upload files and get back media metadata.
+ * Files are stored directly in the database as BYTEA.
+ * Returns PostMediaInput[] with base64-encoded data for use in createPost.
+ */
 export async function uploadFiles(files: File[]): Promise<PostMediaInput[]> {
+    // Read files as base64 and send to the new with-media endpoint
+    // OR: we can use the FormData upload and then the server returns media items
     const formData = new FormData();
     files.forEach(file => formData.append('files', file));
 
@@ -152,7 +201,22 @@ export async function uploadFiles(files: File[]): Promise<PostMediaInput[]> {
     }
 
     const result = await response.json();
-    return result.data.media;
+    // The server returns media with binary data — we need to convert to base64 for JSON transport
+    return result.data.media.map((m: any) => ({
+        mediaType: m.mediaType,
+        mediaData: m.mediaData, // Already base64 from JSON serialization
+        mediaMimeType: m.mediaMimeType,
+        fileName: m.fileName,
+        fileSize: m.fileSize,
+    }));
+}
+
+/**
+ * Get the URL to load media from the database.
+ * This is the key change — instead of /uploads/filename, we use /api/posts/media/:id
+ */
+export function getMediaUrl(mediaId: string): string {
+    return `${API_BASE_URL}/posts/media/${mediaId}`;
 }
 
 export async function getFeed(page = 1, limit = 20): Promise<{ posts: Post[], pagination: any }> {
@@ -198,10 +262,10 @@ export async function getPosts(filters: PostFilters = {}): Promise<{ posts: Post
     return result.data;
 }
 
-export async function likePost(postId: string, reactionType:  string = 'LIKE'): Promise<{ liked: boolean; count: number; reactionType: string | null }> {
+export async function likePost(postId: string, reactionType: string = 'LIKE'): Promise<{ liked: boolean; count: number; reactionType: string | null }> {
     const response = await fetch(`${API_BASE_URL}/posts/${postId}/like`, {
         method: 'POST',
-        headers:  createHeaders(true),
+        headers: createHeaders(true),
         body: JSON.stringify({ reactionType })
     });
 

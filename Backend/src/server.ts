@@ -1,8 +1,10 @@
+import dotenv from 'dotenv';
+dotenv.config();
+
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
-import dotenv from 'dotenv';
-import mongoose from 'mongoose';
+
 import discussionRoutes from './routes/discussionRoutes';
 import profileRoutes from './routes/profileRoutes';
 import postRoutes from './routes/postRoutes';
@@ -37,7 +39,11 @@ app.use(express.urlencoded({ extended: true }));
 
 // Request logging for debugging
 app.use((req, res, next) => {
-    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+    const start = Date.now();
+    res.on('finish', () => {
+        const duration = Date.now() - start;
+        console.log(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl} ${res.statusCode} - ${duration}ms`);
+    });
     next();
 });
 
@@ -47,6 +53,7 @@ console.log(`📂 Serving static files from: ${uploadsPath}`);
 
 // Check if directory exists
 import fs from 'fs';
+import mongoose from 'mongoose';
 if (!fs.existsSync(uploadsPath)) {
     console.warn(`⚠️ Warning: Uploads directory not found at ${uploadsPath}. Creating it...`);
     fs.mkdirSync(uploadsPath, { recursive: true });
@@ -66,7 +73,6 @@ app.use('/api/posts', postRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use("/api", authRoutes);
 app.use("/api/notes", noteRoutes);
-app.use('/api/profile', profileRoutes);
 app.use('/api/network', networkRoutes);
 
 app.use('/api/messages', messagesRoutes);
