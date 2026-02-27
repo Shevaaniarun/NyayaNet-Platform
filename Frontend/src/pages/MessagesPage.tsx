@@ -41,6 +41,8 @@ interface Message {
   sender_name: string;
   sender_photo: string;
   sender_role: string;
+  file_name?: string;
+  file_size?: number;
 }
 
 interface Conversation {
@@ -663,20 +665,20 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ onNavigate, urlId: propId }
                                 <>
                                   {msg.message_type === 'IMAGE' && (
                                     <img
-                                      src={`${API_BASE_URL.replace('/api', '')}/api/messages/media/${msg.id}`}
+                                      src={`${API_BASE_URL}/messages/media/${msg.id}?token=${localStorage.getItem('token')}`}
                                       alt="Attachment"
                                       className="max-w-xs rounded-lg mb-2 border border-white/10 cursor-pointer hover:opacity-90 active:scale-[0.99] transition-all"
-                                      onClick={() => window.open(`${API_BASE_URL.replace('/api', '')}/api/messages/media/${msg.id}`, '_blank')}
+                                      onClick={() => window.open(`${API_BASE_URL}/messages/media/${msg.id}?token=${localStorage.getItem('token')}`, '_blank')}
                                     />
                                   )}
                                   {msg.message_type === 'PDF' && (
                                     <div
                                       className="flex items-center gap-3 p-3 bg-black/20 rounded-xl mb-2 cursor-pointer border border-white/5 hover:bg-black/30 transition-all"
-                                      onClick={() => window.open(`${API_BASE_URL.replace('/api', '')}/api/messages/media/${msg.id}`, '_blank')}
+                                      onClick={() => window.open(`${API_BASE_URL}/messages/media/${msg.id}?token=${localStorage.getItem('token')}`, '_blank')}
                                     >
                                       <FileText className="w-8 h-8 text-red-400" />
                                       <div className="flex-1 overflow-hidden">
-                                        <p className="text-xs font-bold truncate">Legal Document.pdf</p>
+                                        <p className="text-xs font-bold truncate">{msg.file_name || 'Legal Document.pdf'}</p>
                                         <p className="text-[10px] opacity-50 uppercase">Open PDF</p>
                                       </div>
                                     </div>
