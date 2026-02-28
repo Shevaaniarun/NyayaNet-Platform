@@ -18,8 +18,8 @@ import { ChatbotController } from './controllers/chatbotController';
 import { authenticate } from './middleware/auth';
 import dashboardRoutes from './routes/dashboardRoutes';
 
-
-dotenv.config();
+// Import PostgreSQL pool to test connection
+import pool from './config/database';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -47,13 +47,11 @@ app.use((req, res, next) => {
     next();
 });
 
-// Serve uploaded files statically - using absolute path from project root
+// Serve uploaded files statically
 const uploadsPath = path.resolve(process.cwd(), 'uploads');
 console.log(`📂 Serving static files from: ${uploadsPath}`);
 
-// Check if directory exists
 import fs from 'fs';
-import mongoose from 'mongoose';
 if (!fs.existsSync(uploadsPath)) {
     console.warn(`⚠️ Warning: Uploads directory not found at ${uploadsPath}. Creating it...`);
     fs.mkdirSync(uploadsPath, { recursive: true });
@@ -61,11 +59,12 @@ if (!fs.existsSync(uploadsPath)) {
 
 app.use('/uploads', express.static(uploadsPath));
 
-
+// Health check
 app.get('/api/health', (req, res) => {
     res.json({ status: 'healthy', timestamp: new Date().toISOString(), service: 'NyayaNet Backend' });
 });
 
+// Routes
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/discussions', discussionRoutes);
 app.use('/api/profile', profileRoutes);
@@ -74,48 +73,31 @@ app.use('/api/upload', uploadRoutes);
 app.use("/api", authRoutes);
 app.use("/api/notes", noteRoutes);
 app.use('/api/network', networkRoutes);
-
 app.use('/api/messages', messagesRoutes);
-
-// Chatbot routes (inline to avoid module issues)
-app.post('/api/chatbot/chat', authenticate, ChatbotController.chat);
-app.get('/api/chatbot/history', authenticate, ChatbotController.getChatHistory);
 app.use('/api/dashboard', dashboardRoutes);
 
-// Connect to MongoDB for chatbot storage (mongoose)
-const mongoUri = process.env.MONGODB_URI || process.env.MONGO_URL || 'mongodb://localhost:27017/nyayanet_chats';
-mongoose.connect(mongoUri, {
-    // useNewUrlParser and useUnifiedTopology are defaults in modern mongoose
-}).then(() => {
-    console.log(`✅ Connected to MongoDB at ${mongoUri}`);
-}).catch((err) => {
-    console.error('❌ Failed to connect to MongoDB:', err && err.message ? err.message : err);
-    // Do not exit the process; chatbot endpoints will fallback (but will log errors)
-});
+// Chatbot routes
+app.post('/api/chatbot/chat', authenticate, ChatbotController.chat);
+app.get('/api/chatbot/history', authenticate, ChatbotController.getChatHistory);
+app.get('/api/chatbot/chat/:chatId', authenticate, ChatbotController.getChatMessages);
+app.delete('/api/chatbot/chat/:chatId', authenticate, ChatbotController.deleteChat);
+app.put('/api/chatbot/chat/:chatId', authenticate, ChatbotController.updateChatName);
 
-// Development-only debug route to inspect a user's contribution summary by email
-if (process.env.NODE_ENV !== 'production') {
-    const db = require('./config/database').default;
-    app.get('/internal/debug/user_contrib', async (req, res) => {
-        const email = String(req.query.email || '').trim();
-        if (!email) return res.status(400).json({ success: false, message: 'email query param required' });
-        try {
-            const userRow = await db.query('SELECT id, email, full_name FROM users WHERE email = $1 LIMIT 1', [email]);
-            if (!userRow.rows || userRow.rows.length === 0) return res.status(404).json({ success: false, message: 'user not found' });
-            const uid = userRow.rows[0].id;
-            const summary = await db.query('SELECT * FROM user_contribution_summary WHERE user_id = $1 LIMIT 1', [uid]);
-            const likes = await db.query('SELECT COUNT(*) FROM post_likes pl JOIN posts p ON pl.post_id = p.id WHERE p.user_id = $1', [uid]);
-            return res.json({ success: true, user: userRow.rows[0], summary: summary.rows[0] || null, post_likes_count: Number(likes.rows[0].count || 0) });
-        } catch (err) {
-            console.error('Debug route error:', err);
-            const msg = (err instanceof Error) ? err.message : String(err);
-            return res.status(500).json({ success: false, message: 'internal error', error: msg });
-        }
-    });
-}
+// Test PostgreSQL connection on startup
+(async () => {
+    try {
+        const result = await pool.query('SELECT NOW()');
+        console.log('✅ PostgreSQL connected successfully');
+        console.log(`📊 Database time: ${result.rows[0].now}`);
+    } catch (error) {
+        console.error('❌ PostgreSQL connection failed:', error);
+    }
+})();
 
+// 404 handler
 app.use((req, res) => res.status(404).json({ success: false, message: 'Route not found' }));
 
+// Error handler
 app.use((error: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
     console.error('Server error:', error);
     res.status(500).json({ success: false, message: 'Internal server error' });
