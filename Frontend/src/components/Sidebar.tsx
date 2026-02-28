@@ -72,10 +72,9 @@ export function Sidebar({
     },
 
     { path: "/profile", icon: User, label: "Profile" },
+    { path: "/library", icon: BookOpen, label: "Law Library" },
     { path: "/chatbot", icon: Brain, label: "NyayaNetGPT", badge: "AI" },
-    {
-      path: "/library", icon: BookOpen, label: "Law Library"
-    },
+    
   ];
 
   const handleNavClick = (path: string) => {
@@ -85,7 +84,7 @@ export function Sidebar({
   return (
     <aside className="w-64 bg-justice-black border-r border-constitution-gold/20 h-screen fixed left-0 top-0 flex flex-col">
       {/* Logo */}
-      <div className="p-6 border-b border-constitution-gold/20">
+      <div className="p-4 border-b border-constitution-gold/20">
         <div className="flex items-center space-x-3">
           <div className="relative">
             <div className="w-10 h-10 bg-constitution-gold rounded-lg flex items-center justify-center">
@@ -151,7 +150,7 @@ export function Sidebar({
         {/* Logout */}
         <button
           onClick={onLogout}
-          className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all relative overflow-hidden group text-red-500/70 hover:bg-red-500/5 hover:text-red-500 mt-4"
+          className="w-full flex items-center space-x-3 px-5 py-1 rounded-lg transition-all relative overflow-hidden group text-red-500/70 hover:bg-red-500/5 hover:text-red-500 mt-4"
         >
           <LogOut className="w-5 h-5 flex-shrink-0" />
           <span className="font-medium tracking-wide flex-1 text-left">
@@ -161,7 +160,7 @@ export function Sidebar({
       </nav>
 
       {/* Footer */}
-      <div className="p-4 border-t border-constitution-gold/20 text-center">
+      <div className="p-2 border-t border-constitution-gold/20 text-center">
         <div className="w-12 h-12 mx-auto mb-3 rounded-full border-2 border-constitution-gold/30 flex items-center justify-center">
           <Book className="w-6 h-6 text-constitution-gold" />
         </div>

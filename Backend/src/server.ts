@@ -82,6 +82,7 @@ app.use("/api/notes", noteRoutes);
 app.use('/api/network', networkRoutes);
 app.use('/api/messages', messagesRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/library', lawlibraryRoutes);
 
 // Add global process handlers to capture unexpected async errors
 process.on('unhandledRejection', (reason, p) => {
