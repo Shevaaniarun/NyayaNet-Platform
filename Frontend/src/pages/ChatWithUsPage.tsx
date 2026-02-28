@@ -98,7 +98,7 @@ const ChatWithUsPage: React.FC<ChatWithUsPageProps> = ({ onNavigate }) => {
       case 'ADVOCATE':
         return <Scale className="w-4 h-4 text-seal-red" />;
       case 'LEGAL_PROFESSIONAL':
-        return <GraduationCap className="w-4 h-4 text-link-blue" />;
+        return <GraduationCap className="w-4 h-4 text-black" />;
       case 'LAW_STUDENT':
         return <BookOpen className="w-4 h-4 text-gavel-bronze" />;
       default:
@@ -114,7 +114,7 @@ const ChatWithUsPage: React.FC<ChatWithUsPageProps> = ({ onNavigate }) => {
       case 'ADVOCATE':
         return 'bg-seal-red/10 text-seal-red border-seal-red/20';
       case 'LEGAL_PROFESSIONAL':
-        return 'bg-link-blue/10 text-link-blue border-link-blue/20';
+        return 'bg-black/10 text-black border-link-blue/20';
       case 'LAW_STUDENT':
         return 'bg-gavel-bronze/10 text-gavel-bronze border-gavel-bronze/20';
       default:
@@ -309,17 +309,6 @@ const ChatWithUsPage: React.FC<ChatWithUsPageProps> = ({ onNavigate }) => {
 
                     {/* Compact Stats & Action */}
                     <div className="flex items-center gap-6 self-end md:self-center">
-                      <div className="hidden lg:flex items-center gap-8 px-6 border-l border-constitution-gold/10">
-                        <div className="text-center">
-                          <p className="text-constitution-gold font-bold text-lg">{expert.cases_handled || '50+'}</p>
-                          <p className="text-ink-gray/40 text-[10px] uppercase font-bold tracking-tighter">Cases</p>
-                        </div>
-                        <div className="text-center">
-                          <p className="text-constitution-gold font-bold text-lg">{expert.response_time || '2h'}</p>
-                          <p className="text-ink-gray/40 text-[10px] uppercase font-bold tracking-tighter">Reply</p>
-                        </div>
-                      </div>
-
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
