@@ -65,10 +65,49 @@ const UserCard: React.FC<UserCardProps> = ({
     }
   };
 
-  const getActionButton = () => {
+    const getActionButton = () => {
 
     if (user.id === currentUserId) return null;
 
+    // When viewing the "Requests" tab (incoming follow requests), show Accept/Reject
+    if (tabType === 'requests') {
+      return (
+        <div className="flex gap-2">
+          <button
+            onClick={() => handleAction("accept_request")}
+            disabled={isLoading}
+            className="px-3 py-1.5 bg-constitution-gold text-black rounded flex items-center gap-1 disabled:opacity-50"
+          >
+            <Check className="w-4 h-4" />
+            Accept
+          </button>
+          <button
+            onClick={() => handleAction("reject_request")}
+            disabled={isLoading}
+            className="px-3 py-1.5 border border-red-500/50 text-red-400 rounded flex items-center gap-1 hover:bg-red-500/10 disabled:opacity-50"
+          >
+            <X className="w-4 h-4" />
+            Reject
+          </button>
+        </div>
+      );
+    }
+
+    // When viewing the "Pending" tab (outgoing requests you sent), show Cancel
+    if (tabType === 'pending') {
+      return (
+        <button
+          onClick={() => handleAction("cancel_request")}
+          disabled={isLoading}
+          className="px-3 py-1.5 border border-red-500/50 text-red-400 rounded flex items-center gap-1 hover:bg-red-500/10 disabled:opacity-50"
+        >
+          <X className="w-4 h-4" />
+          Cancel Request
+        </button>
+      );
+    }
+
+    // For all other tabs (followers, following, search results), use followStatus
     switch(user.followStatus){
 
       case "NONE":
