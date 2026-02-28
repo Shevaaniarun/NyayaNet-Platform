@@ -250,13 +250,6 @@ export function DiscussionDetail({
                   </div>
                 </div>
                 <div className="flex items-center gap-2.5">
-                  <Eye className="w-5 h-5 text-constitution-gold" />
-                  <div className="flex flex-col">
-                    <span className="font-bold text-ink-gray text-lg leading-none">{discussion.viewCount}</span>
-                    <span className="text-[10px] uppercase font-bold text-ink-gray/40 tracking-tighter">Views</span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2.5">
                   <Users className="w-5 h-5 text-constitution-gold" />
                   <div className="flex flex-col">
                     <span className="font-bold text-ink-gray text-lg leading-none">{discussion.followerCount}</span>
