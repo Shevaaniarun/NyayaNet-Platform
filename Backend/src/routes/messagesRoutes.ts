@@ -28,6 +28,17 @@ router.post('/conversations/group', authenticate, MessagesController.createGroup
 router.delete('/conversations/:conversationId', authenticate, MessagesController.deleteConversation);
 
 
+// --- BLOCK USER APIs --- (Must be ABOVE /:conversationId to avoid wildcard match)
+// Get blocked users
+router.get('/blocked', authenticate, MessagesController.getBlockedUsers);
+
+// Block user
+router.post('/block', authenticate, MessagesController.blockUser);
+
+// Unblock user
+router.delete('/block/:userId', authenticate, MessagesController.unblockUser);
+
+
 // --- MESSAGE APIs ---
 // Send a media message
 router.post('/send-media', authenticate, uploadMedia.single('file'), MessagesController.sendMedia);
@@ -60,17 +71,6 @@ router.post('/group/:conversationId/leave', authenticate, MessagesController.lea
 
 // Change role
 router.put('/group/:conversationId/role', authenticate, MessagesController.changeRole);
-
-
-// --- BLOCK USER APIs ---
-// Block user
-router.post('/block', authenticate, MessagesController.blockUser);
-
-// Unblock user
-router.delete('/block/:userId', authenticate, MessagesController.unblockUser);
-
-// Get blocked users
-router.get('/blocked', authenticate, MessagesController.getBlockedUsers);
 
 
 // --- READ RECEIPT APIs ---

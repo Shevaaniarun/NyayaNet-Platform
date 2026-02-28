@@ -25,7 +25,7 @@ import {
 } from '../api/messagesAPI';
 import {
   ArrowLeft, Send, User, Users, UserPlus, Clock, Calendar, Shield, Paperclip,
-  Mic, MoreVertical, Check, Info, VolumeX, Volume2, Crown, LogOut,
+  Mic, MoreVertical, Check, Info, Crown, LogOut,
   MessageCircle, AlertCircle, Search, Gavel, Plus, X, Trash2, Edit2, Ban, Image as ImageIcon, FileText, CheckSquare
 } from 'lucide-react';
 import { toast } from 'react-toastify';
@@ -100,9 +100,8 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ onNavigate, urlId: propId }
   const [selectedMsgIds, setSelectedMsgIds] = useState<Set<string>>(new Set());
   const chatMenuRef = useRef<HTMLDivElement>(null);
 
-  // Block & Mute state
+  // Block state
   const [isBlocked, setIsBlocked] = useState(false);
-  const [isMuted, setIsMuted] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -152,10 +151,6 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ onNavigate, urlId: propId }
                 setIsBlocked(blocked);
               } catch { setIsBlocked(false); }
             }
-
-            // Restore mute state from localStorage
-            const muteKey = `muted_${urlId}`;
-            setIsMuted(localStorage.getItem(muteKey) === 'true');
 
             return;
           }
@@ -395,18 +390,6 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ onNavigate, urlId: propId }
     }
   };
 
-  // Toggle mute (frontend-only, stored in localStorage)
-  const handleMuteToggle = () => {
-    if (!activeConvId) return;
-    const muteKey = `muted_${activeConvId}`;
-    const newVal = !isMuted;
-    if (!window.confirm(newVal ? 'Mute notifications for this conversation?' : 'Unmute notifications for this conversation?')) return;
-    setIsMuted(newVal);
-    localStorage.setItem(muteKey, String(newVal));
-    toast.success(newVal ? 'Notifications muted' : 'Notifications unmuted');
-    setShowChatMenu(false);
-  };
-
   // Clear all messages in the conversation
   const handleClearChat = async () => {
     if (!activeConvId) return;
@@ -627,16 +610,6 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ onNavigate, urlId: propId }
                         <CheckSquare className="w-4 h-4 text-constitution-gold/60" />
                         {selectMode ? 'Cancel Selection' : 'Select Messages'}
                       </button>
-                      <button
-                        onClick={handleMuteToggle}
-                        className="w-full flex items-center gap-3 px-4 py-3 text-sm text-judge-ivory hover:bg-white/5 transition-all text-left"
-                      >
-                        {isMuted
-                          ? <Volume2 className="w-4 h-4 text-constitution-gold/60" />
-                          : <VolumeX className="w-4 h-4 text-constitution-gold/60" />}
-                        {isMuted ? 'Unmute Notifications' : 'Mute Notifications'}
-                      </button>
-
                       {/* Private-chat actions (block & report) */}
                       {activeConvDetails?.conversation_type === 'PRIVATE' && (
                         <>
