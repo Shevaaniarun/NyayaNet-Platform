@@ -4,6 +4,9 @@ dotenv.config();
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
+import fs from 'fs';
+import pool from './config/database'; // added: use the pool to verify DB & debug route
+
 import discussionRoutes from './routes/discussionRoutes';
 import profileRoutes from './routes/profileRoutes';
 import postRoutes from './routes/postRoutes';
@@ -17,8 +20,6 @@ import { ChatbotController } from './controllers/chatbotController';
 import { authenticate } from './middleware/auth';
 import dashboardRoutes from './routes/dashboardRoutes';
 import lawlibraryRoutes from './routes/lawLibraryRoutes';
-
-dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -46,12 +47,18 @@ app.use((req, res, next) => {
     next();
 });
 
-// Serve uploaded files statically - using absolute path from project root
+// --- Add lightweight body logging for troubleshooting sends not responding / not persisting
+app.use((req, res, next) => {
+    if (req.method === 'POST' && (req.path.startsWith('/api/messages') || req.path.startsWith('/api/chatbot'))) {
+        console.log(`--> Debug BODY ${req.method} ${req.path}:`, JSON.stringify(req.body).slice(0, 2000));
+    }
+    next();
+});
+
+// Serve uploaded files statically
 const uploadsPath = path.resolve(process.cwd(), 'uploads');
 console.log(`📂 Serving static files from: ${uploadsPath}`);
 
-// Check if directory exists
-import fs from 'fs';
 if (!fs.existsSync(uploadsPath)) {
     console.warn(`⚠️ Warning: Uploads directory not found at ${uploadsPath}. Creating it...`);
     fs.mkdirSync(uploadsPath, { recursive: true });
@@ -59,11 +66,12 @@ if (!fs.existsSync(uploadsPath)) {
 
 app.use('/uploads', express.static(uploadsPath));
 
-
+// Health check
 app.get('/api/health', (req, res) => {
     res.json({ status: 'healthy', timestamp: new Date().toISOString(), service: 'NyayaNet Backend' });
 });
 
+// Routes
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/discussions', discussionRoutes);
 app.use('/api/profile', profileRoutes);
@@ -72,18 +80,44 @@ app.use('/api/upload', uploadRoutes);
 app.use("/api", authRoutes);
 app.use("/api/notes", noteRoutes);
 app.use('/api/network', networkRoutes);
-
 app.use('/api/messages', messagesRoutes);
-
-// Chatbot routes (inline to avoid module issues)
-app.post('/api/chatbot/chat', authenticate, ChatbotController.chat);
-app.get('/api/chatbot/history', authenticate, ChatbotController.getChatHistory);
 app.use('/api/dashboard', dashboardRoutes);
-app.use('/api/library', lawlibraryRoutes);
+
+// Add global process handlers to capture unexpected async errors
+process.on('unhandledRejection', (reason, p) => {
+    console.error('Unhandled Rejection at:', p, 'reason:', reason);
+});
+process.on('uncaughtException', (err) => {
+    console.error('Uncaught Exception thrown:', err);
+});
+
+// Safe async wrapper for route handlers to avoid Express closing message channel silently
+const safeHandler = (fn: (req: any, res: any, next?: any) => Promise<any>) => {
+    return async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+        try {
+            await fn(req, res, next);
+        } catch (err) {
+            console.error('Chatbot handler error:', err, '\nStack:', (err instanceof Error) ? err.stack : String(err));
+            const message = (err instanceof Error) ? err.message : String(err);
+            // Respond with structured error so frontend can show fallback UI and not hang
+            res.status(500).json({ success: false, message: 'Chatbot service error', error: message });
+        }
+    };
+};
+
+// Chatbot routes (wrapped)
+app.post('/api/chatbot/chat', authenticate, safeHandler(ChatbotController.chat.bind(ChatbotController)));
+app.get('/api/chatbot/history', authenticate, safeHandler(ChatbotController.getChatHistory.bind(ChatbotController)));
+
+// Add commonly used per-chat endpoints (wrapped). If your frontend calls these, keep them; otherwise harmless.
+app.get('/api/chatbot/chat/:chatId', authenticate, safeHandler((ChatbotController as any).getChatMessages?.bind(ChatbotController) ?? (async (req,res)=> res.status(404).json({success:false,message:'not implemented'}))));
+app.delete('/api/chatbot/chat/:chatId', authenticate, safeHandler((ChatbotController as any).deleteChat?.bind(ChatbotController) ?? (async (req,res)=> res.status(404).json({success:false,message:'not implemented'}))));
+app.put('/api/chatbot/chat/:chatId', authenticate, safeHandler((ChatbotController as any).updateChatName?.bind(ChatbotController) ?? (async (req,res)=> res.status(404).json({success:false,message:'not implemented'}))));
 
 // Development-only debug route to inspect a user's contribution summary by email
 if (process.env.NODE_ENV !== 'production') {
-    const db = require('./config/database').default;
+    // Use the already-imported pool instead of requiring again
+    const db = pool;
     app.get('/internal/debug/user_contrib', async (req, res) => {
         const email = String(req.query.email || '').trim();
         if (!email) return res.status(400).json({ success: false, message: 'email query param required' });
@@ -102,8 +136,20 @@ if (process.env.NODE_ENV !== 'production') {
     });
 }
 
+// Test PostgreSQL connection on startup
+(async () => {
+    try {
+        const result = await pool.query('SELECT NOW()');
+        console.log('✅ PostgreSQL connected successfully');
+        console.log(`📊 Database time: ${result.rows[0].now}`);
+    } catch (error) {
+        console.error('❌ PostgreSQL connection failed:', error);
+    }
+})();
+
 app.use((req, res) => res.status(404).json({ success: false, message: 'Route not found' }));
 
+// Error handler
 app.use((error: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
     console.error('Server error:', error);
     res.status(500).json({ success: false, message: 'Internal server error' });

@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Loader2, Sparkles, BookOpen, Scale, FileText, X, Plus, Trash2, MessageSquare, ChevronDown } from 'lucide-react';
-import { sendChatMessage } from '../api/chatbotAPI';
+import { Send, Bot, User, Loader2, Sparkles, Scale, X, Plus, Menu, ChevronLeft, ChevronRight, Edit2, Trash2, MoreVertical, LogOut } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import axios from 'axios';
 
 interface Message {
   id: string;
@@ -11,11 +11,33 @@ interface Message {
 }
 
 interface Chat {
-  id: string;
+  _id: string;
   name: string;
-  messages: Message[];
-  createdAt: Date;
+  createdAt: string;
+  updatedAt: string;
 }
+
+interface ChatMessages {
+  [key: string]: Message[];
+}
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+
+const axiosInstance = axios.create({
+  baseURL: API_BASE_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Add token to requests
+axiosInstance.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
 
 const SUGGESTED_QUESTIONS = [
   "What are the key provisions of Article 21?",
@@ -27,110 +49,251 @@ const SUGGESTED_QUESTIONS = [
 ];
 
 export function ChatbotPage() {
-  const [chats, setChats] = useState<Chat[]>([
-    {
-      id: '1',
-      name: 'New Conversation',
-      messages: [
-        {
-          id: '1',
-          role: 'assistant',
-          content: 'Hello! I\'m your AI Legal Assistant powered by advanced language models. I can help you with legal queries, case research, statutory interpretations, and much more. How can I assist you today?',
-          timestamp: new Date()
-        }
-      ],
-      createdAt: new Date()
-    }
-  ]);
-  const [activeChatId, setActiveChatId] = useState('1');
+  const [chats, setChats] = useState<Chat[]>([]);
+  const [currentChatId, setCurrentChatId] = useState<string>('');
+  const [chatMessages, setChatMessages] = useState<ChatMessages>({});
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [showSidebar, setShowSidebar] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isLoadingChats, setIsLoadingChats] = useState(true);
+  const [editingChatId, setEditingChatId] = useState<string | null>(null);
+  const [editingChatName, setEditingChatName] = useState('');
+  const [showChatMenu, setShowChatMenu] = useState<string | null>(null);
+  
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const editInputRef = useRef<HTMLInputElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
-  const activeChat = chats.find(chat => chat.id === activeChatId) || chats[0];
-  const messages = activeChat?.messages || [];
+  // Load chat history on mount
+  useEffect(() => {
+    fetchChatHistory();
+  }, []);
+
+  // Scroll to bottom when messages change
+  useEffect(() => {
+    scrollToBottom();
+  }, [currentChatId, chatMessages]);
+
+  // Focus edit input when editing starts
+  useEffect(() => {
+    if (editingChatId && editInputRef.current) {
+      editInputRef.current.focus();
+    }
+  }, [editingChatId]);
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setShowChatMenu(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
-  const generateChatName = (message: string) => {
-    // Generate a name based on the first user message
-    const words = message.split(' ').slice(0, 5).join(' ');
-    return words.length > 30 ? words.substring(0, 30) + '...' : words;
-  };
-
-  const createNewChat = () => {
-    const newChatId = Date.now().toString();
-    const newChat: Chat = {
-      id: newChatId,
-      name: 'New Conversation',
-      messages: [
-        {
-          id: '1',
-          role: 'assistant',
-          content: 'Hello! I\'m your AI Legal Assistant. How can I help you with this new conversation?',
-          timestamp: new Date()
-        }
-      ],
-      createdAt: new Date()
-    };
-    
-    setChats([...chats, newChat]);
-    setActiveChatId(newChatId);
-    setInputMessage('');
-  };
-
-  const deleteChat = (chatId: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    
-    // Allow deleting all chats
-    const updatedChats = chats.filter(chat => chat.id !== chatId);
-    
-    if (updatedChats.length === 0) {
-      // Create a new default chat if all are deleted
-      const newChatId = Date.now().toString();
-      const newChat: Chat = {
-        id: newChatId,
-        name: 'New Conversation',
-        messages: [
-          {
-            id: '1',
-            role: 'assistant',
-            content: 'Hello! I\'m your AI Legal Assistant. How can I help you today?',
-            timestamp: new Date()
-          }
-        ],
-        createdAt: new Date()
-      };
-      setChats([newChat]);
-      setActiveChatId(newChatId);
-    } else {
-      setChats(updatedChats);
-      if (activeChatId === chatId) {
-        setActiveChatId(updatedChats[0].id);
+  const fetchChatHistory = async () => {
+    try {
+      setIsLoadingChats(true);
+      const response = await axiosInstance.get('/chatbot/history');
+      const fetchedChats = response.data;
+      setChats(fetchedChats);
+      
+      // If there are chats, load the most recent one
+      if (fetchedChats.length > 0) {
+        setCurrentChatId(fetchedChats[0]._id);
+        await fetchChatMessages(fetchedChats[0]._id);
+      } else {
+        // Create a new chat if none exists
+        createNewChat();
       }
+    } catch (error: any) {
+      console.error('Failed to fetch chat history:', error);
+      if (error.response?.status === 401) {
+        // Redirect to login if unauthorized
+        window.location.href = '/login';
+      } else {
+        toast.error('Failed to load chat history');
+      }
+    } finally {
+      setIsLoadingChats(false);
     }
   };
 
-  const updateChatName = (chatId: string, userMessage: string) => {
-    setChats(prevChats => 
-      prevChats.map(chat => 
-        chat.id === chatId && chat.name === 'New Conversation'
-          ? { ...chat, name: generateChatName(userMessage) }
-          : chat
-      )
-    );
+  const fetchChatMessages = async (chatId: string) => {
+    try {
+      // Check if we already have messages for this chat
+      if (chatMessages[chatId]) {
+        return;
+      }
+
+      const response = await axiosInstance.get(`/chatbot/chat/${chatId}`);
+      const messages = response.data.map((msg: any) => ({
+        ...msg,
+        id: msg._id || Date.now().toString() + Math.random(),
+        timestamp: new Date(msg.timestamp)
+      }));
+      
+      setChatMessages(prev => ({
+        ...prev,
+        [chatId]: messages
+      }));
+    } catch (error) {
+      console.error('Failed to fetch chat messages:', error);
+      toast.error('Failed to load messages');
+    }
+  };
+
+  const createNewChat = async () => {
+    try {
+      // Create a temporary local chat
+      const tempChat: Chat = {
+        _id: 'temp-' + Date.now(),
+        name: 'New Conversation',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      
+      setChats(prev => [tempChat, ...prev]);
+      setCurrentChatId(tempChat._id);
+      
+      // Add welcome message
+      const welcomeMessage: Message = {
+        id: Date.now().toString(),
+        role: 'assistant',
+        content: 'Hello! I\'m your AI Legal Assistant. How can I help you today?',
+        timestamp: new Date()
+      };
+      
+      setChatMessages(prev => ({
+        ...prev,
+        [tempChat._id]: [welcomeMessage]
+      }));
+      
+      setShowChatMenu(null);
+    } catch (error) {
+      console.error('Failed to create new chat:', error);
+      toast.error('Failed to create new chat');
+    }
+  };
+
+  const deleteChat = async (chatId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    try {
+      // If it's a temporary chat (not saved to server), just remove locally
+      if (chatId.startsWith('temp-')) {
+        setChats(prev => prev.filter(chat => chat._id !== chatId));
+        setChatMessages(prev => {
+          const newMessages = { ...prev };
+          delete newMessages[chatId];
+          return newMessages;
+        });
+        
+        if (currentChatId === chatId) {
+          const remainingChats = chats.filter(chat => chat._id !== chatId);
+          if (remainingChats.length > 0) {
+            setCurrentChatId(remainingChats[0]._id);
+          } else {
+            createNewChat();
+          }
+        }
+      } else {
+        // Delete from server
+        await axiosInstance.delete(`/chatbot/chat/${chatId}`);
+        
+        setChats(prev => prev.filter(chat => chat._id !== chatId));
+        setChatMessages(prev => {
+          const newMessages = { ...prev };
+          delete newMessages[chatId];
+          return newMessages;
+        });
+        
+        if (currentChatId === chatId) {
+          const remainingChats = chats.filter(chat => chat._id !== chatId);
+          if (remainingChats.length > 0) {
+            setCurrentChatId(remainingChats[0]._id);
+            await fetchChatMessages(remainingChats[0]._id);
+          } else {
+            createNewChat();
+          }
+        }
+      }
+      
+      toast.success('Chat deleted successfully');
+    } catch (error) {
+      console.error('Failed to delete chat:', error);
+      toast.error('Failed to delete chat');
+    }
+    
+    setShowChatMenu(null);
+  };
+
+  const startEditingChat = (chat: Chat, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditingChatId(chat._id);
+    setEditingChatName(chat.name);
+    setShowChatMenu(null);
+  };
+
+  const saveChatName = async (chatId: string) => {
+    if (!editingChatName.trim()) {
+      setEditingChatId(null);
+      return;
+    }
+
+    try {
+      // If it's a temporary chat, update locally
+      if (chatId.startsWith('temp-')) {
+        setChats(prev => prev.map(chat => 
+          chat._id === chatId 
+            ? { ...chat, name: editingChatName.trim() }
+            : chat
+        ));
+      } else {
+        // Update on server
+        await axiosInstance.put(`/chatbot/chat/${chatId}`, { name: editingChatName.trim() });
+        
+        setChats(prev => prev.map(chat => 
+          chat._id === chatId 
+            ? { ...chat, name: editingChatName.trim() }
+            : chat
+        ));
+      }
+      
+      toast.success('Chat renamed successfully');
+    } catch (error) {
+      console.error('Failed to rename chat:', error);
+      toast.error('Failed to rename chat');
+    }
+    
+    setEditingChatId(null);
+    setEditingChatName('');
+  };
+
+  // FIXED: Renamed from handleKeyPress to handleKeyDown
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      if (editingChatId) {
+        saveChatName(editingChatId);
+      } else {
+        handleSendMessage();
+      }
+    } else if (e.key === 'Escape' && editingChatId) {
+      e.preventDefault();
+      setEditingChatId(null);
+      setEditingChatName('');
+    }
   };
 
   const handleSendMessage = async () => {
-    if (!inputMessage.trim() || isLoading || !activeChat) return;
+    if (!inputMessage.trim() || isLoading || !currentChatId) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -139,91 +302,90 @@ export function ChatbotPage() {
       timestamp: new Date()
     };
 
-    // Update messages for the active chat
-    setChats(prevChats => 
-      prevChats.map(chat => 
-        chat.id === activeChatId 
-          ? { ...chat, messages: [...chat.messages, userMessage] }
-          : chat
-      )
-    );
-
-    // Persist AI query to local activity log so dashboard can pick it up
-    try {
-      const aiLogStr = localStorage.getItem('ai_activity_log');
-      const aiLog = aiLogStr ? JSON.parse(aiLogStr) : [];
-      // Try to get current user id
-      let currentUserId = null;
-      try {
-        const u = JSON.parse(localStorage.getItem('user') || 'null');
-        currentUserId = u?.id || null;
-      } catch {}
-
-      const aiEntry = {
-        id: `ai-${Date.now()}`,
-        userId: currentUserId,
-        title: inputMessage.trim(),
-        content: '',
-        postType: 'AI_QUERY',
-        createdAt: new Date().toISOString(),
-        metadata: {
-          // crude detection for constitution-themed queries
-          queryType: /constitution|article|fundamental rights|article\s*21/i.test(inputMessage) ? 'CONSTITUTION' : undefined
-        }
-      };
-      aiLog.push(aiEntry);
-      // keep only last 200 entries to avoid growing indefinitely
-      const trimmed = aiLog.slice(-200);
-      localStorage.setItem('ai_activity_log', JSON.stringify(trimmed));
-    } catch (err) {
-      console.warn('Failed to persist AI activity locally', err);
-    }
+    // Update UI with user message
+    setChatMessages(prev => ({
+      ...prev,
+      [currentChatId]: [...(prev[currentChatId] || []), userMessage]
+    }));
 
     setInputMessage('');
     setIsLoading(true);
 
-    // Update chat name if it's still "New Conversation"
-    const currentChat = chats.find(c => c.id === activeChatId);
-    if (currentChat && currentChat.name === 'New Conversation') {
-      updateChatName(activeChatId, inputMessage.trim());
-    }
-
     try {
-      const response = await sendChatMessage(inputMessage.trim());
-      
+      const response = await axiosInstance.post('/chatbot/chat', {
+        message: inputMessage.trim(),
+        chatId: currentChatId.startsWith('temp-') ? null : currentChatId
+      });
+
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: response.message,
+        content: response.data.message,
         timestamp: new Date()
       };
 
-      setChats(prevChats => 
-        prevChats.map(chat => 
-          chat.id === activeChatId 
-            ? { ...chat, messages: [...chat.messages, assistantMessage] }
+      // Update messages with assistant response
+      setChatMessages(prev => ({
+        ...prev,
+        [currentChatId]: [...(prev[currentChatId] || []), assistantMessage]
+      }));
+
+      // If this was a temporary chat (new), update its ID and name from server
+      if (currentChatId.startsWith('temp-') && response.data.chatId) {
+        const oldChatId = currentChatId;
+        const newChatId = response.data.chatId;
+        
+        // Update chats list with the new server chat
+        setChats(prev => prev.map(chat => 
+          chat._id === oldChatId 
+            ? { 
+                ...chat, 
+                _id: newChatId, 
+                name: response.data.chatName || chat.name 
+              }
             : chat
-        )
-      );
+        ));
+        
+        // Move messages to new chat ID
+        setChatMessages(prev => {
+          const newMessages = { ...prev };
+          newMessages[newChatId] = newMessages[oldChatId];
+          delete newMessages[oldChatId];
+          return newMessages;
+        });
+        
+        setCurrentChatId(newChatId);
+      } else {
+        // Update chat name if it was the first message
+        if (chats.find(c => c._id === currentChatId)?.name === 'New Conversation') {
+          setChats(prev => prev.map(chat => 
+            chat._id === currentChatId 
+              ? { ...chat, name: inputMessage.trim().substring(0, 30) + (inputMessage.length > 30 ? '...' : '') }
+              : chat
+          ));
+        }
+      }
 
     } catch (error: any) {
       console.error('Chat error:', error);
-      toast.error(error.message || 'Failed to get response. Please try again.');
       
-      const errorMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: 'I apologize, but I encountered an error processing your request. Please try again or rephrase your question.',
-        timestamp: new Date()
-      };
-
-      setChats(prevChats => 
-        prevChats.map(chat => 
-          chat.id === activeChatId 
-            ? { ...chat, messages: [...chat.messages, errorMessage] }
-            : chat
-        )
-      );
+      if (error.response?.status === 401) {
+        window.location.href = '/login';
+      } else {
+        toast.error(error.response?.data?.message || 'Failed to get response');
+        
+        const errorMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          content: 'I apologize, but I encountered an error processing your request. Please try again or rephrase your question.',
+          timestamp: new Date()
+        };
+        
+        setChatMessages(prev => ({
+          ...prev,
+          [currentChatId]: [...(prev[currentChatId] || []), errorMessage]
+        }));
+      }
     } finally {
       setIsLoading(false);
       inputRef.current?.focus();
@@ -235,101 +397,170 @@ export function ChatbotPage() {
     inputRef.current?.focus();
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
+  const switchChat = async (chatId: string) => {
+    setCurrentChatId(chatId);
+    if (!chatMessages[chatId]) {
+      await fetchChatMessages(chatId);
     }
   };
 
-  const clearCurrentChat = () => {
-    setChats(prevChats => 
-      prevChats.map(chat => 
-        chat.id === activeChatId 
-          ? { 
-              ...chat, 
-              messages: [{
-                id: '1',
-                role: 'assistant',
-                content: 'Chat cleared. How can I assist you today?',
-                timestamp: new Date()
-              }]
-            }
-          : chat
-      )
-    );
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    window.location.href = '/login';
   };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    
+    if (date.toDateString() === today.toDateString()) {
+      return 'Today';
+    } else if (date.toDateString() === yesterday.toDateString()) {
+      return 'Yesterday';
+    } else {
+      return date.toLocaleDateString('en-US', { 
+        month: 'short', 
+        day: 'numeric' 
+      });
+    }
+  };
+
+  const currentMessages = chatMessages[currentChatId] || [];
 
   return (
     <div className="flex h-screen bg-gradient-to-br from-justice-black via-justice-black/95 to-constitution-gold/5">
-      {/* Sidebar - Chat History */}
-      <div className={`${showSidebar ? 'w-80' : 'w-0'} transition-all duration-300 bg-justice-black/90 backdrop-blur-sm border-r border-constitution-gold/20 flex flex-col`}>
-        <div className="p-4">
-          <button
-            onClick={createNewChat}
-            className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-constitution-gold hover:bg-constitution-gold/90 text-justice-black rounded-xl transition-all font-medium"
-          >
-            <Plus className="w-5 h-5" />
-            <span>New Chat</span>
-          </button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto px-2">
-          {chats.map((chat) => (
-            <div
-              key={chat.id}
-              onClick={() => setActiveChatId(chat.id)}
-              className={`
-                group flex items-center justify-between px-3 py-3 mb-1 rounded-lg cursor-pointer transition-all
-                ${activeChatId === chat.id 
-                  ? 'bg-constitution-gold/20 border border-constitution-gold/50' 
-                  : 'hover:bg-constitution-gold/10 border border-transparent'
-                }
-              `}
-            >
-              <div className="flex items-center space-x-3 flex-1 min-w-0">
-                <MessageSquare className={`w-4 h-4 flex-shrink-0 ${
-                  activeChatId === chat.id ? 'text-constitution-gold' : 'text-constitution-gold/50'
-                }`} />
-                <span className="text-sm text-judge-ivory truncate">
-                  {chat.name}
-                </span>
-              </div>
+      {/* Sidebar */}
+      <div 
+        className={`${
+          isSidebarOpen ? 'w-80' : 'w-0'
+        } transition-all duration-300 relative border-r border-constitution-gold/20 bg-justice-black/90 backdrop-blur-sm`}
+      >
+        {isSidebarOpen && (
+          <div className="flex flex-col h-full">
+            {/* New Chat Button */}
+            <div className="p-4">
               <button
-                onClick={(e) => deleteChat(chat.id, e)}
-                className="opacity-0 group-hover:opacity-100 p-1 hover:bg-seal-red/20 rounded-full transition-all"
+                onClick={createNewChat}
+                className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-constitution-gold/10 hover:bg-constitution-gold/20 border border-constitution-gold/30 rounded-xl text-constitution-gold transition-all group"
               >
-                <Trash2 className="w-3 h-3 text-constitution-gold/70 hover:text-seal-red" />
+                <Plus className="w-5 h-5 group-hover:rotate-90 transition-transform" />
+                <span className="font-medium">New Chat</span>
               </button>
             </div>
-          ))}
-        </div>
 
-        <div className="p-4 border-t border-constitution-gold/20">
-          <button
-            onClick={() => setShowSidebar(false)}
-            className="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-constitution-gold/10 hover:bg-constitution-gold/20 text-constitution-gold rounded-lg transition-all"
-          >
-            <ChevronDown className="w-4 h-4 rotate-90" />
-            <span className="text-sm">Collapse Sidebar</span>
-          </button>
-        </div>
+            {/* Chat History */}
+            <div className="flex-1 overflow-y-auto px-3">
+              {isLoadingChats ? (
+                <div className="flex justify-center py-8">
+                  <Loader2 className="w-6 h-6 text-constitution-gold animate-spin" />
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  {chats.map((chat) => (
+                    <div
+                      key={chat._id}
+                      onClick={() => switchChat(chat._id)}
+                      className={`group relative flex items-center justify-between px-3 py-3 rounded-xl cursor-pointer transition-all ${
+                        currentChatId === chat._id
+                          ? 'bg-constitution-gold/20 border border-constitution-gold/40'
+                          : 'hover:bg-constitution-gold/5 border border-transparent'
+                      }`}
+                    >
+                      {editingChatId === chat._id ? (
+                        <input
+                          ref={editInputRef}
+                          type="text"
+                          value={editingChatName}
+                          onChange={(e) => setEditingChatName(e.target.value)}
+                          onBlur={() => saveChatName(chat._id)}
+                          onKeyDown={handleKeyDown}
+                          className="flex-1 bg-justice-black text-judge-ivory border border-constitution-gold rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-constitution-gold"
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                      ) : (
+                        <>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-judge-ivory text-sm font-medium truncate">
+                              {chat.name}
+                            </p>
+                            <p className="text-constitution-gold/50 text-xs mt-1">
+                              {formatDate(chat.updatedAt)}
+                            </p>
+                          </div>
+
+                          <div className="relative">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setShowChatMenu(showChatMenu === chat._id ? null : chat._id);
+                              }}
+                              className="opacity-0 group-hover:opacity-100 p-1 hover:bg-constitution-gold/20 rounded transition-all"
+                            >
+                              <MoreVertical className="w-4 h-4 text-constitution-gold/70" />
+                            </button>
+
+                            {showChatMenu === chat._id && (
+                              <div
+                                ref={menuRef}
+                                className="absolute right-0 top-full mt-1 w-40 bg-justice-black border border-constitution-gold/20 rounded-lg shadow-xl z-50 py-1"
+                              >
+                                <button
+                                  onClick={(e) => startEditingChat(chat, e)}
+                                  className="w-full px-4 py-2 text-left text-sm text-judge-ivory hover:bg-constitution-gold/10 flex items-center space-x-2"
+                                >
+                                  <Edit2 className="w-3.5 h-3.5 text-constitution-gold/70" />
+                                  <span>Rename</span>
+                                </button>
+                                <button
+                                  onClick={(e) => deleteChat(chat._id, e)}
+                                  className="w-full px-4 py-2 text-left text-sm text-red-400 hover:bg-red-500/10 flex items-center space-x-2"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                  <span>Delete</span>
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Logout Button */}
+            <div className="p-4 border-t border-constitution-gold/20">
+              <button
+                onClick={handleLogout}
+                className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 rounded-xl text-red-400 transition-all"
+              >
+                <LogOut className="w-5 h-5" />
+                <span className="font-medium">Logout</span>
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Main Chat Area */}
+      {/* Main Content */}
       <div className="flex-1 flex flex-col">
         {/* Header */}
         <div className="bg-justice-black/80 backdrop-blur-sm border-b border-constitution-gold/20 px-6 py-4">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between max-w-6xl mx-auto">
             <div className="flex items-center space-x-4">
-              {!showSidebar && (
-                <button
-                  onClick={() => setShowSidebar(true)}
-                  className="p-2 hover:bg-constitution-gold/10 rounded-lg transition-all"
-                >
-                  <MessageSquare className="w-5 h-5 text-constitution-gold" />
-                </button>
-              )}
+              <button
+                onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                className="p-2 hover:bg-constitution-gold/10 rounded-lg transition-all"
+              >
+                {isSidebarOpen ? (
+                  <ChevronLeft className="w-5 h-5 text-constitution-gold" />
+                ) : (
+                  <ChevronRight className="w-5 h-5 text-constitution-gold" />
+                )}
+              </button>
               <div className="relative">
                 <div className="w-12 h-12 bg-gradient-to-br from-constitution-gold to-constitution-gold/70 rounded-xl flex items-center justify-center shadow-lg">
                   <Bot className="w-7 h-7 text-justice-black" />
@@ -341,23 +572,13 @@ export function ChatbotPage() {
                 <p className="text-constitution-gold/70 text-sm">Powered by Advanced Language Models</p>
               </div>
             </div>
-            
-            {activeChat && activeChat.messages.length > 1 && (
-              <button
-                onClick={clearCurrentChat}
-                className="px-4 py-2 bg-constitution-gold/10 hover:bg-constitution-gold/20 text-constitution-gold rounded-lg transition-all flex items-center space-x-2"
-              >
-                <X className="w-4 h-4" />
-                <span>Clear Chat</span>
-              </button>
-            )}
           </div>
         </div>
 
         {/* Messages Container */}
         <div className="flex-1 overflow-y-auto px-4 py-6">
           <div className="max-w-4xl mx-auto space-y-6">
-            {messages.map((message) => (
+            {currentMessages.map((message) => (
               <div
                 key={message.id}
                 className={`flex items-start space-x-4 ${
@@ -426,8 +647,8 @@ export function ChatbotPage() {
           </div>
         </div>
 
-        {/* Suggested Questions - Only show for new chats */}
-        {activeChat && activeChat.messages.length <= 1 && (
+        {/* Suggested Questions */}
+        {currentMessages.length <= 1 && (
           <div className="px-4 pb-4">
             <div className="max-w-4xl mx-auto">
               <div className="flex items-center space-x-2 mb-3">
@@ -449,7 +670,7 @@ export function ChatbotPage() {
           </div>
         )}
 
-        {/* Input Area - Always visible */}
+        {/* Input Area */}
         <div className="bg-justice-black/80 backdrop-blur-sm border-t border-constitution-gold/20 px-4 py-4">
           <div className="max-w-4xl mx-auto">
             <div className="flex items-end space-x-3">
@@ -459,7 +680,7 @@ export function ChatbotPage() {
                   type="text"
                   value={inputMessage}
                   onChange={(e) => setInputMessage(e.target.value)}
-                  onKeyPress={handleKeyPress}
+                  onKeyDown={handleKeyDown}
                   placeholder="Ask me anything about law, cases, or legal procedures..."
                   className="w-full px-6 py-4 bg-constitution-gold/5 border border-constitution-gold/20 rounded-xl text-judge-ivory placeholder-constitution-gold/40 focus:outline-none focus:ring-2 focus:ring-constitution-gold/50 focus:border-transparent transition-all"
                   disabled={isLoading}
