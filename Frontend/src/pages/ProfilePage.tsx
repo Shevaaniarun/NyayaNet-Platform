@@ -106,7 +106,7 @@ export function ProfilePage({
     setIsLoadingFollow(true);
     try {
       const status = await networkApi.getFollowStatus(targetUserId);
-      setFollowStatus(status.status);
+      setFollowStatus(status.status || 'NONE');
       setRequestId(status.requestId || null);
     } catch (error) {
       console.error("Failed to load follow status:", error);
@@ -671,7 +671,6 @@ export function ProfilePage({
             followingCount={profileStats.following}
             postCount={profileStats.posts}
             discussionCount={profileStats.discussions}
-            likesCount={profileStats.likes}
           />
         </div>
 

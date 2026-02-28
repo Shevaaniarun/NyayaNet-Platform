@@ -262,6 +262,9 @@ export const getLikedDiscussions = async (page = 1, limit = 20) => {
    FOLLOW/FOLLOWERS METHODS
 ============================ */
 
+
+
+
 export const getFollowers = async () => {
   try {
     const response = await networkApi.get('/network/followers');
@@ -281,25 +284,36 @@ export const getFollowing = async () => {
     throw error.response?.data || error;
   }
 };
-
+// FIXED follow
 export const followUser = async (userId: string) => {
-  try {
-    const response = await networkApi.post('/network/follow', { userId });
-    return response.data.data;
-  } catch (error: any) {
-    console.error('Error following user:', error);
-    throw error.response?.data || error;
-  }
+  const res = await networkApi.post(`/network/follow/${userId}`);
+  return res.data;
 };
 
+// FIXED unfollow
 export const unfollowUser = async (userId: string) => {
-  try {
-    const response = await networkApi.post('/network/unfollow', { userId });
-    return response.data.data;
-  } catch (error: any) {
-    console.error('Error unfollowing user:', error);
-    throw error.response?.data || error;
-  }
+  const res = await networkApi.post(`/network/unfollow/${userId}`);
+  return res.data;
+};
+
+export const getFollowStatus = async (userId: string) => {
+  const res = await networkApi.get(`/network/follow-status/${userId}`);
+  return res.data.data;
+};
+
+export const cancelFollowRequest = async (requestId: string) => {
+  const res = await networkApi.post(`/network/requests/${requestId}/cancel`);
+  return res.data;
+};
+
+export const acceptFollowRequest = async (requestId: string) => {
+  const res = await networkApi.post(`/network/requests/${requestId}/accept`);
+  return res.data;
+};
+
+export const rejectFollowRequest = async (requestId: string) => {
+  const res = await networkApi.post(`/network/requests/${requestId}/reject`);
+  return res.data;
 };
 
 export const getNetworkStats = async () => {
