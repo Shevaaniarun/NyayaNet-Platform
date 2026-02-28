@@ -1,3 +1,4 @@
+// [file name]: NetworkPage.tsx
 "use client";
 import React, { useState, useEffect, useCallback } from "react";
 import { 
@@ -29,7 +30,7 @@ type TabType = 'followers' | 'following' | 'requests' | 'pending';
 interface UserCardProps {
   user: any;
   tabType: TabType;
-  onAction: (userId: string, action: string, requestId?: string) => Promise<void>;
+  onAction: (userId: string, action: string, requestId?: string) => void;
   currentUserId?: string;
   requestId?: string;
   onViewProfile?: (userId: string) => void;
@@ -44,16 +45,11 @@ const UserCard: React.FC<UserCardProps> = ({
   onViewProfile 
 }) => {
   const [isLoading, setIsLoading] = useState(false);
-  const [actionSuccess, setActionSuccess] = useState(false);
   
   const handleAction = async (action: string) => {
     setIsLoading(true);
     try {
       await onAction(user.id, action, requestId);
-      setActionSuccess(true);
-      setTimeout(() => setActionSuccess(false), 2000);
-    } catch (error) {
-      console.error('Action failed:', error);
     } finally {
       setIsLoading(false);
     }
@@ -62,50 +58,147 @@ const UserCard: React.FC<UserCardProps> = ({
   const handleViewProfile = () => {
     if (onViewProfile) {
       onViewProfile(user.id);
+    } else {
+      // Fallback to direct URL if no callback provided
+      window.location.href = `/profile/${user.id}`;
     }
   };
 
   const getActionButton = () => {
-
     if (user.id === currentUserId) return null;
 
-    switch(user.followStatus){
+    switch (tabType) {
+      case 'followers':
+        // People following me
+        if (user.isFollowingBack) {
+          // Mutual follow - show Unfollow
+          return (
+            <button
+              onClick={() => handleAction('unfollow')}
+              className="px-3 py-1.5 border border-constitution-gold/30 text-constitution-gold rounded-lg text-sm hover:bg-constitution-gold/5 flex items-center gap-1"
+              disabled={isLoading}
+              type="button"
+            >
+              {isLoading ? (
+                <Loader2 className="w-3 h-3 animate-spin" />
+              ) : (
+                <>
+                  <UserCheck className="w-3 h-3" />
+                  Unfollow
+                </>
+              )}
+            </button>
+          );
+        } else {
+          // They follow me, I don't follow back - show Follow Back
+          return (
+            <button
+              onClick={() => handleAction('follow')}
+              className="px-3 py-1.5 bg-constitution-gold text-justice-black rounded-lg text-sm font-medium hover:bg-constitution-gold/90 flex items-center gap-1"
+              disabled={isLoading}
+              type="button"
+            >
+              {isLoading ? (
+                <Loader2 className="w-3 h-3 animate-spin" />
+              ) : (
+                <>
+                  <UserPlus className="w-3 h-3" />
+                  Follow Back
+                </>
+              )}
+            </button>
+          );
+        }
 
-      case "NONE":
+      case 'following':
+        // People I'm following
+        if (user.isFollowedBy) {
+          // Mutual follow - show Unfollow
+          return (
+            <button
+              onClick={() => handleAction('unfollow')}
+              className="px-3 py-1.5 border border-constitution-gold/30 text-constitution-gold rounded-lg text-sm hover:bg-constitution-gold/5 flex items-center gap-1"
+              disabled={isLoading}
+              type="button"
+            >
+              {isLoading ? (
+                <Loader2 className="w-3 h-3 animate-spin" />
+              ) : (
+                <>
+                  <UserCheck className="w-3 h-3" />
+                  Unfollow
+                </>
+              )}
+            </button>
+          );
+        } else {
+          // I follow them, they don't follow back - show Following
+          return (
+            <button
+              onClick={() => handleAction('unfollow')}
+              className="px-3 py-1.5 border border-constitution-gold/30 text-constitution-gold rounded-lg text-sm hover:bg-constitution-gold/5 flex items-center gap-1"
+              disabled={isLoading}
+              type="button"
+            >
+              {isLoading ? (
+                <Loader2 className="w-3 h-3 animate-spin" />
+              ) : (
+                <>
+                  <UserCheck className="w-3 h-3" />
+                  Following
+                </>
+              )}
+            </button>
+          );
+        }
+
+      case 'requests':
+        // People who sent me follow requests
         return (
-          <button
-            onClick={() => handleAction("follow")}
-            className="px-3 py-1.5 bg-constitution-gold text-black rounded"
-          >
-            Follow
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={() => handleAction('accept_request')}
+              className="px-3 py-1.5 bg-constitution-gold text-justice-black rounded-lg text-sm font-medium hover:bg-constitution-gold/90 flex items-center gap-1"
+              disabled={isLoading}
+              type="button"
+            >
+              {isLoading ? (
+                <Loader2 className="w-3 h-3 animate-spin" />
+              ) : (
+                <>
+                  <Check className="w-3 h-3" />
+                  Accept
+                </>
+              )}
+            </button>
+            <button
+              onClick={() => handleAction('reject_request')}
+              className="px-3 py-1.5 border border-red-400/30 text-red-400 rounded-lg text-sm hover:bg-red-400/5"
+              disabled={isLoading}
+              type="button"
+            >
+              {isLoading ? '...' : 'Reject'}
+            </button>
+          </div>
         );
 
-      case "PENDING":
-        return (
-          <button disabled className="px-3 py-1.5 border rounded">
-            Pending
-          </button>
-        );
-
-      case "FOLLOWED_BY":
+      case 'pending':
+        // My pending requests
         return (
           <button
-            onClick={() => handleAction("follow")}
-            className="px-3 py-1.5 bg-constitution-gold text-black rounded"
+            onClick={() => handleAction('cancel_request')}
+            className="px-3 py-1.5 border border-constitution-gold/30 text-constitution-gold rounded-lg text-sm hover:bg-constitution-gold/5 flex items-center gap-1"
+            disabled={isLoading}
+            type="button"
           >
-            Follow Back
-          </button>
-        );
-
-      case "FOLLOWING":
-      case "MUTUAL":
-        return (
-          <button
-            onClick={() => handleAction("unfollow")}
-            className="px-3 py-1.5 border rounded"
-          >
-            Unfollow
+            {isLoading ? (
+              <Loader2 className="w-3 h-3 animate-spin" />
+            ) : (
+              <>
+                <Clock className="w-3 h-3" />
+                Pending
+              </>
+            )}
           </button>
         );
 
@@ -245,13 +338,13 @@ export function NetworkPage({ onBack, currentUserId, onNavigateToProfile }: Netw
       switch (action) {
         case 'follow':
           await networkApi.sendFollowRequest(userId);
+          await loadNetworkData();
           break;
         
         case 'unfollow':
           if (window.confirm('Are you sure you want to unfollow this user?')) {
             await networkApi.unfollowUser(userId);
-          } else {
-            return; // Don't reload if user cancels
+            await loadNetworkData();
           }
           break;
         
@@ -264,6 +357,7 @@ export function NetworkPage({ onBack, currentUserId, onNavigateToProfile }: Netw
               await networkApi.acceptFollowRequest(request.id);
             }
           }
+          await loadNetworkData();
           break;
         
         case 'reject_request':
@@ -275,6 +369,7 @@ export function NetworkPage({ onBack, currentUserId, onNavigateToProfile }: Netw
               await networkApi.rejectFollowRequest(request.id);
             }
           }
+          await loadNetworkData();
           break;
         
         case 'cancel_request':
@@ -286,16 +381,8 @@ export function NetworkPage({ onBack, currentUserId, onNavigateToProfile }: Netw
               await networkApi.cancelFollowRequest(pendingRequest.id);
             }
           }
+          await loadNetworkData();
           break;
-      }
-      
-      // Reload data after action
-      await loadNetworkData();
-      
-      // Clear search results if any
-      if (searchResults.length > 0) {
-        setSearchResults([]);
-        setSearchQuery('');
       }
     } catch (error: any) {
       console.error(`Failed to ${action} user:`, error);
@@ -410,12 +497,8 @@ export function NetworkPage({ onBack, currentUserId, onNavigateToProfile }: Netw
         {searchResults.map((user) => {
           // Determine the tab type based on user's follow status
           let tabType: TabType = 'followers';
-          if (user.isFollowing && user.isFollower) {
-            tabType = 'following'; // Mutual follow - show in following tab with unfollow option
-          } else if (user.isFollowing) {
+          if (user.isFollowing && !user.isFollower) {
             tabType = 'following';
-          } else if (user.isFollower) {
-            tabType = 'followers';
           } else if (user.hasPendingRequest) {
             tabType = 'pending';
           }
@@ -440,7 +523,7 @@ export function NetworkPage({ onBack, currentUserId, onNavigateToProfile }: Netw
   }, [loadNetworkData]);
 
   const tabs = [
-    { id: 'followers', label: 'Followers', icon: Users, count: stats.followers },
+    { id: 'followers', label: 'Followers', icon: User, count: stats.followers },
     { id: 'following', label: 'Following', icon: UserCheck, count: stats.following },
     { id: 'requests', label: 'Requests', icon: Mail, count: stats.requests },
     { id: 'pending', label: 'Pending', icon: Clock, count: stats.pending },
@@ -467,18 +550,14 @@ export function NetworkPage({ onBack, currentUserId, onNavigateToProfile }: Netw
               className="w-full pl-12 pr-24 py-3 bg-aged-paper border border-constitution-gold/20 rounded-lg text-judge-ivory placeholder-judge-ivory/50 focus:outline-none focus:border-constitution-gold/50"
             />
             <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2">
-              {searchResults.length > 0 && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSearchResults([]);
-                    setSearchQuery('');
-                  }}
-                  className="text-ink-gray/50 hover:text-ink-gray"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              )}
+              <button
+                type="button"
+                className="p-2 hover:bg-constitution-gold/10 rounded"
+                title="Filter"
+                onClick={() => {/* Implement filters */}}
+              >
+                <Filter className="w-4 h-4 text-ink-gray/50" />
+              </button>
               <button
                 type="submit"
                 disabled={isSearching}
@@ -495,7 +574,7 @@ export function NetworkPage({ onBack, currentUserId, onNavigateToProfile }: Netw
           <div className="flex gap-1 overflow-x-auto pb-2">
             {tabs.map((tab) => {
               const Icon = tab.icon;
-              const isActive = activeTab === tab.id && searchResults.length === 0;
+              const isActive = activeTab === tab.id;
               return (
                 <button
                   key={tab.id}
