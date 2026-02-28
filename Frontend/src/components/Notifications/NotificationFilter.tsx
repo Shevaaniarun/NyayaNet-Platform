@@ -21,8 +21,6 @@ export function NotificationFilters({
         { value: 'DISCUSSION_REPLY', label: 'Replies' },
         { value: 'CONNECTION_REQUEST', label: 'Connections' },
         { value:  'MESSAGE_RECEIVED', label: 'Messages' },
-        { value: 'AI_RESULT_READY', label: 'AI Results' },
-        { value: 'MENTION', label: 'Mentions' }
     ];
 
     return (
