@@ -118,19 +118,20 @@ export class MessagesController {
   static async createGroup(req: AuthRequest, res: Response): Promise<void> {
     try {
       const userId = req.user?.id || req.user?.userId;
-      const { title, memberIds } = req.body;
+      const { title, memberIds = [] } = req.body;
 
       if (!userId) {
         res.status(401).json({ error: 'User not authenticated' });
         return;
       }
 
-      if (!title || !memberIds || !Array.isArray(memberIds)) {
-        res.status(400).json({ error: 'Title and memberIds array are required' });
+      if (!title) {
+        res.status(400).json({ error: 'Title is required' });
         return;
       }
 
-      const conversationId = await messagesService.createGroup(userId, title, memberIds);
+      const members = Array.isArray(memberIds) ? memberIds : [];
+      const conversationId = await messagesService.createGroup(userId, title, members);
       res.status(201).json({ conversationId });
     } catch (error: any) {
       console.error('Error creating group:', error);

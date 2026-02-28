@@ -13,16 +13,20 @@ import {
   createGroup,
   editMessage,
   deleteMessage,
+  deleteConversation,
   markConversationRead,
   blockUser,
   unblockUser,
   getBlockedUsers,
+  getExperts,
+  addGroupMember,
+  leaveGroup,
   API_BASE_URL
 } from '../api/messagesAPI';
 import {
-  ArrowLeft, Send, User, Clock, Calendar, Shield, Paperclip,
-  Mic, MoreVertical, Check, CheckCheck, Info, VolumeX,
-  MessageCircle, AlertCircle, Search, Gavel, Plus, X, Trash2, Edit2, Ban, Image as ImageIcon, FileText
+  ArrowLeft, Send, User, Users, UserPlus, Clock, Calendar, Shield, Paperclip,
+  Mic, MoreVertical, Check, Info, VolumeX, Crown, LogOut,
+  MessageCircle, AlertCircle, Search, Gavel, Plus, X, Trash2, Edit2, Ban, Image as ImageIcon, FileText, CheckSquare
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 
@@ -37,6 +41,8 @@ interface Message {
   sender_name: string;
   sender_photo: string;
   sender_role: string;
+  file_name?: string;
+  file_size?: number;
 }
 
 interface Conversation {
@@ -71,10 +77,28 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ onNavigate, urlId: propId }
   // Group creation state
   const [showCreateGroup, setShowCreateGroup] = useState(false);
   const [groupTitle, setGroupTitle] = useState('');
+  const [groupMemberSearch, setGroupMemberSearch] = useState('');
+  const [availableUsers, setAvailableUsers] = useState<any[]>([]);
+  const [selectedMembers, setSelectedMembers] = useState<any[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
 
   // Message edit state
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState('');
+
+  // Add member to existing group state
+  const [showAddMember, setShowAddMember] = useState(false);
+  const [addMemberSearch, setAddMemberSearch] = useState('');
+  const [addMemberUsers, setAddMemberUsers] = useState<any[]>([]);
+
+  // Group info state
+  const [showGroupInfo, setShowGroupInfo] = useState(false);
+
+  // Chat menu (three-dot) state
+  const [showChatMenu, setShowChatMenu] = useState(false);
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedMsgIds, setSelectedMsgIds] = useState<Set<string>>(new Set());
+  const chatMenuRef = useRef<HTMLDivElement>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -202,6 +226,7 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ onNavigate, urlId: propId }
       toast.error('Upload failed');
     } finally {
       setSending(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
@@ -231,15 +256,145 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ onNavigate, urlId: propId }
   const handleCreateGroup = async () => {
     if (!groupTitle.trim()) return;
     try {
-      const { conversationId } = await createGroup(groupTitle, []);
+      const memberIds = selectedMembers.map(m => m.id);
+      const { conversationId } = await createGroup(groupTitle, memberIds);
       setShowCreateGroup(false);
       setGroupTitle('');
+      setSelectedMembers([]);
+      setGroupMemberSearch('');
       onNavigate(`/messages/${conversationId}`);
       fetchConversations();
     } catch (e) {
       toast.error('Failed to create group');
     }
   };
+
+  const openCreateGroup = async () => {
+    setShowCreateGroup(true);
+    setGroupTitle('');
+    setSelectedMembers([]);
+    setGroupMemberSearch('');
+    try {
+      setLoadingUsers(true);
+      const users = await getExperts();
+      setAvailableUsers(users);
+    } catch (e) {
+      console.error('Failed to load users for group:', e);
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
+
+  const toggleMember = (user: any) => {
+    setSelectedMembers(prev => {
+      const exists = prev.find(m => m.id === user.id);
+      if (exists) return prev.filter(m => m.id !== user.id);
+      return [...prev, user];
+    });
+  };
+
+  const openAddMember = async () => {
+    setShowAddMember(true);
+    setAddMemberSearch('');
+    try {
+      const users = await getExperts();
+      // Filter out users already in the conversation
+      const existingIds = (activeConvDetails?.members || []).map((m: any) => m.user_id);
+      setAddMemberUsers(users.filter((u: any) => !existingIds.includes(u.id) && u.id !== currentUserId));
+    } catch (e) {
+      console.error('Failed to load users:', e);
+    }
+  };
+
+  const handleAddMemberToGroup = async (userId: string) => {
+    if (!activeConvId) return;
+    try {
+      await addGroupMember(activeConvId, userId);
+      toast.success('Member added!');
+      // Refresh conversation details
+      const details = await getConversationDetails(activeConvId);
+      setActiveConvDetails(details);
+      // Remove added user from available list
+      setAddMemberUsers(prev => prev.filter(u => u.id !== userId));
+    } catch (e) {
+      toast.error('Failed to add member');
+    }
+  };
+
+  const handleDeleteChat = async () => {
+    if (!activeConvId) return;
+    if (!window.confirm('Are you sure you want to delete this entire conversation? This action cannot be undone.')) return;
+    try {
+      await deleteConversation(activeConvId);
+      toast.success('Conversation deleted');
+      setActiveConvId(null);
+      setActiveConvDetails(null);
+      setMessages([]);
+      setShowChatMenu(false);
+      onNavigate('/messages');
+      fetchConversations();
+    } catch (e) {
+      toast.error('Failed to delete conversation');
+    }
+  };
+
+  const handleLeaveGroup = async () => {
+    if (!activeConvId) return;
+    if (!window.confirm('Are you sure you want to leave this group?')) return;
+    try {
+      await leaveGroup(activeConvId);
+      toast.success('Left the group');
+      setActiveConvId(null);
+      setActiveConvDetails(null);
+      setMessages([]);
+      setShowChatMenu(false);
+      onNavigate('/messages');
+      fetchConversations();
+    } catch (e) {
+      toast.error('Failed to leave group');
+    }
+  };
+
+  const toggleSelectMode = () => {
+    setSelectMode(prev => !prev);
+    setSelectedMsgIds(new Set());
+    setShowChatMenu(false);
+  };
+
+  const toggleSelectMessage = (msgId: string) => {
+    setSelectedMsgIds(prev => {
+      const next = new Set(prev);
+      if (next.has(msgId)) next.delete(msgId);
+      else next.add(msgId);
+      return next;
+    });
+  };
+
+  const handleDeleteSelected = async () => {
+    if (selectedMsgIds.size === 0) return;
+    if (!window.confirm(`Delete ${selectedMsgIds.size} selected message(s)?`)) return;
+    try {
+      await Promise.all(Array.from(selectedMsgIds).map(id => deleteMessage(id)));
+      toast.success(`${selectedMsgIds.size} message(s) deleted`);
+      setSelectMode(false);
+      setSelectedMsgIds(new Set());
+      const msgs = await getMessages(activeConvId!);
+      setMessages(msgs);
+    } catch (e) {
+      toast.error('Failed to delete messages');
+    }
+  };
+
+  // Close chat menu on outside click
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (chatMenuRef.current && !chatMenuRef.current.contains(e.target as Node)) {
+        setShowChatMenu(false);
+      }
+    };
+    if (showChatMenu) document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showChatMenu]);
 
   const formatTime = (ts: string) => {
     try {
@@ -262,7 +417,7 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ onNavigate, urlId: propId }
             <h1 className="font-bold text-judge-ivory text-xl tracking-tight">Legal Chambers</h1>
             <div className="flex gap-2">
               <button
-                onClick={() => setShowCreateGroup(true)}
+                onClick={openCreateGroup}
                 className="p-2 text-constitution-gold hover:bg-constitution-gold/10 rounded-lg transition-all"
                 title="Create Group"
               >
@@ -271,9 +426,9 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ onNavigate, urlId: propId }
               <button
                 onClick={() => onNavigate('/chat-with-us')}
                 className="p-2 text-constitution-gold hover:bg-constitution-gold/10 rounded-lg transition-all"
-                title="New Chat"
+                title="Find Experts"
               >
-                <MessageCircle className="w-5 h-5" />
+                <Search className="w-5 h-5" />
               </button>
             </div>
           </div>
@@ -285,8 +440,16 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ onNavigate, urlId: propId }
               placeholder="Search conversations..."
               value={sidebarSearch}
               onChange={(e) => setSidebarSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 bg-constitution-gold/5 border border-constitution-gold/10 rounded-xl text-sm text-judge-ivory placeholder-judge-ivory/20 focus:outline-none focus:border-constitution-gold/30 transition-all"
+              className="w-full pl-10 pr-8 py-2.5 bg-constitution-gold/5 border border-constitution-gold/10 rounded-xl text-sm text-judge-ivory placeholder-judge-ivory/20 focus:outline-none focus:border-constitution-gold/30 transition-all"
             />
+            {sidebarSearch && (
+              <button
+                onClick={() => setSidebarSearch('')}
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-judge-ivory/40 hover:text-judge-ivory rounded-full"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            )}
           </div>
         </div>
 
@@ -363,10 +526,77 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ onNavigate, urlId: propId }
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <button className="p-2 text-constitution-gold/60 hover:text-constitution-gold transition-colors"><Info className="w-5 h-5" /></button>
-                <button className="p-2 text-constitution-gold/60 hover:text-constitution-gold transition-colors"><MoreVertical className="w-5 h-5" /></button>
+                {activeConvDetails?.conversation_type === 'GROUP' && (
+                  <button
+                    onClick={openAddMember}
+                    className="p-2 text-constitution-gold/60 hover:text-constitution-gold transition-colors"
+                    title="Add Member"
+                  >
+                    <UserPlus className="w-5 h-5" />
+                  </button>
+                )}
+                <button onClick={() => setShowGroupInfo(true)} className="p-2 text-constitution-gold/60 hover:text-constitution-gold transition-colors"><Info className="w-5 h-5" /></button>
+                <div className="relative" ref={chatMenuRef}>
+                  <button
+                    onClick={() => setShowChatMenu(prev => !prev)}
+                    className="p-2 text-constitution-gold/60 hover:text-constitution-gold transition-colors"
+                  >
+                    <MoreVertical className="w-5 h-5" />
+                  </button>
+                  {showChatMenu && (
+                    <div className="absolute right-0 top-full mt-2 w-56 bg-justice-black border border-constitution-gold/20 rounded-2xl shadow-2xl overflow-hidden z-50">
+                      <button
+                        onClick={toggleSelectMode}
+                        className="w-full flex items-center gap-3 px-4 py-3 text-sm text-judge-ivory hover:bg-white/5 transition-all text-left"
+                      >
+                        <CheckSquare className="w-4 h-4 text-constitution-gold/60" />
+                        {selectMode ? 'Cancel Selection' : 'Select Messages'}
+                      </button>
+                      <button
+                        onClick={handleDeleteChat}
+                        className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-400 hover:bg-red-500/5 transition-all text-left"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        Delete Chat
+                      </button>
+                      {activeConvDetails?.conversation_type === 'GROUP' && (
+                        <button
+                          onClick={handleLeaveGroup}
+                          className="w-full flex items-center gap-3 px-4 py-3 text-sm text-orange-400 hover:bg-orange-500/5 transition-all text-left border-t border-white/5"
+                        >
+                          <LogOut className="w-4 h-4" />
+                          Leave Group
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
+
+            {/* Select Mode Action Bar */}
+            {selectMode && (
+              <div className="px-6 py-3 bg-constitution-gold/10 border-b border-constitution-gold/20 flex items-center justify-between">
+                <span className="text-sm text-constitution-gold font-bold">
+                  {selectedMsgIds.size} message{selectedMsgIds.size !== 1 ? 's' : ''} selected
+                </span>
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleDeleteSelected}
+                    disabled={selectedMsgIds.size === 0}
+                    className="px-4 py-1.5 bg-red-500/20 text-red-400 text-xs font-bold rounded-lg hover:bg-red-500/30 transition-all disabled:opacity-30 flex items-center gap-1"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" /> Delete Selected
+                  </button>
+                  <button
+                    onClick={toggleSelectMode}
+                    className="px-4 py-1.5 bg-white/5 text-judge-ivory/60 text-xs font-bold rounded-lg hover:bg-white/10 transition-all"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Messages */}
             <div className="flex-1 overflow-y-auto p-6 md:p-10 space-y-8 custom-scrollbar bg-[url('https://www.transparenttextures.com/patterns/dark-matter.png')]">
@@ -387,7 +617,20 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ onNavigate, urlId: propId }
 
                   return (
                     <div key={msg.id} className={`flex ${isSent ? 'justify-end' : 'justify-start'}`}>
-                      <div className={`max-w-[85%] md:max-w-[70%] flex gap-3 ${isSent ? 'flex-row-reverse' : 'flex-row'}`}>
+                      <div
+                        className={`max-w-[85%] md:max-w-[70%] flex gap-3 ${isSent ? 'flex-row-reverse' : 'flex-row'} ${selectMode ? 'cursor-pointer' : ''} ${selectedMsgIds.has(msg.id) ? 'opacity-100' : selectMode ? 'opacity-60' : ''}`}
+                        onClick={() => selectMode && toggleSelectMessage(msg.id)}
+                      >
+                        {selectMode && (
+                          <div className="flex items-center flex-shrink-0">
+                            <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${selectedMsgIds.has(msg.id)
+                              ? 'bg-constitution-gold border-constitution-gold'
+                              : 'border-judge-ivory/30'
+                              }`}>
+                              {selectedMsgIds.has(msg.id) && <Check className="w-3 h-3 text-justice-black" />}
+                            </div>
+                          </div>
+                        )}
                         <div className="flex-shrink-0 w-8">
                           {!isSent && showAvatar && (
                             <div className="w-8 h-8 rounded-full border border-constitution-gold/20 overflow-hidden bg-constitution-gold/10 flex items-center justify-center">
@@ -422,20 +665,20 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ onNavigate, urlId: propId }
                                 <>
                                   {msg.message_type === 'IMAGE' && (
                                     <img
-                                      src={`${API_BASE_URL.replace('/api', '')}/api/messages/media/${msg.id}`}
+                                      src={`${API_BASE_URL}/messages/media/${msg.id}?token=${localStorage.getItem('token')}`}
                                       alt="Attachment"
                                       className="max-w-xs rounded-lg mb-2 border border-white/10 cursor-pointer hover:opacity-90 active:scale-[0.99] transition-all"
-                                      onClick={() => window.open(`${API_BASE_URL.replace('/api', '')}/api/messages/media/${msg.id}`, '_blank')}
+                                      onClick={() => window.open(`${API_BASE_URL}/messages/media/${msg.id}?token=${localStorage.getItem('token')}`, '_blank')}
                                     />
                                   )}
                                   {msg.message_type === 'PDF' && (
                                     <div
                                       className="flex items-center gap-3 p-3 bg-black/20 rounded-xl mb-2 cursor-pointer border border-white/5 hover:bg-black/30 transition-all"
-                                      onClick={() => window.open(`${API_BASE_URL.replace('/api', '')}/api/messages/media/${msg.id}`, '_blank')}
+                                      onClick={() => window.open(`${API_BASE_URL}/messages/media/${msg.id}?token=${localStorage.getItem('token')}`, '_blank')}
                                     >
                                       <FileText className="w-8 h-8 text-red-400" />
                                       <div className="flex-1 overflow-hidden">
-                                        <p className="text-xs font-bold truncate">Legal Document.pdf</p>
+                                        <p className="text-xs font-bold truncate">{msg.file_name || 'Legal Document.pdf'}</p>
                                         <p className="text-[10px] opacity-50 uppercase">Open PDF</p>
                                       </div>
                                     </div>
@@ -457,9 +700,6 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ onNavigate, urlId: propId }
                           <div className={`flex items-center gap-2 mt-1 px-1 ${isSent ? 'justify-end' : 'justify-start'}`}>
                             <span className="text-[9px] text-judge-ivory/20 font-bold uppercase">{formatTime(msg.created_at)}</span>
                             {msg.is_edited && <span className="text-[9px] text-judge-ivory/20 italic">(edited)</span>}
-                            {isSent && (
-                              <CheckCheck className="w-3 h-3 text-emerald-500 opacity-50" />
-                            )}
                           </div>
                         </div>
                       </div>
@@ -527,10 +767,155 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ onNavigate, urlId: propId }
         )}
       </div>
 
+      {/* Add Member Panel for existing groups */}
+      {showAddMember && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="bg-justice-black border border-constitution-gold/20 rounded-3xl p-8 max-w-md w-full shadow-2xl max-h-[80vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-lg font-bold text-judge-ivory flex items-center gap-2">
+                <UserPlus className="w-5 h-5 text-constitution-gold" /> Add Members
+              </h2>
+              <button onClick={() => setShowAddMember(false)} className="p-1 hover:bg-white/10 rounded-full text-judge-ivory"><X /></button>
+            </div>
+
+            {/* Current Members */}
+            {activeConvDetails?.members?.length > 0 && (
+              <div className="mb-4">
+                <p className="text-[10px] font-bold text-constitution-gold/40 uppercase tracking-wider mb-2">Current Members ({activeConvDetails.members.length})</p>
+                <div className="flex flex-wrap gap-2">
+                  {activeConvDetails.members.map((m: any) => (
+                    <span key={m.user_id} className="px-2 py-1 bg-white/5 text-judge-ivory/60 rounded-full text-[10px] font-bold">
+                      {m.full_name}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Search */}
+            <div className="relative mb-3">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-judge-ivory/30" />
+              <input
+                type="text"
+                placeholder="Search users..."
+                value={addMemberSearch}
+                onChange={(e) => setAddMemberSearch(e.target.value)}
+                className="w-full pl-9 pr-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-sm text-judge-ivory placeholder-judge-ivory/20 outline-none focus:border-constitution-gold/30 transition-all"
+              />
+            </div>
+
+            {/* Available Users */}
+            <div className="max-h-60 overflow-y-auto rounded-lg border border-white/5">
+              {addMemberUsers
+                .filter(u => !addMemberSearch || u.full_name?.toLowerCase().includes(addMemberSearch.toLowerCase()))
+                .length === 0 ? (
+                <div className="p-6 text-center text-judge-ivory/30 text-sm">No users available to add</div>
+              ) : (
+                addMemberUsers
+                  .filter(u => !addMemberSearch || u.full_name?.toLowerCase().includes(addMemberSearch.toLowerCase()))
+                  .map(u => (
+                    <div
+                      key={u.id}
+                      className="flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-all"
+                    >
+                      <div className="w-8 h-8 rounded-full bg-constitution-gold/10 flex items-center justify-center flex-shrink-0">
+                        <User className="w-4 h-4 text-constitution-gold/40" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-sm text-judge-ivory truncate">{u.full_name}</p>
+                        <p className="text-[10px] text-judge-ivory/40">{u.role?.replace('_', ' ')}</p>
+                      </div>
+                      <button
+                        onClick={() => handleAddMemberToGroup(u.id)}
+                        className="px-3 py-1.5 bg-constitution-gold text-justice-black text-xs font-bold rounded-lg hover:bg-constitution-gold/90 transition-all"
+                      >
+                        Add
+                      </button>
+                    </div>
+                  ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Group Info Panel */}
+      {showGroupInfo && activeConvDetails && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="bg-justice-black border border-constitution-gold/20 rounded-3xl p-8 max-w-md w-full shadow-2xl max-h-[80vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-lg font-bold text-judge-ivory flex items-center gap-2">
+                <Info className="w-5 h-5 text-constitution-gold" /> Conversation Info
+              </h2>
+              <button onClick={() => setShowGroupInfo(false)} className="p-1 hover:bg-white/10 rounded-full text-judge-ivory"><X /></button>
+            </div>
+
+            {/* Group Name & Type */}
+            <div className="mb-6 text-center">
+              <div className="w-16 h-16 mx-auto mb-3 rounded-full border-2 border-constitution-gold/30 flex items-center justify-center bg-constitution-gold/5">
+                {activeConvDetails.conversation_type === 'GROUP'
+                  ? <Users className="w-8 h-8 text-constitution-gold/40" />
+                  : <User className="w-8 h-8 text-constitution-gold/40" />
+                }
+              </div>
+              <h3 className="text-xl font-bold text-judge-ivory mb-1">{activeConvDetails.display_name}</h3>
+              <span className="inline-block px-3 py-1 bg-constitution-gold/10 text-constitution-gold text-[10px] font-black uppercase tracking-widest rounded-full">
+                {activeConvDetails.conversation_type}
+              </span>
+            </div>
+
+            {/* Created Info */}
+            {activeConvDetails.created_at && (
+              <div className="flex items-center gap-2 text-judge-ivory/40 text-xs mb-6 justify-center">
+                <Calendar className="w-3.5 h-3.5" />
+                Created {new Date(activeConvDetails.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
+              </div>
+            )}
+
+            {/* Members */}
+            {activeConvDetails.members && activeConvDetails.members.length > 0 && (
+              <div>
+                <p className="text-[10px] font-bold text-constitution-gold/40 uppercase tracking-wider mb-3">
+                  Members ({activeConvDetails.members.length})
+                </p>
+                <div className="space-y-1 rounded-xl border border-white/5 overflow-hidden">
+                  {activeConvDetails.members.map((m: any) => (
+                    <div key={m.user_id} className="flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-all">
+                      <div className="w-9 h-9 rounded-full bg-constitution-gold/10 flex items-center justify-center flex-shrink-0 border border-constitution-gold/20">
+                        <User className="w-4 h-4 text-constitution-gold/40" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-sm text-judge-ivory truncate">
+                          {m.full_name}
+                          {m.user_id === currentUserId && <span className="text-constitution-gold/40 text-[10px] ml-1">(You)</span>}
+                        </p>
+                        <p className="text-[10px] text-judge-ivory/30">
+                          Joined {new Date(m.joined_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                      {m.role === 'OWNER' && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-constitution-gold/10 text-constitution-gold text-[9px] font-bold rounded-full uppercase">
+                          <Crown className="w-3 h-3" /> Owner
+                        </span>
+                      )}
+                      {m.role === 'ADMIN' && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-500/10 text-blue-400 text-[9px] font-bold rounded-full uppercase">
+                          Admin
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Group Creation Modal */}
       {showCreateGroup && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-          <div className="bg-justice-black border border-constitution-gold/20 rounded-3xl p-8 max-w-md w-full shadow-2xl">
+          <div className="bg-justice-black border border-constitution-gold/20 rounded-3xl p-8 max-w-md w-full shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-bold text-judge-ivory">Establish Legal Circle</h2>
               <button onClick={() => setShowCreateGroup(false)} className="p-1 hover:bg-white/10 rounded-full"><X /></button>
@@ -538,16 +923,82 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ onNavigate, urlId: propId }
             <input
               type="text"
               placeholder="Circle Title (e.g., Supreme Court Prep)"
-              className="w-full bg-white/5 border-2 border-white/10 rounded-xl px-4 py-3 mb-6 outline-none focus:border-constitution-gold transition-all"
+              className="w-full bg-white/5 border-2 border-white/10 rounded-xl px-4 py-3 mb-4 outline-none focus:border-constitution-gold transition-all text-judge-ivory"
               value={groupTitle}
               onChange={(e) => setGroupTitle(e.target.value)}
             />
+
+            {/* Member Selection */}
+            <div className="mb-4">
+              <label className="text-xs font-bold text-constitution-gold/60 uppercase tracking-wider mb-2 block">
+                <Users className="w-3.5 h-3.5 inline mr-1" /> Add Members
+              </label>
+
+              {/* Selected Members */}
+              {selectedMembers.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {selectedMembers.map(m => (
+                    <span key={m.id} className="inline-flex items-center gap-1 px-3 py-1 bg-constitution-gold/20 text-constitution-gold rounded-full text-xs font-bold">
+                      {m.full_name}
+                      <button onClick={() => toggleMember(m)} className="hover:text-red-400">
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {/* Search Members */}
+              <div className="relative mb-2">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-judge-ivory/30" />
+                <input
+                  type="text"
+                  placeholder="Search users to add..."
+                  value={groupMemberSearch}
+                  onChange={(e) => setGroupMemberSearch(e.target.value)}
+                  className="w-full pl-9 pr-4 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-judge-ivory placeholder-judge-ivory/20 outline-none focus:border-constitution-gold/30 transition-all"
+                />
+              </div>
+
+              {/* User List */}
+              <div className="max-h-40 overflow-y-auto rounded-lg border border-white/5">
+                {loadingUsers ? (
+                  <div className="p-4 text-center">
+                    <div className="w-5 h-5 border-2 border-constitution-gold/20 border-t-constitution-gold rounded-full animate-spin mx-auto"></div>
+                  </div>
+                ) : availableUsers
+                  .filter(u => u.id !== currentUserId)
+                  .filter(u => !groupMemberSearch || u.full_name?.toLowerCase().includes(groupMemberSearch.toLowerCase()))
+                  .map(u => {
+                    const isSelected = selectedMembers.some(m => m.id === u.id);
+                    return (
+                      <div
+                        key={u.id}
+                        onClick={() => toggleMember(u)}
+                        className={`flex items-center gap-3 px-3 py-2.5 cursor-pointer transition-all text-sm ${isSelected ? 'bg-constitution-gold/10 text-constitution-gold' : 'hover:bg-white/5 text-judge-ivory/70'
+                          }`}
+                      >
+                        <div className="w-7 h-7 rounded-full bg-constitution-gold/10 flex items-center justify-center flex-shrink-0">
+                          <User className="w-3.5 h-3.5 text-constitution-gold/40" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-bold text-xs truncate">{u.full_name}</p>
+                          <p className="text-[10px] opacity-50">{u.role?.replace('_', ' ')}</p>
+                        </div>
+                        {isSelected && <Check className="w-4 h-4 text-constitution-gold" />}
+                      </div>
+                    );
+                  })
+                }
+              </div>
+            </div>
+
             <button
               onClick={handleCreateGroup}
               disabled={!groupTitle.trim()}
               className="w-full py-4 bg-constitution-gold text-justice-black font-black uppercase tracking-widest rounded-xl hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-30"
             >
-              Initialize Circle
+              Initialize Circle {selectedMembers.length > 0 ? `(${selectedMembers.length} members)` : ''}
             </button>
           </div>
         </div>
