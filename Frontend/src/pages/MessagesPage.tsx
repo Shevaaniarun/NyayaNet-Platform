@@ -25,7 +25,7 @@ import {
 } from '../api/messagesAPI';
 import {
   ArrowLeft, Send, User, Users, UserPlus, Clock, Calendar, Shield, Paperclip,
-  Mic, MoreVertical, Check, Info, VolumeX, Crown, LogOut,
+  Mic, MoreVertical, Check, Info, VolumeX, Volume2, Crown, LogOut,
   MessageCircle, AlertCircle, Search, Gavel, Plus, X, Trash2, Edit2, Ban, Image as ImageIcon, FileText, CheckSquare
 } from 'lucide-react';
 import { toast } from 'react-toastify';
@@ -100,6 +100,10 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ onNavigate, urlId: propId }
   const [selectedMsgIds, setSelectedMsgIds] = useState<Set<string>>(new Set());
   const chatMenuRef = useRef<HTMLDivElement>(null);
 
+  // Block & Mute state
+  const [isBlocked, setIsBlocked] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -139,6 +143,20 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ onNavigate, urlId: propId }
             setActiveConvDetails(details);
             const msgs = await getMessages(urlId);
             setMessages(msgs);
+
+            // Check blocked status for private chats
+            if (details.conversation_type === 'PRIVATE' && details.other_user_id) {
+              try {
+                const blockedList = await getBlockedUsers();
+                const blocked = Array.isArray(blockedList) && blockedList.some((b: any) => b.blocked_user_id === details.other_user_id || b.id === details.other_user_id);
+                setIsBlocked(blocked);
+              } catch { setIsBlocked(false); }
+            }
+
+            // Restore mute state from localStorage
+            const muteKey = `muted_${urlId}`;
+            setIsMuted(localStorage.getItem(muteKey) === 'true');
+
             return;
           }
         } catch (e) {
@@ -355,6 +373,62 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ onNavigate, urlId: propId }
     }
   };
 
+  // Block / Unblock the other user in a private chat
+  const handleBlockUser = async () => {
+    if (!activeConvDetails?.other_user_id) return;
+    const otherId = activeConvDetails.other_user_id;
+    try {
+      if (isBlocked) {
+        if (!window.confirm('Unblock this user? They will be able to message you again.')) return;
+        await unblockUser(otherId);
+        setIsBlocked(false);
+        toast.success('User unblocked');
+      } else {
+        if (!window.confirm('Block this user? They will no longer be able to send you messages.')) return;
+        await blockUser(otherId);
+        setIsBlocked(true);
+        toast.success('User blocked');
+      }
+      setShowChatMenu(false);
+    } catch (e) {
+      toast.error('Failed to update block status');
+    }
+  };
+
+  // Toggle mute (frontend-only, stored in localStorage)
+  const handleMuteToggle = () => {
+    if (!activeConvId) return;
+    const muteKey = `muted_${activeConvId}`;
+    const newVal = !isMuted;
+    if (!window.confirm(newVal ? 'Mute notifications for this conversation?' : 'Unmute notifications for this conversation?')) return;
+    setIsMuted(newVal);
+    localStorage.setItem(muteKey, String(newVal));
+    toast.success(newVal ? 'Notifications muted' : 'Notifications unmuted');
+    setShowChatMenu(false);
+  };
+
+  // Clear all messages in the conversation
+  const handleClearChat = async () => {
+    if (!activeConvId) return;
+    if (!window.confirm('Clear all messages in this chat? This cannot be undone.')) return;
+    try {
+      await Promise.all(messages.map(m => deleteMessage(m.id)));
+      setMessages([]);
+      toast.success('Chat cleared');
+      setShowChatMenu(false);
+      fetchConversations();
+    } catch (e) {
+      toast.error('Failed to clear chat');
+    }
+  };
+
+  // Report user (UI-only for now)
+  const handleReportUser = () => {
+    if (!window.confirm('Report this user for inappropriate behaviour?')) return;
+    toast.success('Report submitted. Our team will review it shortly.');
+    setShowChatMenu(false);
+  };
+
   const toggleSelectMode = () => {
     setSelectMode(prev => !prev);
     setSelectedMsgIds(new Set());
@@ -544,7 +618,8 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ onNavigate, urlId: propId }
                     <MoreVertical className="w-5 h-5" />
                   </button>
                   {showChatMenu && (
-                    <div className="absolute right-0 top-full mt-2 w-56 bg-justice-black border border-constitution-gold/20 rounded-2xl shadow-2xl overflow-hidden z-50">
+                    <div className="absolute right-0 top-full mt-2 w-56 bg-justice-black border border-constitution-gold/20 rounded-2xl shadow-2xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                      {/* General actions */}
                       <button
                         onClick={toggleSelectMode}
                         className="w-full flex items-center gap-3 px-4 py-3 text-sm text-judge-ivory hover:bg-white/5 transition-all text-left"
@@ -553,21 +628,66 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ onNavigate, urlId: propId }
                         {selectMode ? 'Cancel Selection' : 'Select Messages'}
                       </button>
                       <button
+                        onClick={handleMuteToggle}
+                        className="w-full flex items-center gap-3 px-4 py-3 text-sm text-judge-ivory hover:bg-white/5 transition-all text-left"
+                      >
+                        {isMuted
+                          ? <Volume2 className="w-4 h-4 text-constitution-gold/60" />
+                          : <VolumeX className="w-4 h-4 text-constitution-gold/60" />}
+                        {isMuted ? 'Unmute Notifications' : 'Mute Notifications'}
+                      </button>
+
+                      {/* Private-chat actions (block & report) */}
+                      {activeConvDetails?.conversation_type === 'PRIVATE' && (
+                        <>
+                          <div className="border-t border-white/5" />
+                          <button
+                            onClick={handleBlockUser}
+                            className={`w-full flex items-center gap-3 px-4 py-3 text-sm transition-all text-left ${isBlocked
+                              ? 'text-emerald-400 hover:bg-emerald-500/5'
+                              : 'text-red-400 hover:bg-red-500/5'
+                              }`}
+                          >
+                            {isBlocked
+                              ? <Shield className="w-4 h-4" />
+                              : <Ban className="w-4 h-4" />}
+                            {isBlocked ? 'Unblock User' : 'Block User'}
+                          </button>
+                          <button
+                            onClick={handleReportUser}
+                            className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-400 hover:bg-red-500/5 transition-all text-left"
+                          >
+                            <AlertCircle className="w-4 h-4" />
+                            Report User
+                          </button>
+                        </>
+                      )}
+
+                      {/* Destructive actions */}
+                      <div className="border-t border-white/5" />
+                      <button
+                        onClick={handleClearChat}
+                        className="w-full flex items-center gap-3 px-4 py-3 text-sm text-orange-400 hover:bg-orange-500/5 transition-all text-left"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        Clear Chat
+                      </button>
+                      {activeConvDetails?.conversation_type === 'GROUP' && (
+                        <button
+                          onClick={handleLeaveGroup}
+                          className="w-full flex items-center gap-3 px-4 py-3 text-sm text-orange-400 hover:bg-orange-500/5 transition-all text-left"
+                        >
+                          <LogOut className="w-4 h-4" />
+                          Leave Group
+                        </button>
+                      )}
+                      <button
                         onClick={handleDeleteChat}
                         className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-400 hover:bg-red-500/5 transition-all text-left"
                       >
                         <Trash2 className="w-4 h-4" />
                         Delete Chat
                       </button>
-                      {activeConvDetails?.conversation_type === 'GROUP' && (
-                        <button
-                          onClick={handleLeaveGroup}
-                          className="w-full flex items-center gap-3 px-4 py-3 text-sm text-orange-400 hover:bg-orange-500/5 transition-all text-left border-t border-white/5"
-                        >
-                          <LogOut className="w-4 h-4" />
-                          Leave Group
-                        </button>
-                      )}
                     </div>
                   )}
                 </div>
@@ -713,6 +833,26 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ onNavigate, urlId: propId }
             {/* Input */}
             <div className="p-6 bg-justice-black/60 border-t border-constitution-gold/10 backdrop-blur-xl">
               <form onSubmit={handleSendMessage} className="max-w-4xl mx-auto flex items-end gap-3 translate-y-0 active:translate-y-0 transition-transform">
+
+                {/* Hidden file input */}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*,.pdf,application/pdf"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
+
+                {/* Attachment button */}
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={sending}
+                  className="p-4 rounded-2xl text-constitution-gold/50 hover:text-constitution-gold hover:bg-white/5 transition-all disabled:opacity-20"
+                  title="Attach file (images & PDFs)"
+                >
+                  <Paperclip className="w-5 h-5" />
+                </button>
 
                 <div className="flex-1 relative">
                   <textarea

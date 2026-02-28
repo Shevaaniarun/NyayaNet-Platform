@@ -46,14 +46,20 @@ export const authenticate: RequestHandler = (
     const authRequest = req as AuthRequest;
     const authHeader = authRequest.headers.authorization;
 
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    // Support token from Authorization header or query parameter (for media URLs)
+    let token: string | undefined;
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      token = authHeader.split(" ")[1];
+    } else if (req.query.token && typeof req.query.token === 'string') {
+      token = req.query.token;
+    }
+
+    if (!token) {
       return res.status(401).json({
         success: false,
         message: "Authentication required",
       });
     }
-
-    const token = authHeader.split(" ")[1];
 
     const JWT_SECRET = process.env.JWT_SECRET;
     if (!JWT_SECRET) {
