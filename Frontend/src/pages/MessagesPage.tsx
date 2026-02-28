@@ -713,20 +713,6 @@ const MessagesPage: React.FC<MessagesPageProps> = ({ onNavigate, urlId: propId }
             {/* Input */}
             <div className="p-6 bg-justice-black/60 border-t border-constitution-gold/10 backdrop-blur-xl">
               <form onSubmit={handleSendMessage} className="max-w-4xl mx-auto flex items-end gap-3 translate-y-0 active:translate-y-0 transition-transform">
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="p-4 bg-white/5 border border-white/10 rounded-2xl text-constitution-gold hover:bg-white/10 transition-all active:scale-90"
-                >
-                  <Paperclip className="w-5 h-5" />
-                </button>
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handleFileUpload}
-                  className="hidden"
-                  accept="image/*,application/pdf"
-                />
 
                 <div className="flex-1 relative">
                   <textarea
