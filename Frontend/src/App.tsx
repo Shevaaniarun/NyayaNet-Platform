@@ -26,7 +26,9 @@ import { ChatbotPage } from "./pages/ChatbotPage";
 import ChatWithUsPage from "./pages/ChatWithUsPage";
 import MessagesPage from "./pages/MessagesPage";
 import { NetworkPage } from "./pages/NetworkPage";
-
+import { LawLibraryPage } from "./pages/LawLibraryPage";
+import { LawActDetailPage } from "./pages/LawActDetailPage";
+// import { LawBookmarksPage } from "./pages/LawBookmarksPage"; 
 import { useNotificationCount } from "./hooks/useNotificationCount";
 import { getFeed } from "./api/postsAPI";
 import { toast } from "react-toastify";
@@ -243,6 +245,38 @@ function AppContent() {
               </Protected>
             }
           />
+
+          {/* Library Routes */}
+          <Route
+            path="/library"
+            element={
+              <Protected>
+                <LawLibraryPage />
+              </Protected>
+            }
+          />
+
+          {/* ADD THIS - Law Act Detail Page */}
+          <Route
+            path="/library/act/:actId"
+            element={
+              <Protected>
+                <LawActDetailPage />
+              </Protected>
+            }
+          />
+
+          {/* Add bookmarks route if you have it 
+          <Route
+            path="/library/bookmarks"
+            element={
+              <Protected>
+                <LawBookmarksPage /> 
+              </Protected>
+            }
+          />
+          */}
+
 
           {/* Add create-discussion route if needed */}
           <Route

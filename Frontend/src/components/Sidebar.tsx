@@ -12,6 +12,7 @@ import {
   Scale,
   Book,
   User,
+  BookOpen
 } from "lucide-react";
 
 interface NavItem {
@@ -74,6 +75,9 @@ export function Sidebar({
 
     { path: "/profile", icon: User, label: "Profile" },
     { path: "/chatbot", icon: Brain, label: "NyayaNetGPT", badge: "AI" },
+    {
+      path: "/library", icon: BookOpen, label: "Law Library"
+    },
   ];
 
   const handleNavClick = (path: string) => {

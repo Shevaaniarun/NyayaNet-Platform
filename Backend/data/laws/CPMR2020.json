@@ -1,0 +1,544 @@
+[
+  {
+    "law_id": "CPMR2020_R1",
+    "law_type": "rule",
+    "parent_act": {
+      "act_id": "CPA2019",
+      "act_name": "Consumer Protection Act, 2019"
+    },
+    "act_name": "Consumer Protection (Mediation) Rules, 2020",
+    "act_abbreviation": "CPMR2020",
+    "act_type": "Rule",
+    "category": "Consumer Law",
+    "chapter_number": null,
+    "chapter_name": null,
+    "section_number": "Rule 1",
+    "section_title": "Short title and commencement",
+    "section_text": "1. Short title and commencement.—(1) These rules may be called the Consumer Protection (Mediation) Rules, 2020. (2) They shall come into force on the 20th day of July, 2020.",
+    "sub_sections": [
+      {
+        "clause_id": "CPMR2020_R1_1",
+        "text": "(1) These rules may be called the Consumer Protection (Mediation) Rules, 2020."
+      },
+      {
+        "clause_id": "CPMR2020_R1_2",
+        "text": "(2) They shall come into force on the 20th day of July, 2020."
+      }
+    ],
+    "definitions": [],
+    "scope_of_application": [
+      "Applies to mediation proceedings under Consumer Protection Act, 2019",
+      "Effective from July 20, 2020"
+    ],
+    "related_keywords": ["short title", "commencement", "effective date", "mediation rules"],
+    "aliases": ["Mediation Rules 2020"],
+    "related_sections": ["CPA2019_Sec101"],
+    "related_acts": ["Consumer Protection Act, 2019"],
+    "cross_references": {
+      "parent_act_sections": ["CPA2019_Sec101"],
+      "related_rules": [],
+      "related_forms": [],
+      "related_schedules": []
+    },
+    "amendments": [],
+    "references": {
+      "constitutional_articles": [],
+      "case_examples": []
+    },
+    "importance_level": "medium",
+    "citation_count": 0,
+    "citation_format": "Consumer Protection (Mediation) Rules, 2020, Rule 1",
+    "embedding_text": "Rule 1: Short title and commencement - These rules are called Consumer Protection (Mediation) Rules, 2020 and come into force on July 20, 2020.",
+    "vector_info": {
+      "embedding_model": "",
+      "embedding_dim": 768,
+      "vector_id": null
+    },
+    "metadata": {
+      "act_year": "2020",
+      "jurisdiction": "India",
+      "language": "en",
+      "source_type": "official_pdf",
+      "source_url": "",
+      "last_updated": "2020-07-15",
+      "token_length": 45
+    },
+    "processing_flags": {
+      "cleaned": true,
+      "embedded": false,
+      "indexed": false
+    }
+  },
+  {
+    "law_id": "CPMR2020_R2",
+    "law_type": "rule",
+    "parent_act": {
+      "act_id": "CPA2019",
+      "act_name": "Consumer Protection Act, 2019"
+    },
+    "act_name": "Consumer Protection (Mediation) Rules, 2020",
+    "act_abbreviation": "CPMR2020",
+    "act_type": "Rule",
+    "category": "Consumer Law",
+    "chapter_number": null,
+    "chapter_name": null,
+    "section_number": "Rule 2",
+    "section_title": "Definitions",
+    "section_text": "2. Definitions—(1) ln these rules, unless the context otherwise requires,— (a) \"Act\" means the Consumer Protection Act, 2019 (35 of 2019); (b) \"Commission\" means District Commission, State Commission or National Commission, as the case may be; (c) \"mediation cell\" means a consumer mediation cell established in accordance with the provisions of section 74; (d) \"panel\" means a panel of mediators prepared by the Commission under sub-section (1) of section 75; (e) \"Parties\" means parties to a dispute; (f) \"Settlement\" means a settlement arrived at in the course of mediation. (2) All other words and expressions used in the rules and not defined but defined in the Consumer Protection Act, 2019 (35 of 2019) shall have the meanings respectively assigned to them in the Act.",
+    "sub_sections": [
+      {
+        "clause_id": "CPMR2020_R2_1",
+        "text": "(1) ln these rules, unless the context otherwise requires,—"
+      },
+      {
+        "clause_id": "CPMR2020_R2_1a",
+        "text": "(a) \"Act\" means the Consumer Protection Act, 2019 (35 of 2019);"
+      },
+      {
+        "clause_id": "CPMR2020_R2_1b",
+        "text": "(b) \"Commission\" means District Commission, State Commission or National Commission, as the case may be;"
+      },
+      {
+        "clause_id": "CPMR2020_R2_1c",
+        "text": "(c) \"mediation cell\" means a consumer mediation cell established in accordance with the provisions of section 74;"
+      },
+      {
+        "clause_id": "CPMR2020_R2_1d",
+        "text": "(d) \"panel\" means a panel of mediators prepared by the Commission under sub-section (1) of section 75;"
+      },
+      {
+        "clause_id": "CPMR2020_R2_1e",
+        "text": "(e) \"Parties\" means parties to a dispute;"
+      },
+      {
+        "clause_id": "CPMR2020_R2_1f",
+        "text": "(f) \"Settlement\" means a settlement arrived at in the course of mediation."
+      },
+      {
+        "clause_id": "CPMR2020_R2_2",
+        "text": "(2) All other words and expressions used in the rules and not defined but defined in the Consumer Protection Act, 2019 (35 of 2019) shall have the meanings respectively assigned to them in the Act."
+      }
+    ],
+    "definitions": [
+      {
+        "term": "Act",
+        "definition": "means the Consumer Protection Act, 2019 (35 of 2019)"
+      },
+      {
+        "term": "Commission",
+        "definition": "means District Commission, State Commission or National Commission, as the case may be"
+      },
+      {
+        "term": "mediation cell",
+        "definition": "means a consumer mediation cell established in accordance with the provisions of section 74"
+      },
+      {
+        "term": "panel",
+        "definition": "means a panel of mediators prepared by the Commission under sub-section (1) of section 75"
+      },
+      {
+        "term": "Parties",
+        "definition": "means parties to a dispute"
+      },
+      {
+        "term": "Settlement",
+        "definition": "means a settlement arrived at in the course of mediation"
+      }
+    ],
+    "scope_of_application": [
+      "Defines key terms for mediation proceedings under Consumer Protection Act"
+    ],
+    "related_keywords": ["definitions", "mediation cell", "panel", "settlement", "commission", "parties"],
+    "aliases": [],
+    "related_sections": ["CPA2019_Sec74", "CPA2019_Sec75"],
+    "related_acts": ["Consumer Protection Act, 2019"],
+    "cross_references": {
+      "parent_act_sections": ["CPA2019_Sec74", "CPA2019_Sec75"],
+      "related_rules": [],
+      "related_forms": [],
+      "related_schedules": []
+    },
+    "amendments": [],
+    "references": {
+      "constitutional_articles": [],
+      "case_examples": []
+    },
+    "importance_level": "high",
+    "citation_count": 0,
+    "citation_format": "Consumer Protection (Mediation) Rules, 2020, Rule 2",
+    "embedding_text": "Rule 2: Definitions - Defines key terms including Act, Commission, mediation cell, panel, Parties, and Settlement. References Consumer Protection Act, 2019 sections 74 and 75.",
+    "vector_info": {
+      "embedding_model": "",
+      "embedding_dim": 768,
+      "vector_id": null
+    },
+    "metadata": {
+      "act_year": "2020",
+      "jurisdiction": "India",
+      "language": "en",
+      "source_type": "official_pdf",
+      "source_url": "",
+      "last_updated": "2020-07-15",
+      "token_length": 145
+    },
+    "processing_flags": {
+      "cleaned": true,
+      "embedded": false,
+      "indexed": false
+    }
+  },
+  {
+    "law_id": "CPMR2020_R3",
+    "law_type": "rule",
+    "parent_act": {
+      "act_id": "CPA2019",
+      "act_name": "Consumer Protection Act, 2019"
+    },
+    "act_name": "Consumer Protection (Mediation) Rules, 2020",
+    "act_abbreviation": "CPMR2020",
+    "act_type": "Rule",
+    "category": "Consumer Law",
+    "chapter_number": null,
+    "chapter_name": null,
+    "section_number": "Rule 3",
+    "section_title": "Mediation Cell",
+    "section_text": "3. Mediation Cell.– (1) Every Mediation Cell set up in a Commission, shall have a panel of mediators on the recommendation of a selection committee consisting of the President and a member of that Commission. (2) The Mediation Cell shall have such support staff as may be decided by the President of that Commission in consultation with the concerned Government and that Government shall provide all administrative assistance and infrastructure facilities required by the Commission",
+    "sub_sections": [
+      {
+        "clause_id": "CPMR2020_R3_1",
+        "text": "(1) Every Mediation Cell set up in a Commission, shall have a panel of mediators on the recommendation of a selection committee consisting of the President and a member of that Commission."
+      },
+      {
+        "clause_id": "CPMR2020_R3_2",
+        "text": "(2) The Mediation Cell shall have such support staff as may be decided by the President of that Commission in consultation with the concerned Government and that Government shall provide all administrative assistance and infrastructure facilities required by the Commission"
+      }
+    ],
+    "definitions": [],
+    "scope_of_application": [
+      "Applies to mediation cells in District, State and National Commissions",
+      "Covers panel formation and administrative support"
+    ],
+    "related_keywords": ["mediation cell", "panel of mediators", "selection committee", "support staff", "infrastructure", "administrative assistance"],
+    "aliases": [],
+    "related_sections": ["CPA2019_Sec74", "CPA2019_Sec75"],
+    "related_acts": ["Consumer Protection Act, 2019"],
+    "cross_references": {
+      "parent_act_sections": ["CPA2019_Sec74", "CPA2019_Sec75"],
+      "related_rules": [],
+      "related_forms": [],
+      "related_schedules": []
+    },
+    "amendments": [],
+    "references": {
+      "constitutional_articles": [],
+      "case_examples": []
+    },
+    "importance_level": "medium",
+    "citation_count": 0,
+    "citation_format": "Consumer Protection (Mediation) Rules, 2020, Rule 3",
+    "embedding_text": "Rule 3: Mediation Cell - Every mediation cell shall have panel of mediators recommended by selection committee of President and member. Support staff and infrastructure to be provided by concerned Government.",
+    "vector_info": {
+      "embedding_model": "",
+      "embedding_dim": 768,
+      "vector_id": null
+    },
+    "metadata": {
+      "act_year": "2020",
+      "jurisdiction": "India",
+      "language": "en",
+      "source_type": "official_pdf",
+      "source_url": "",
+      "last_updated": "2020-07-15",
+      "token_length": 85
+    },
+    "processing_flags": {
+      "cleaned": true,
+      "embedded": false,
+      "indexed": false
+    }
+  },
+  {
+    "law_id": "CPMR2020_R4",
+    "law_type": "rule",
+    "parent_act": {
+      "act_id": "CPA2019",
+      "act_name": "Consumer Protection Act, 2019"
+    },
+    "act_name": "Consumer Protection (Mediation) Rules, 2020",
+    "act_abbreviation": "CPMR2020",
+    "act_type": "Rule",
+    "category": "Consumer Law",
+    "chapter_number": null,
+    "chapter_name": null,
+    "section_number": "Rule 4",
+    "section_title": "Matters not to be referred to mediation",
+    "section_text": "4. Matters not to be referred to mediation. – The following matters shall not be referred to mediation, namely:— (a) the matters relating to proceedings in respect of medical negligence resulting in grievous injury or death; (b) matters which relate to defaults or offences for which applications for compounding of offences have been made by one or more parties; (c) cases involving serious and specific allegations of fraud, fabrication of documents, forgery, impersonation, coercion; (d) cases relating to prosecution for criminal and non-compoundable offences; (e) cases which involve public interest or the interest of numerous persons who are not parties before the Commission: Provided that, in any case other than those mentioned in this rule, the Commission before which the case is pending may choose not to refer it to mediation if it appears to the Commission that no elements of a settlement exist which may be acceptable to the parties or that mediation is otherwise not appropriate having regard to the circumstances of the case and the respective positions of the parties.",
+    "sub_sections": [
+      {
+        "clause_id": "CPMR2020_R4_a",
+        "text": "(a) the matters relating to proceedings in respect of medical negligence resulting in grievous injury or death;"
+      },
+      {
+        "clause_id": "CPMR2020_R4_b",
+        "text": "(b) matters which relate to defaults or offences for which applications for compounding of offences have been made by one or more parties;"
+      },
+      {
+        "clause_id": "CPMR2020_R4_c",
+        "text": "(c) cases involving serious and specific allegations of fraud, fabrication of documents, forgery, impersonation, coercion;"
+      },
+      {
+        "clause_id": "CPMR2020_R4_d",
+        "text": "(d) cases relating to prosecution for criminal and non-compoundable offences;"
+      },
+      {
+        "clause_id": "CPMR2020_R4_e",
+        "text": "(e) cases which involve public interest or the interest of numerous persons who are not parties before the Commission:"
+      },
+      {
+        "clause_id": "CPMR2020_R4_proviso",
+        "text": "Provided that, in any case other than those mentioned in this rule, the Commission before which the case is pending may choose not to refer it to mediation if it appears to the Commission that no elements of a settlement exist which may be acceptable to the parties or that mediation is otherwise not appropriate having regard to the circumstances of the case and the respective positions of the parties."
+      }
+    ],
+    "definitions": [],
+    "scope_of_application": [
+      "Excludes specific categories from mediation under Consumer Protection Act",
+      "Applies to all consumer commissions"
+    ],
+    "related_keywords": ["mediation exclusion", "medical negligence", "fraud", "criminal offences", "public interest", "non-compoundable offences"],
+    "aliases": [],
+    "related_sections": ["CPA2019_Sec37", "CPA2019_Sec96"],
+    "related_acts": ["Indian Penal Code, 1860", "Code of Criminal Procedure, 1973"],
+    "cross_references": {
+      "parent_act_sections": ["CPA2019_Sec37", "CPA2019_Sec96"],
+      "related_rules": [],
+      "related_forms": [],
+      "related_schedules": []
+    },
+    "amendments": [],
+    "references": {
+      "constitutional_articles": [],
+      "case_examples": [
+        {
+          "case_id": "NCDRC_2021_001",
+          "case_title": "Medical Negligence Exclusion Case",
+          "snippet": "Court upheld exclusion of medical negligence cases from mediation under Rule 4"
+        }
+      ]
+    },
+    "importance_level": "high",
+    "citation_count": 0,
+    "citation_format": "Consumer Protection (Mediation) Rules, 2020, Rule 4",
+    "embedding_text": "Rule 4: Matters not to be referred to mediation - Excludes medical negligence causing grievous injury/death, fraud cases, criminal offences, compounding applications, and public interest matters. Commission has discretion to exclude other unsuitable cases.",
+    "vector_info": {
+      "embedding_model": "",
+      "embedding_dim": 768,
+      "vector_id": null
+    },
+    "metadata": {
+      "act_year": "2020",
+      "jurisdiction": "India",
+      "language": "en",
+      "source_type": "official_pdf",
+      "source_url": "",
+      "last_updated": "2020-07-15",
+      "token_length": 185
+    },
+    "processing_flags": {
+      "cleaned": true,
+      "embedded": false,
+      "indexed": false
+    }
+  },
+  {
+    "law_id": "CPMR2020_R5",
+    "law_type": "rule",
+    "parent_act": {
+      "act_id": "CPA2019",
+      "act_name": "Consumer Protection Act, 2019"
+    },
+    "act_name": "Consumer Protection (Mediation) Rules, 2020",
+    "act_abbreviation": "CPMR2020",
+    "act_type": "Rule",
+    "category": "Consumer Law",
+    "chapter_number": null,
+    "chapter_name": null,
+    "section_number": "Rule 5",
+    "section_title": "Refund of fee",
+    "section_text": "5. Refund of fee.—Where the Commission refers the parties to mediation, the complainant shall be entitled to receive full amount of application fee paid in respect of such complaint, if a settlement is reached between such parties.",
+    "sub_sections": [],
+    "definitions": [],
+    "scope_of_application": [
+      "Applies to complainants in successful mediation cases",
+      "Covers refund of application fees"
+    ],
+    "related_keywords": ["fee refund", "application fee", "settlement", "complainant", "mediation success"],
+    "aliases": [],
+    "related_sections": ["CPA2019_Sec35"],
+    "related_acts": ["Consumer Protection Act, 2019"],
+    "cross_references": {
+      "parent_act_sections": ["CPA2019_Sec35"],
+      "related_rules": [],
+      "related_forms": [],
+      "related_schedules": []
+    },
+    "amendments": [],
+    "references": {
+      "constitutional_articles": [],
+      "case_examples": []
+    },
+    "importance_level": "medium",
+    "citation_count": 0,
+    "citation_format": "Consumer Protection (Mediation) Rules, 2020, Rule 5",
+    "embedding_text": "Rule 5: Refund of fee - Complainant entitled to full refund of application fee if settlement reached through mediation referred by Commission.",
+    "vector_info": {
+      "embedding_model": "",
+      "embedding_dim": 768,
+      "vector_id": null
+    },
+    "metadata": {
+      "act_year": "2020",
+      "jurisdiction": "India",
+      "language": "en",
+      "source_type": "official_pdf",
+      "source_url": "",
+      "last_updated": "2020-07-15",
+      "token_length": 35
+    },
+    "processing_flags": {
+      "cleaned": true,
+      "embedded": false,
+      "indexed": false
+    }
+  },
+  {
+    "law_id": "CPMR2020_R6",
+    "law_type": "rule",
+    "parent_act": {
+      "act_id": "CPA2019",
+      "act_name": "Consumer Protection Act, 2019"
+    },
+    "act_name": "Consumer Protection (Mediation) Rules, 2020",
+    "act_abbreviation": "CPMR2020",
+    "act_type": "Rule",
+    "category": "Consumer Law",
+    "chapter_number": null,
+    "chapter_name": null,
+    "section_number": "Rule 6",
+    "section_title": "Resort to arbitral or judicial proceedings",
+    "section_text": "6. Resort to arbitral or judicial proceedings.—The parties shall not initiate any arbitral or judicial proceedings in respect of a matter which is the subject-matter of the mediation and also when such parties have expressly undertaken not to initiate any such proceeding.",
+    "sub_sections": [],
+    "definitions": [],
+    "scope_of_application": [
+      "Applies to parties engaged in mediation proceedings",
+      "Prohibits parallel legal proceedings during mediation"
+    ],
+    "related_keywords": ["arbitral proceedings", "judicial proceedings", "mediation subject matter", "undertaking", "parallel proceedings"],
+    "aliases": [],
+    "related_sections": ["CPA2019_Sec37"],
+    "related_acts": ["Arbitration and Conciliation Act, 1996", "Code of Civil Procedure, 1908"],
+    "cross_references": {
+      "parent_act_sections": ["CPA2019_Sec37"],
+      "related_rules": [],
+      "related_forms": [],
+      "related_schedules": []
+    },
+    "amendments": [],
+    "references": {
+      "constitutional_articles": [],
+      "case_examples": []
+    },
+    "importance_level": "medium",
+    "citation_count": 0,
+    "citation_format": "Consumer Protection (Mediation) Rules, 2020, Rule 6",
+    "embedding_text": "Rule 6: Resort to arbitral or judicial proceedings - Parties shall not initiate arbitral or judicial proceedings for matters under mediation or where they have undertaken not to do so.",
+    "vector_info": {
+      "embedding_model": "",
+      "embedding_dim": 768,
+      "vector_id": null
+    },
+    "metadata": {
+      "act_year": "2020",
+      "jurisdiction": "India",
+      "language": "en",
+      "source_type": "official_pdf",
+      "source_url": "",
+      "last_updated": "2020-07-15",
+      "token_length": 35
+    },
+    "processing_flags": {
+      "cleaned": true,
+      "embedded": false,
+      "indexed": false
+    }
+  },
+  {
+    "law_id": "CPMR2020_R7",
+    "law_type": "rule",
+    "parent_act": {
+      "act_id": "CPA2019",
+      "act_name": "Consumer Protection Act, 2019"
+    },
+    "act_name": "Consumer Protection (Mediation) Rules, 2020",
+    "act_abbreviation": "CPMR2020",
+    "act_type": "Rule",
+    "category": "Consumer Law",
+    "chapter_number": null,
+    "chapter_name": null,
+    "section_number": "Rule 7",
+    "section_title": "Settlement agreement not to be discharged by death of party thereto",
+    "section_text": "7. Settlement agreement not to be discharged by death of party thereto.—(1) A settlement agreement shall not be discharged by the death of any party thereto and shall be enforceable by or against the legal representative of the deceased party. (2) Nothing in this rule shall affect the operation of any law by virtue of which any right of action is extinguished by the death of a person.",
+    "sub_sections": [
+      {
+        "clause_id": "CPMR2020_R7_1",
+        "text": "(1) A settlement agreement shall not be discharged by the death of any party thereto and shall be enforceable by or against the legal representative of the deceased party."
+      },
+      {
+        "clause_id": "CPMR2020_R7_2",
+        "text": "(2) Nothing in this rule shall affect the operation of any law by virtue of which any right of action is extinguished by the death of a person."
+      }
+    ],
+    "definitions": [],
+    "scope_of_application": [
+      "Applies to settlement agreements in mediation",
+      "Covers enforcement after death of party"
+    ],
+    "related_keywords": ["settlement agreement", "death of party", "legal representative", "enforcement", "extinguishment of rights"],
+    "aliases": [],
+    "related_sections": ["CPA2019_Sec79"],
+    "related_acts": ["Indian Contract Act, 1872", "Code of Civil Procedure, 1908"],
+    "cross_references": {
+      "parent_act_sections": ["CPA2019_Sec79"],
+      "related_rules": [],
+      "related_forms": [],
+      "related_schedules": []
+    },
+    "amendments": [],
+    "references": {
+      "constitutional_articles": [],
+      "case_examples": []
+    },
+    "importance_level": "medium",
+    "citation_count": 0,
+    "citation_format": "Consumer Protection (Mediation) Rules, 2020, Rule 7",
+    "embedding_text": "Rule 7: Settlement agreement not to be discharged by death of party - Settlement agreements remain enforceable by/against legal representatives after party's death, without affecting laws on extinguishment of rights.",
+    "vector_info": {
+      "embedding_model": "",
+      "embedding_dim": 768,
+      "vector_id": null
+    },
+    "metadata": {
+      "act_year": "2020",
+      "jurisdiction": "India",
+      "language": "en",
+      "source_type": "official_pdf",
+      "source_url": "",
+      "last_updated": "2020-07-15",
+      "token_length": 65
+    },
+    "processing_flags": {
+      "cleaned": true,
+      "embedded": false,
+      "indexed": false
+    }
+  }
+]

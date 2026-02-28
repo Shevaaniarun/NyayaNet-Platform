@@ -16,7 +16,7 @@ import messagesRoutes from './routes/messagesRoutes';
 import { ChatbotController } from './controllers/chatbotController';
 import { authenticate } from './middleware/auth';
 import dashboardRoutes from './routes/dashboardRoutes';
-
+import lawlibraryRoutes from './routes/lawLibraryRoutes';
 
 dotenv.config();
 
@@ -79,6 +79,7 @@ app.use('/api/messages', messagesRoutes);
 app.post('/api/chatbot/chat', authenticate, ChatbotController.chat);
 app.get('/api/chatbot/history', authenticate, ChatbotController.getChatHistory);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/library', lawlibraryRoutes);
 
 // Development-only debug route to inspect a user's contribution summary by email
 if (process.env.NODE_ENV !== 'production') {
