@@ -665,15 +665,6 @@ export function ProfilePage({
           </div>
         )}
 
-        <div className="mt-6">
-          <ProfileStats
-            followerCount={profileStats.followers}
-            followingCount={profileStats.following}
-            postCount={profileStats.posts}
-            discussionCount={profileStats.discussions}
-          />
-        </div>
-
         {/* Certifications Section */}
         <div className="mt-6">
           <div className="flex items-center justify-between mb-4">

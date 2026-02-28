@@ -12,5 +12,27 @@
       <div id="root"></div>
       <script type="module" src="/src/main.tsx"></script>
     </body>
+
+    <style>
+      /* Chrome, Edge, Safari */
+      ::-webkit-scrollbar {
+        width: 8px;
+      }
+
+      ::-webkit-scrollbar-track {
+        background: #0f0f0f; /* justice-black */
+      }
+
+      ::-webkit-scrollbar-thumb {
+        background: #f7ebcf; /* constitution-gold */
+        border-radius: 6px;
+      }
+
+      /* Firefox */
+      * {
+        scrollbar-width: thin;
+        scrollbar-color: #f7ebcf #0f0f0f;
+      }
+    </style>
   </html>
   

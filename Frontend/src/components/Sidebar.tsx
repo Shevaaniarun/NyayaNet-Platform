@@ -69,8 +69,6 @@ export function Sidebar({
       path: "/notifications",
       icon: Bell,
       label: "Notifications",
-      badge: notificationCount > 0 ? notificationCount : null,
-      badgeType: "count",
     },
 
     { path: "/profile", icon: User, label: "Profile" },

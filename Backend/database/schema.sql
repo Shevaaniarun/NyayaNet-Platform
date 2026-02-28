@@ -961,7 +961,6 @@ CREATE TRIGGER update_discussion_view_count_trigger
 AFTER INSERT ON discussion_views
 FOR EACH ROW EXECUTE FUNCTION update_discussion_view_count();
 
-/*
 -- Update discussion upvote count
 CREATE OR REPLACE FUNCTION update_discussion_upvote_count()
 RETURNS TRIGGER AS $$
