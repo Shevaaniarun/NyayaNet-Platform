@@ -4,7 +4,6 @@ dotenv.config();
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
-
 import discussionRoutes from './routes/discussionRoutes';
 import profileRoutes from './routes/profileRoutes';
 import postRoutes from './routes/postRoutes';
@@ -17,9 +16,9 @@ import messagesRoutes from './routes/messagesRoutes';
 import { ChatbotController } from './controllers/chatbotController';
 import { authenticate } from './middleware/auth';
 import dashboardRoutes from './routes/dashboardRoutes';
+import lawlibraryRoutes from './routes/lawLibraryRoutes';
 
-// Import PostgreSQL pool to test connection
-import pool from './config/database';
+dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -79,22 +78,30 @@ app.use('/api/dashboard', dashboardRoutes);
 // Chatbot routes
 app.post('/api/chatbot/chat', authenticate, ChatbotController.chat);
 app.get('/api/chatbot/history', authenticate, ChatbotController.getChatHistory);
-app.get('/api/chatbot/chat/:chatId', authenticate, ChatbotController.getChatMessages);
-app.delete('/api/chatbot/chat/:chatId', authenticate, ChatbotController.deleteChat);
-app.put('/api/chatbot/chat/:chatId', authenticate, ChatbotController.updateChatName);
+app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/library', lawlibraryRoutes);
 
-// Test PostgreSQL connection on startup
-(async () => {
-    try {
-        const result = await pool.query('SELECT NOW()');
-        console.log('✅ PostgreSQL connected successfully');
-        console.log(`📊 Database time: ${result.rows[0].now}`);
-    } catch (error) {
-        console.error('❌ PostgreSQL connection failed:', error);
-    }
-})();
+// Development-only debug route to inspect a user's contribution summary by email
+if (process.env.NODE_ENV !== 'production') {
+    const db = require('./config/database').default;
+    app.get('/internal/debug/user_contrib', async (req, res) => {
+        const email = String(req.query.email || '').trim();
+        if (!email) return res.status(400).json({ success: false, message: 'email query param required' });
+        try {
+            const userRow = await db.query('SELECT id, email, full_name FROM users WHERE email = $1 LIMIT 1', [email]);
+            if (!userRow.rows || userRow.rows.length === 0) return res.status(404).json({ success: false, message: 'user not found' });
+            const uid = userRow.rows[0].id;
+            const summary = await db.query('SELECT * FROM user_contribution_summary WHERE user_id = $1 LIMIT 1', [uid]);
+            const likes = await db.query('SELECT COUNT(*) FROM post_likes pl JOIN posts p ON pl.post_id = p.id WHERE p.user_id = $1', [uid]);
+            return res.json({ success: true, user: userRow.rows[0], summary: summary.rows[0] || null, post_likes_count: Number(likes.rows[0].count || 0) });
+        } catch (err) {
+            console.error('Debug route error:', err);
+            const msg = (err instanceof Error) ? err.message : String(err);
+            return res.status(500).json({ success: false, message: 'internal error', error: msg });
+        }
+    });
+}
 
-// 404 handler
 app.use((req, res) => res.status(404).json({ success: false, message: 'Route not found' }));
 
 // Error handler

@@ -48,18 +48,6 @@ export function ProfileTabs({
 
     const [activeTab, setActiveTab] = useState<TabId>('posts');
 
-    const tabs = [
-        { id: 'posts' as const, label: 'Posts', icon: FileText, count: posts.length },
-        { id: 'discussions' as const, label: 'Discussions', icon: MessageSquare, count: discussions.length },
-        { id: 'followers' as const, label: 'Followers', icon: Users, count: followers.length },
-        { id: 'following' as const, label: 'Following', icon: UserCheck, count: following.length },
-        ...(isOwnProfile ? [
-            { id: 'bookmarks' as const, label: 'Bookmarks', icon: Bookmark, count: bookmarks.length },
-            { id: 'likedPosts' as const, label: 'Liked Posts', icon: Heart, count: likedPosts.length },
-            { id: 'likedDiscussions' as const, label: 'Liked Discussions', icon: Heart, count: likedDiscussions.length }
-        ] : [])
-    ];
-
     const handlePostClick = (id: string) => onPostClick?.(id);
     const handleDiscussionClick = (id: string) => onDiscussionClick?.(id);
     const handleUserClick = (userId: string) => onUserClick?.(userId);
@@ -206,47 +194,161 @@ export function ProfileTabs({
 
     return (
         <div className="aged-paper rounded-lg border border-constitution-gold/20">
+            {/* Category Buttons */}
+            <div className="flex flex-wrap gap-3 p-6 border-b border-constitution-gold/20">
+                <button
+                    onClick={() => setActiveTab('posts')}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
+                        activeTab === 'posts'
+                            ? 'bg-constitution-gold text-justice-black'
+                            : 'bg-justice-black/40 text-ink-gray/70 hover:text-constitution-gold border border-constitution-gold/20'
+                    }`}
+                >
+                    <FileText className="w-4 h-4" />
+                    <span>Posts</span>
+                    <span className={`px-2 py-0.5 text-xs rounded-full ${
+                        activeTab === 'posts'
+                            ? 'bg-justice-black/20 text-justice-black'
+                            : 'bg-constitution-gold/20 text-constitution-gold'
+                    }`}>
+                        {posts.length}
+                    </span>
+                </button>
 
-            {/* Tabs */}
-            <div className="flex border-b border-constitution-gold/20 overflow-x-auto">
-                {tabs.map(tab => (
-                    <button
-                        key={tab.id}
-                        onClick={() => setActiveTab(tab.id)}
-                        className={`flex items-center gap-2 px-4 py-4 font-medium whitespace-nowrap transition ${
-                            activeTab === tab.id
-                                ? 'text-constitution-gold border-b-2 border-constitution-gold -mb-[2px]'
-                                : 'text-ink-gray/60 hover:text-ink-gray'
-                        }`}
-                    >
-                        <tab.icon className="w-4 h-4" />
-                        <span className="hidden sm:inline">{tab.label}</span>
-                        <span className="px-2 py-0.5 text-xs rounded-full bg-constitution-gold/20 text-constitution-gold">
-                            {tab.count}
-                        </span>
-                    </button>
-                ))}
+                <button
+                    onClick={() => setActiveTab('discussions')}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
+                        activeTab === 'discussions'
+                            ? 'bg-constitution-gold text-justice-black'
+                            : 'bg-justice-black/40 text-ink-gray/70 hover:text-constitution-gold border border-constitution-gold/20'
+                    }`}
+                >
+                    <MessageSquare className="w-4 h-4" />
+                    <span>Discussions</span>
+                    <span className={`px-2 py-0.5 text-xs rounded-full ${
+                        activeTab === 'discussions'
+                            ? 'bg-justice-black/20 text-justice-black'
+                            : 'bg-constitution-gold/20 text-constitution-gold'
+                    }`}>
+                        {discussions.length}
+                    </span>
+                </button>
+
+                <button
+                    onClick={() => setActiveTab('followers')}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
+                        activeTab === 'followers'
+                            ? 'bg-constitution-gold text-justice-black'
+                            : 'bg-justice-black/40 text-ink-gray/70 hover:text-constitution-gold border border-constitution-gold/20'
+                    }`}
+                >
+                    <Users className="w-4 h-4" />
+                    <span>Followers</span>
+                    <span className={`px-2 py-0.5 text-xs rounded-full ${
+                        activeTab === 'followers'
+                            ? 'bg-justice-black/20 text-justice-black'
+                            : 'bg-constitution-gold/20 text-constitution-gold'
+                    }`}>
+                        {followers.length}
+                    </span>
+                </button>
+
+                <button
+                    onClick={() => setActiveTab('following')}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
+                        activeTab === 'following'
+                            ? 'bg-constitution-gold text-justice-black'
+                            : 'bg-justice-black/40 text-ink-gray/70 hover:text-constitution-gold border border-constitution-gold/20'
+                    }`}
+                >
+                    <UserCheck className="w-4 h-4" />
+                    <span>Following</span>
+                    <span className={`px-2 py-0.5 text-xs rounded-full ${
+                        activeTab === 'following'
+                            ? 'bg-justice-black/20 text-justice-black'
+                            : 'bg-constitution-gold/20 text-constitution-gold'
+                    }`}>
+                        {following.length}
+                    </span>
+                </button>
 
                 {isOwnProfile && (
                     <>
-                        {activeTab === 'posts' && onCreatePost && (
-                            <button
-                                onClick={onCreatePost}
-                                className="ml-auto mr-4 my-2 px-4 py-2 bg-constitution-gold text-justice-black rounded-lg font-medium hover:bg-constitution-gold/90 flex items-center gap-2"
-                            >
-                                <Plus className="w-4 h-4" /> New Post
-                            </button>
-                        )}
+                        <button
+                            onClick={() => setActiveTab('bookmarks')}
+                            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
+                                activeTab === 'bookmarks'
+                                    ? 'bg-constitution-gold text-justice-black'
+                                    : 'bg-justice-black/40 text-ink-gray/70 hover:text-constitution-gold border border-constitution-gold/20'
+                            }`}
+                        >
+                            <Bookmark className="w-4 h-4" />
+                            <span>Bookmarks</span>
+                            <span className={`px-2 py-0.5 text-xs rounded-full ${
+                                activeTab === 'bookmarks'
+                                    ? 'bg-justice-black/20 text-justice-black'
+                                    : 'bg-constitution-gold/20 text-constitution-gold'
+                            }`}>
+                                {bookmarks.length}
+                            </span>
+                        </button>
 
-                        {activeTab === 'discussions' && onCreateDiscussion && (
-                            <button
-                                onClick={handleNewDiscussion}
-                                className="ml-auto mr-4 my-2 px-4 py-2 bg-constitution-gold text-justice-black rounded-lg font-medium hover:bg-constitution-gold/90 flex items-center gap-2"
-                            >
-                                <Plus className="w-4 h-4" /> New Discussion
-                            </button>
-                        )}
+                        <button
+                            onClick={() => setActiveTab('likedPosts')}
+                            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
+                                activeTab === 'likedPosts'
+                                    ? 'bg-constitution-gold text-justice-black'
+                                    : 'bg-justice-black/40 text-ink-gray/70 hover:text-constitution-gold border border-constitution-gold/20'
+                            }`}
+                        >
+                            <Heart className="w-4 h-4" />
+                            <span>Liked Posts</span>
+                            <span className={`px-2 py-0.5 text-xs rounded-full ${
+                                activeTab === 'likedPosts'
+                                    ? 'bg-justice-black/20 text-justice-black'
+                                    : 'bg-constitution-gold/20 text-constitution-gold'
+                            }`}>
+                                {likedPosts.length}
+                            </span>
+                        </button>
+
+                        <button
+                            onClick={() => setActiveTab('likedDiscussions')}
+                            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
+                                activeTab === 'likedDiscussions'
+                                    ? 'bg-constitution-gold text-justice-black'
+                                    : 'bg-justice-black/40 text-ink-gray/70 hover:text-constitution-gold border border-constitution-gold/20'
+                            }`}
+                        >
+                            <Heart className="w-4 h-4" />
+                            <span>Liked Discussions</span>
+                            <span className={`px-2 py-0.5 text-xs rounded-full ${
+                                activeTab === 'likedDiscussions'
+                                    ? 'bg-justice-black/20 text-justice-black'
+                                    : 'bg-constitution-gold/20 text-constitution-gold'
+                            }`}>
+                                {likedDiscussions.length}
+                            </span>
+                        </button>
                     </>
+                )}
+
+                {isOwnProfile && activeTab === 'posts' && onCreatePost && (
+                    <button
+                        onClick={onCreatePost}
+                        className="ml-auto flex items-center gap-2 px-4 py-2 bg-constitution-gold text-justice-black rounded-lg font-medium hover:bg-constitution-gold/90 transition-colors"
+                    >
+                        <Plus className="w-4 h-4" /> New Post
+                    </button>
+                )}
+
+                {isOwnProfile && activeTab === 'discussions' && onCreateDiscussion && (
+                    <button
+                        onClick={handleNewDiscussion}
+                        className="ml-auto flex items-center gap-2 px-4 py-2 bg-constitution-gold text-justice-black rounded-lg font-medium hover:bg-constitution-gold/90 transition-colors"
+                    >
+                        <Plus className="w-4 h-4" /> New Discussion
+                    </button>
                 )}
             </div>
 

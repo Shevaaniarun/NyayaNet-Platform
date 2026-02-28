@@ -215,11 +215,6 @@ export function DiscussionCard({ discussion, onClick, onFollow, onSave, onUpvote
               <span className="text-xs font-bold">{discussion.upvoteCount}</span>
               <span className="text-[10px] uppercase font-medium">Upvotes</span>
             </button>
-            <div className="flex items-center space-x-1.5 text-ink-gray/60">
-              <Eye className="w-4 h-4" />
-              <span className="text-xs font-bold">{discussion.viewCount}</span>
-              <span className="text-[10px] uppercase font-medium">Views</span>
-            </div>
           </div>
 
           {discussion.hasBestAnswer && (

@@ -12,6 +12,7 @@ import {
   Scale,
   Book,
   User,
+  BookOpen
 } from "lucide-react";
 
 interface NavItem {
@@ -46,11 +47,11 @@ export function Sidebar({
     { path: "/discussions", icon: MessageSquare, label: "Debates" },
 
     {
-      path: "/chat-with-us",
+      path: "/messages",
       icon: MessageCircle,
       label: "Chat",
     },
-    
+
     // Network & Community
     {
       path: "/network",
@@ -74,6 +75,9 @@ export function Sidebar({
 
     { path: "/profile", icon: User, label: "Profile" },
     { path: "/chatbot", icon: Brain, label: "NyayaNetGPT", badge: "AI" },
+    {
+      path: "/library", icon: BookOpen, label: "Law Library"
+    },
   ];
 
   const handleNavClick = (path: string) => {
@@ -117,16 +121,14 @@ export function Sidebar({
             <button
               key={item.path}
               onClick={() => handleNavClick(item.path)}
-              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all relative overflow-hidden group ${
-                isActive
+              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all relative overflow-hidden group ${isActive
                   ? "bg-constitution-gold/10 text-judge-ivory border-l-2 border-constitution-gold"
                   : "text-constitution-gold/70 hover:bg-constitution-gold/5 hover:text-judge-ivory"
-              }`}
+                }`}
             >
               <Icon
-                className={`w-5 h-5 flex-shrink-0 ${
-                  isActive ? "text-constitution-gold" : ""
-                }`}
+                className={`w-5 h-5 flex-shrink-0 ${isActive ? "text-constitution-gold" : ""
+                  }`}
               />
 
               <span className="font-medium tracking-wide flex-1 text-left">
@@ -136,11 +138,10 @@ export function Sidebar({
               {/* Badge */}
               {item.badge && (
                 <span
-                  className={`px-2 py-0.5 rounded-full font-bold text-xs ${
-                    item.badgeType === "count"
+                  className={`px-2 py-0.5 rounded-full font-bold text-xs ${item.badgeType === "count"
                       ? "bg-amber-700 text-white"
                       : "bg-constitution-gold text-justice-black"
-                  }`}
+                    }`}
                 >
                   {item.badge}
                 </span>
@@ -176,24 +177,24 @@ export function Sidebar({
     </aside>
   );
 }
- 
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    /*{ path: "/cases", icon: Briefcase, label: "Docket", badge: "5", symbol: "📁" },*/
-    /*{
-      path: "/ai",
-      icon: Brain,
-      label: "Legal AI",
-      badge: "New",
-      badgeType: "new",
-      symbol: "🧠",
-    },*/
+
+
+
+
+
+
+
+
+
+
+
+
+/*{ path: "/cases", icon: Briefcase, label: "Docket", badge: "5", symbol: "📁" },*/
+/*{
+  path: "/ai",
+  icon: Brain,
+  label: "Legal AI",
+  badge: "New",
+  badgeType: "new",
+  symbol: "🧠",
+},*/

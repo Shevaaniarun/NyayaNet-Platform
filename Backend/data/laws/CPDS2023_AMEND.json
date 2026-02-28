@@ -1,0 +1,66 @@
+[
+  {
+    "rule_id": "CPDS2023_AMEND",
+    "rule_set_name": "Consumer Protection (Direct Selling) (Amendment) Rules, 2023",
+    "rule_type": "Rule",
+    "chapter_number": null,
+    "chapter_name": null,
+    "rule_number": "Amendment Rules",
+    "rule_title": "Consumer Protection (Direct Selling) (Amendment) Rules, 2023",
+    "rule_text": "1. (1) These rules may be called the Consumer Protection (Direct Selling) (Amendment) Rules, 2023. (2) They shall come into force on the date of their publication in the Official Gazette. (2) In the Consumer Protection (Direct Selling) Rules, 2021, in rule 3, in sub-rule(1),- (i) in clause (d), for the words \"through direct sellers\", the words \"directly through a network of sellers\" shall be substituted; (ii) after clause(g), the following clause shall be inserted, namely :- '(ga) \"network of sellers\" means a network of direct sellers formed by a direct selling entity to sell goods or services for the purpose of receiving consideration solely from such sale;'.",
+    "sub_rules": [
+      {
+        "sub_rule_id": "CPDS2023_AMEND_1",
+        "text": "(1) These rules may be called the Consumer Protection (Direct Selling) (Amendment) Rules, 2023."
+      },
+      {
+        "sub_rule_id": "CPDS2023_AMEND_2",
+        "text": "(2) They shall come into force on the date of their publication in the Official Gazette."
+      },
+      {
+        "sub_rule_id": "CPDS2023_AMEND_3",
+        "text": "(2) In the Consumer Protection (Direct Selling) Rules, 2021, in rule 3, in sub-rule(1),- (i) in clause (d), for the words \"through direct sellers\", the words \"directly through a network of sellers\" shall be substituted; (ii) after clause(g), the following clause shall be inserted, namely :- '(ga) \"network of sellers\" means a network of direct sellers formed by a direct selling entity to sell goods or services for the purpose of receiving consideration solely from such sale;'."
+      }
+    ],
+    "tables": [],
+    "schedules": [],
+    "scope_of_application": ["Amends Consumer Protection (Direct Selling) Rules, 2021"],
+    "related_keywords": ["amendment", "direct selling", "network of sellers", "definition change", "2023 amendment"],
+    "aliases": ["Direct Selling Amendment Rules 2023"],
+    "cross_references": {
+      "parent_act_sections": ["CPA2019_Sec94", "CPA2019_Sec101"],
+      "related_rules": ["CPDS2021_R3"],
+      "related_acts": ["Consumer Protection Act, 2019"],
+      "related_schedules": []
+    },
+    "amendments": [
+      {
+        "rule_name": "Consumer Protection (Direct Selling) Rules, 2021",
+        "rule_year": "2021",
+        "rule_section": "Rule 3",
+        "summary": "Amended definition of direct selling entity and added definition of 'network of sellers'"
+      }
+    ],
+    "importance_level": "medium",
+    "citation_format": "Consumer Protection (Direct Selling) (Amendment) Rules, 2023",
+    "citation_count": 0,
+    "metadata": {
+      "token_length": 125,
+      "source_url": "",
+      "source_type": "official_pdf",
+      "last_updated": "2023-06-21"
+    },
+    "embedding_text": "Consumer Protection (Direct Selling) (Amendment) Rules, 2023 - Amends Rule 3 of 2021 Rules by substituting 'through direct sellers' with 'directly through a network of sellers' and adds definition of 'network of sellers' as network formed for selling goods/services solely for sale consideration.",
+    "vector_info": {
+      "embedding_model": "",
+      "embedding_dim": 768,
+      "vector_id": null
+    },
+    "processing_flags": {
+      "cleaned": true,
+      "extracted_tables": false,
+      "embedded": false,
+      "indexed": false
+    }
+  }
+]

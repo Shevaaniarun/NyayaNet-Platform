@@ -1,0 +1,306 @@
+[
+  {
+    "rule_id": "CPDS2021_R1",
+    "rule_set_name": "Consumer Protection (Direct Selling) Rules, 2021",
+    "rule_type": "Rule",
+    "chapter_number": null,
+    "chapter_name": null,
+    "rule_number": "1",
+    "rule_title": "Short title and commencement",
+    "rule_text": "1. Short title and commencement. - (1) These rules may be called the Consumer Protection (Direct Selling) Rules, 2021. (2) They shall come into force on the date of their publication in the Official Gazette.",
+    "sub_rules": [
+      {
+        "sub_rule_id": "CPDS2021_R1_1",
+        "text": "(1) These rules may be called the Consumer Protection (Direct Selling) Rules, 2021."
+      },
+      {
+        "sub_rule_id": "CPDS2021_R1_2",
+        "text": "(2) They shall come into force on the date of their publication in the Official Gazette."
+      }
+    ],
+    "tables": [],
+    "schedules": [],
+    "scope_of_application": ["Applies to direct selling businesses and entities"],
+    "related_keywords": ["short title", "commencement", "direct selling", "official gazette"],
+    "aliases": ["Direct Selling Rules 2021"],
+    "cross_references": {
+      "parent_act_sections": ["CPA2019_Sec94", "CPA2019_Sec101"],
+      "related_rules": [],
+      "related_acts": ["Consumer Protection Act, 2019"],
+      "related_schedules": []
+    },
+    "amendments": [],
+    "importance_level": "medium",
+    "citation_format": "Consumer Protection (Direct Selling) Rules, 2021, Rule 1",
+    "citation_count": 0,
+    "metadata": {
+      "token_length": 45,
+      "source_url": "",
+      "source_type": "official_pdf",
+      "last_updated": "2021-12-28"
+    },
+    "embedding_text": "Rule 1: Short title and commencement - These rules are called Consumer Protection (Direct Selling) Rules, 2021 and come into force on date of publication in Official Gazette.",
+    "vector_info": {
+      "embedding_model": "",
+      "embedding_dim": 768,
+      "vector_id": null
+    },
+    "processing_flags": {
+      "cleaned": true,
+      "extracted_tables": false,
+      "embedded": false,
+      "indexed": false
+    }
+  },
+  {
+    "rule_id": "CPDS2021_R2",
+    "rule_set_name": "Consumer Protection (Direct Selling) Rules, 2021",
+    "rule_type": "Rule",
+    "chapter_number": null,
+    "chapter_name": null,
+    "rule_number": "2",
+    "rule_title": "Application",
+    "rule_text": "2. Application. - (1) Save as otherwise expressly provided, these rules shall apply to (a) all goods and services bought or sold through direct selling; (b) all models of direct selling; (c) all direct selling entities offering goods and services to consumers in India; (d) all forms of unfair trade practices across all models of direct selling: Provided that existing direct selling entities shall comply with the provisions of these rules within ninety days from the date of publication of these rules in the Official Gazette; (2) Notwithstanding anything contained in sub-rule (1), these rules shall also apply to a direct selling entity which is not established in India, but offers goods or services to consumers in India.",
+    "sub_rules": [
+      {
+        "sub_rule_id": "CPDS2021_R2_1",
+        "text": "(1) Save as otherwise expressly provided, these rules shall apply to (a) all goods and services bought or sold through direct selling; (b) all models of direct selling; (c) all direct selling entities offering goods and services to consumers in India; (d) all forms of unfair trade practices across all models of direct selling: Provided that existing direct selling entities shall comply with the provisions of these rules within ninety days from the date of publication of these rules in the Official Gazette;"
+      },
+      {
+        "sub_rule_id": "CPDS2021_R2_2",
+        "text": "(2) Notwithstanding anything contained in sub-rule (1), these rules shall also apply to a direct selling entity which is not established in India, but offers goods or services to consumers in India."
+      }
+    ],
+    "tables": [],
+    "schedules": [],
+    "scope_of_application": [
+      "Applies to all direct selling goods and services in India",
+      "Applies to all direct selling models and entities",
+      "Applies to foreign direct selling entities serving Indian consumers"
+    ],
+    "related_keywords": ["application", "direct selling", "unfair trade practices", "foreign entities", "compliance period"],
+    "aliases": [],
+    "cross_references": {
+      "parent_act_sections": ["CPA2019_Sec2"],
+      "related_rules": [],
+      "related_acts": ["Consumer Protection Act, 2019"],
+      "related_schedules": []
+    },
+    "amendments": [],
+    "importance_level": "high",
+    "citation_format": "Consumer Protection (Direct Selling) Rules, 2021, Rule 2",
+    "citation_count": 0,
+    "metadata": {
+      "token_length": 125,
+      "source_url": "",
+      "source_type": "official_pdf",
+      "last_updated": "2021-12-28"
+    },
+    "embedding_text": "Rule 2: Application - Applies to all direct selling goods/services, models, entities in India, including foreign entities serving Indian consumers. Existing entities have 90 days compliance period.",
+    "vector_info": {
+      "embedding_model": "",
+      "embedding_dim": 768,
+      "vector_id": null
+    },
+    "processing_flags": {
+      "cleaned": true,
+      "extracted_tables": false,
+      "embedded": false,
+      "indexed": false
+    }
+  },
+  {
+    "rule_id": "CPDS2021_R3",
+    "rule_set_name": "Consumer Protection (Direct Selling) Rules, 2021",
+    "rule_type": "Rule",
+    "chapter_number": null,
+    "chapter_name": null,
+    "rule_number": "3",
+    "rule_title": "Definitions",
+    "rule_text": "3. Definitions. - (1) In these rules, unless the context otherwise requires,- (a) \"Act\" means the Consumer Protection Act, 2019 (35 of 2019); (b) \"cooling-off period\" means a period of time given to a participant to cancel the agreement he has entered into for participating in the direct selling business without resulting in any breach of contract or levy of penalty; (c) \"direct seller\" means a person authorized by a direct selling entity through a legally enforceable written contract to undertake direct selling business on principal to principal basis; (d) \"direct selling entity\" means the principal entity which sells or offers to sell goods or services through direct sellers, but does not include an entity which is engaged in a Pyramid Scheme or money circulation scheme; (f) \"money circulation scheme\" means the schemes defined in clause (c) of section 2 of the Prize Chits and Money Circulation Schemes (Banning) Act, 1978 (43 of 1978); (g) \"mis-selling\" means selling a product or service by misrepresenting in order to successfully complete a sale and includes providing consumers with misleading information about a product or service or omitting key information about a product or providing information that makes the product appear to be something it is not; (h) \"prospect\" means a person to whom an offer or a proposal is made by a direct seller to join a direct selling entity; (i) \"Pyramid Scheme\" means a multi layered network of subscribers to a scheme formed by subscribers enrolling one or more subscribers in order to receive any benefit, directly or indirectly, as a result of enrolment or action or performance of additional subscribers to the scheme, in which the subscribers enrolling further subscribers occupy a higher position and the enrolled subscribers a lower position, resulting in a multi-layered network of subscribers with successive enrolments: (j) \"saleable\", in relation to goods or services, means unused and marketable goods or services which have not expired, and which are not seasonal, discontinued or used for special promotion; (k) \"sensitive personal data\" means the sensitive data or information as specified from time to time under section 43A of the Information Technology Act, 2000 (21 of 2000); (I) \"State\" includes a Union territory; (2) Words and expressions used herein and not defined, but defined in the Act shall have the meanings respectively assigned to them in the Act.",
+    "sub_rules": [
+      {
+        "sub_rule_id": "CPDS2021_R3_1",
+        "text": "(1) In these rules, unless the context otherwise requires,-"
+      },
+      {
+        "sub_rule_id": "CPDS2021_R3_1a",
+        "text": "(a) \"Act\" means the Consumer Protection Act, 2019 (35 of 2019);"
+      },
+      {
+        "sub_rule_id": "CPDS2021_R3_1b",
+        "text": "(b) \"cooling-off period\" means a period of time given to a participant to cancel the agreement he has entered into for participating in the direct selling business without resulting in any breach of contract or levy of penalty;"
+      },
+      {
+        "sub_rule_id": "CPDS2021_R3_1c",
+        "text": "(c) \"direct seller\" means a person authorized by a direct selling entity through a legally enforceable written contract to undertake direct selling business on principal to principal basis;"
+      },
+      {
+        "sub_rule_id": "CPDS2021_R3_1d",
+        "text": "(d) \"direct selling entity\" means the principal entity which sells or offers to sell goods or services through direct sellers, but does not include an entity which is engaged in a Pyramid Scheme or money circulation scheme;"
+      },
+      {
+        "sub_rule_id": "CPDS2021_R3_1f",
+        "text": "(f) \"money circulation scheme\" means the schemes defined in clause (c) of section 2 of the Prize Chits and Money Circulation Schemes (Banning) Act, 1978 (43 of 1978);"
+      },
+      {
+        "sub_rule_id": "CPDS2021_R3_1g",
+        "text": "(g) \"mis-selling\" means selling a product or service by misrepresenting in order to successfully complete a sale and includes providing consumers with misleading information about a product or service or omitting key information about a product or providing information that makes the product appear to be something it is not;"
+      },
+      {
+        "sub_rule_id": "CPDS2021_R3_1h",
+        "text": "(h) \"prospect\" means a person to whom an offer or a proposal is made by a direct seller to join a direct selling entity;"
+      },
+      {
+        "sub_rule_id": "CPDS2021_R3_1i",
+        "text": "(i) \"Pyramid Scheme\" means a multi layered network of subscribers to a scheme formed by subscribers enrolling one or more subscribers in order to receive any benefit, directly or indirectly, as a result of enrolment or action or performance of additional subscribers to the scheme, in which the subscribers enrolling further subscribers occupy a higher position and the enrolled subscribers a lower position, resulting in a multi-layered network of subscribers with successive enrolments:"
+      },
+      {
+        "sub_rule_id": "CPDS2021_R3_1j",
+        "text": "(j) \"saleable\", in relation to goods or services, means unused and marketable goods or services which have not expired, and which are not seasonal, discontinued or used for special promotion;"
+      },
+      {
+        "sub_rule_id": "CPDS2021_R3_1k",
+        "text": "(k) \"sensitive personal data\" means the sensitive data or information as specified from time to time under section 43A of the Information Technology Act, 2000 (21 of 2000);"
+      },
+      {
+        "sub_rule_id": "CPDS2021_R3_1l",
+        "text": "(I) \"State\" includes a Union territory;"
+      },
+      {
+        "sub_rule_id": "CPDS2021_R3_2",
+        "text": "(2) Words and expressions used herein and not defined, but defined in the Act shall have the meanings respectively assigned to them in the Act."
+      }
+    ],
+    "tables": [],
+    "schedules": [],
+    "scope_of_application": ["Defines key terms for direct selling regulations"],
+    "related_keywords": ["definitions", "cooling-off period", "direct seller", "direct selling entity", "pyramid scheme", "money circulation", "mis-selling", "sensitive personal data"],
+    "aliases": [],
+    "cross_references": {
+      "parent_act_sections": ["CPA2019_Sec2"],
+      "related_rules": [],
+      "related_acts": ["Consumer Protection Act, 2019", "Prize Chits and Money Circulation Schemes (Banning) Act, 1978", "Information Technology Act, 2000"],
+      "related_schedules": []
+    },
+    "amendments": [],
+    "importance_level": "high",
+    "citation_format": "Consumer Protection (Direct Selling) Rules, 2021, Rule 3",
+    "citation_count": 0,
+    "metadata": {
+      "token_length": 485,
+      "source_url": "",
+      "source_type": "official_pdf",
+      "last_updated": "2021-12-28"
+    },
+    "embedding_text": "Rule 3: Definitions - Defines key terms including Act, cooling-off period, direct seller, direct selling entity, pyramid scheme, money circulation scheme, mis-selling, prospect, saleable goods, sensitive personal data, and State.",
+    "vector_info": {
+      "embedding_model": "",
+      "embedding_dim": 768,
+      "vector_id": null
+    },
+    "processing_flags": {
+      "cleaned": true,
+      "extracted_tables": false,
+      "embedded": false,
+      "indexed": false
+    }
+  },
+  {
+    "rule_id": "CPDS2021_R10",
+    "rule_set_name": "Consumer Protection (Direct Selling) Rules, 2021",
+    "rule_type": "Rule",
+    "chapter_number": null,
+    "chapter_name": null,
+    "rule_number": "10",
+    "rule_title": "Prohibition of Pyramid Scheme and money circulation scheme",
+    "rule_text": "10. Prohibition of Pyramid Scheme and money circulation scheme.-No direct selling entity or direct seller shall- (a) promote a Pyramid Scheme or enroll any person to such scheme or participate in such arrangement in any manner whatsoever in the garb of doing direct selling business; (b) participate in money circulation scheme in the garb of doing direct selling business.",
+    "sub_rules": [
+      {
+        "sub_rule_id": "CPDS2021_R10_a",
+        "text": "(a) promote a Pyramid Scheme or enroll any person to such scheme or participate in such arrangement in any manner whatsoever in the garb of doing direct selling business;"
+      },
+      {
+        "sub_rule_id": "CPDS2021_R10_b",
+        "text": "(b) participate in money circulation scheme in the garb of doing direct selling business."
+      }
+    ],
+    "tables": [],
+    "schedules": [],
+    "scope_of_application": ["Prohibits pyramid and money circulation schemes in direct selling"],
+    "related_keywords": ["pyramid scheme prohibition", "money circulation scheme", "fraud prevention", "direct selling restrictions"],
+    "aliases": [],
+    "cross_references": {
+      "parent_act_sections": ["CPA2019_Sec2_47"],
+      "related_rules": ["CPDS2021_R3"],
+      "related_acts": ["Consumer Protection Act, 2019", "Prize Chits and Money Circulation Schemes (Banning) Act, 1978"],
+      "related_schedules": []
+    },
+    "amendments": [],
+    "importance_level": "high",
+    "citation_format": "Consumer Protection (Direct Selling) Rules, 2021, Rule 10",
+    "citation_count": 0,
+    "metadata": {
+      "token_length": 65,
+      "source_url": "",
+      "source_type": "official_pdf",
+      "last_updated": "2021-12-28"
+    },
+    "embedding_text": "Rule 10: Prohibition of Pyramid Scheme and money circulation scheme - Direct selling entities and sellers prohibited from promoting pyramid schemes or participating in money circulation schemes under guise of direct selling.",
+    "vector_info": {
+      "embedding_model": "",
+      "embedding_dim": 768,
+      "vector_id": null
+    },
+    "processing_flags": {
+      "cleaned": true,
+      "extracted_tables": false,
+      "embedded": false,
+      "indexed": false
+    }
+  },
+  {
+    "rule_id": "CPDS2021_R13",
+    "rule_set_name": "Consumer Protection (Direct Selling) Rules, 2021",
+    "rule_type": "Rule",
+    "chapter_number": null,
+    "chapter_name": null,
+    "rule_number": "13",
+    "rule_title": "Contravention of rules",
+    "rule_text": "13. Contravention of rules.- The provisions of the Act shall apply for any contravention of these rules.",
+    "sub_rules": [],
+    "tables": [],
+    "schedules": [],
+    "scope_of_application": ["Applies Consumer Protection Act provisions to rule violations"],
+    "related_keywords": ["contravention", "penalties", "enforcement", "compliance"],
+    "aliases": [],
+    "cross_references": {
+      "parent_act_sections": ["CPA2019_Sec88", "CPA2019_Sec89", "CPA2019_Sec90", "CPA2019_Sec91"],
+      "related_rules": [],
+      "related_acts": ["Consumer Protection Act, 2019"],
+      "related_schedules": []
+    },
+    "amendments": [],
+    "importance_level": "medium",
+    "citation_format": "Consumer Protection (Direct Selling) Rules, 2021, Rule 13",
+    "citation_count": 0,
+    "metadata": {
+      "token_length": 15,
+      "source_url": "",
+      "source_type": "official_pdf",
+      "last_updated": "2021-12-28"
+    },
+    "embedding_text": "Rule 13: Contravention of rules - Provisions of Consumer Protection Act, 2019 apply to any contravention of these Direct Selling Rules.",
+    "vector_info": {
+      "embedding_model": "",
+      "embedding_dim": 768,
+      "vector_id": null
+    },
+    "processing_flags": {
+      "cleaned": true,
+      "extracted_tables": false,
+      "embedded": false,
+      "indexed": false
+    }
+  }
+]

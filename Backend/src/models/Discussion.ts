@@ -90,50 +90,41 @@ export class DiscussionModel {
     };
   }
 
-  // Increment view count (unique per user/IP)
-  static async incrementViewCount(id: string, userId?: string, ipAddress?: string): Promise<void> {
-    const client = await pool.connect();
-    try {
-      await client.query('BEGIN');
+  static async incrementViewCount(id: string, userId?: string, ip?: string) {
+    let check;
 
-      let insertResult;
-      if (userId) {
-        // Track by userId
-        insertResult = await client.query(
-          'INSERT INTO discussion_views (discussion_id, user_id) VALUES ($1, $2) ON CONFLICT (discussion_id, user_id) DO NOTHING RETURNING id',
-          [id, userId]
-        );
-      } else if (ipAddress) {
-        // Track by IP for guests
-        insertResult = await client.query(
-          'INSERT INTO discussion_views (discussion_id, ip_address) VALUES ($1, $2) ON CONFLICT (discussion_id, ip_address) WHERE user_id IS NULL DO NOTHING RETURNING id',
-          [id, ipAddress]
-        );
-      } else {
-        // Unconditional increment if no tracking info (fallback)
-        await client.query(
-          'UPDATE discussions SET view_count = view_count + 1 WHERE id = $1',
-          [id]
-        );
-        await client.query('COMMIT');
-        return;
-      }
-
-      // If a new record was inserted, increment the main count
-      if (insertResult.rows.length > 0) {
-        await client.query(
-          'UPDATE discussions SET view_count = view_count + 1 WHERE id = $1',
-          [id]
-        );
-      }
-
-      await client.query('COMMIT');
-    } catch (error) {
-      await client.query('ROLLBACK');
-      console.error('Error incrementing view count:', error);
-    } finally {
-      client.release();
+    if (userId) {
+      // Logged-in user → check only by userId
+      check = await pool.query(
+        `SELECT 1 FROM discussion_views
+        WHERE discussion_id = $1 AND user_id = $2`,
+        [id, userId]
+      );
+    } else if (ip) {
+      // Guest user → check only by IP
+      check = await pool.query(
+        `SELECT 1 FROM discussion_views
+        WHERE discussion_id = $1 AND ip_address = $2`,
+        [id, ip]
+      );
+    } else {
+      return;
     }
+
+    if (check.rows.length > 0) return;
+
+    await pool.query(
+      `INSERT INTO discussion_views (discussion_id, user_id, ip_address)
+      VALUES ($1,$2,$3)`,
+      [id, userId || null, ip || null]
+    );
+
+    await pool.query(
+      `UPDATE discussions
+      SET view_count = view_count + 1
+      WHERE id=$1`,
+      [id]
+    );
   }
 
   // Get discussions with filters

@@ -35,7 +35,6 @@ export function DiscussionFilters({ onFilterChange, availableCategories }: Discu
   const sortOptions = [
     { value: 'newest', label: 'Newest', icon: Clock },
     { value: 'active', label: 'Most Active', icon: TrendingUp },
-    { value: 'popular', label: 'Most Popular', icon: Users },
     { value: 'upvoted', label: 'Most Upvoted', icon: Star },
   ];
 

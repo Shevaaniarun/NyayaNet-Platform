@@ -1,0 +1,248 @@
+[
+  {
+    "rule_id": "CPJC2021_R1",
+    "rule_set_name": "Consumer Protection (Jurisdiction of the District Commission, the State Commission and the National Commission) Rules, 2021",
+    "rule_type": "Rule",
+    "chapter_number": null,
+    "chapter_name": null,
+    "rule_number": "1",
+    "rule_title": "Short title and commencement",
+    "rule_text": "1. Short title and commencement.-(1) These rules may be called the Consumer Protection (Jurisdiction of the District Commission, the State Commission and the National Commission) Rules, 2021. (2) They shall come into force on the date of their publication in the official gazette.",
+    "sub_rules": [
+      {
+        "sub_rule_id": "CPJC2021_R1_1",
+        "text": "(1) These rules may be called the Consumer Protection (Jurisdiction of the District Commission, the State Commission and the National Commission) Rules, 2021."
+      },
+      {
+        "sub_rule_id": "CPJC2021_R1_2",
+        "text": "(2) They shall come into force on the date of their publication in the official gazette."
+      }
+    ],
+    "tables": [],
+    "schedules": [],
+    "scope_of_application": ["Defines jurisdiction limits for consumer commissions"],
+    "related_keywords": ["short title", "commencement", "jurisdiction rules", "official gazette"],
+    "aliases": ["Jurisdiction Rules 2021"],
+    "cross_references": {
+      "parent_act_sections": ["CPA2019_Sec34", "CPA2019_Sec47", "CPA2019_Sec58", "CPA2019_Sec101"],
+      "related_rules": [],
+      "related_acts": ["Consumer Protection Act, 2019"],
+      "related_schedules": []
+    },
+    "amendments": [],
+    "importance_level": "high",
+    "citation_format": "Consumer Protection (Jurisdiction of the District Commission, the State Commission and the National Commission) Rules, 2021, Rule 1",
+    "citation_count": 0,
+    "metadata": {
+      "token_length": 65,
+      "source_url": "",
+      "source_type": "official_pdf",
+      "last_updated": "2021-12-30"
+    },
+    "embedding_text": "Rule 1: Short title and commencement - These rules are called Consumer Protection (Jurisdiction of the District Commission, the State Commission and the National Commission) Rules, 2021 and come into force on date of publication in official gazette.",
+    "vector_info": {
+      "embedding_model": "",
+      "embedding_dim": 768,
+      "vector_id": null
+    },
+    "processing_flags": {
+      "cleaned": true,
+      "extracted_tables": false,
+      "embedded": false,
+      "indexed": false
+    }
+  },
+  {
+    "rule_id": "CPJC2021_R2",
+    "rule_set_name": "Consumer Protection (Jurisdiction of the District Commission, the State Commission and the National Commission) Rules, 2021",
+    "rule_type": "Rule",
+    "chapter_number": null,
+    "chapter_name": null,
+    "rule_number": "2",
+    "rule_title": "Definitions",
+    "rule_text": "2. Definitions.-(1) In these rules, unless the context otherwise requires.- (a) \"Act\" means the Consumer Protection Act, 2019 (35 of2019); (b) \"District Commission, State Commission and National Commission\" shall have the meaning assigned to them in the Act; (2) The words and expressions used herein, but not defined, and defined in the Act, shall have the same meaning assigned to them in the Act.",
+    "sub_rules": [
+      {
+        "sub_rule_id": "CPJC2021_R2_1",
+        "text": "(1) In these rules, unless the context otherwise requires.-"
+      },
+      {
+        "sub_rule_id": "CPJC2021_R2_1a",
+        "text": "(a) \"Act\" means the Consumer Protection Act, 2019 (35 of2019);"
+      },
+      {
+        "sub_rule_id": "CPJC2021_R2_1b",
+        "text": "(b) \"District Commission, State Commission and National Commission\" shall have the meaning assigned to them in the Act;"
+      },
+      {
+        "sub_rule_id": "CPJC2021_R2_2",
+        "text": "(2) The words and expressions used herein, but not defined, and defined in the Act, shall have the same meaning assigned to them in the Act."
+      }
+    ],
+    "tables": [],
+    "schedules": [],
+    "scope_of_application": ["Defines key terms for jurisdiction rules"],
+    "related_keywords": ["definitions", "act", "district commission", "state commission", "national commission"],
+    "aliases": [],
+    "cross_references": {
+      "parent_act_sections": ["CPA2019_Sec2"],
+      "related_rules": [],
+      "related_acts": ["Consumer Protection Act, 2019"],
+      "related_schedules": []
+    },
+    "amendments": [],
+    "importance_level": "medium",
+    "citation_format": "Consumer Protection (Jurisdiction of the District Commission, the State Commission and the National Commission) Rules, 2021, Rule 2",
+    "citation_count": 0,
+    "metadata": {
+      "token_length": 85,
+      "source_url": "",
+      "source_type": "official_pdf",
+      "last_updated": "2021-12-30"
+    },
+    "embedding_text": "Rule 2: Definitions - Defines Act as Consumer Protection Act, 2019 and references definitions of District Commission, State Commission and National Commission from the Act.",
+    "vector_info": {
+      "embedding_model": "",
+      "embedding_dim": 768,
+      "vector_id": null
+    },
+    "processing_flags": {
+      "cleaned": true,
+      "extracted_tables": false,
+      "embedded": false,
+      "indexed": false
+    }
+  },
+  {
+    "rule_id": "CPJC2021_R3",
+    "rule_set_name": "Consumer Protection (Jurisdiction of the District Commission, the State Commission and the National Commission) Rules, 2021",
+    "rule_type": "Rule",
+    "chapter_number": null,
+    "chapter_name": null,
+    "rule_number": "3",
+    "rule_title": "Jurisdiction of District Commission",
+    "rule_text": "3. Jurisdiction of District Commission.-Subject to the other provisions of the Act and in pursuance of proviso to sub-section (1) of section 34 of the Act, the District Commission shall have jurisdiction to entertain complaints where the value of the goods or services paid as consideration does not exceed fifty lakh rupees.",
+    "sub_rules": [],
+    "tables": [],
+    "schedules": [],
+    "scope_of_application": ["Defines monetary jurisdiction for District Commissions"],
+    "related_keywords": ["district commission jurisdiction", "monetary limits", "complaint value", "fifty lakh rupees"],
+    "aliases": [],
+    "cross_references": {
+      "parent_act_sections": ["CPA2019_Sec34"],
+      "related_rules": ["CPJC2021_R4", "CPJC2021_R5"],
+      "related_acts": ["Consumer Protection Act, 2019"],
+      "related_schedules": []
+    },
+    "amendments": [],
+    "importance_level": "high",
+    "citation_format": "Consumer Protection (Jurisdiction of the District Commission, the State Commission and the National Commission) Rules, 2021, Rule 3",
+    "citation_count": 0,
+    "metadata": {
+      "token_length": 45,
+      "source_url": "",
+      "source_type": "official_pdf",
+      "last_updated": "2021-12-30"
+    },
+    "embedding_text": "Rule 3: Jurisdiction of District Commission - District Commission has jurisdiction for complaints where value of goods/services does not exceed fifty lakh rupees.",
+    "vector_info": {
+      "embedding_model": "",
+      "embedding_dim": 768,
+      "vector_id": null
+    },
+    "processing_flags": {
+      "cleaned": true,
+      "extracted_tables": false,
+      "embedded": false,
+      "indexed": false
+    }
+  },
+  {
+    "rule_id": "CPJC2021_R4",
+    "rule_set_name": "Consumer Protection (Jurisdiction of the District Commission, the State Commission and the National Commission) Rules, 2021",
+    "rule_type": "Rule",
+    "chapter_number": null,
+    "chapter_name": null,
+    "rule_number": "4",
+    "rule_title": "Jurisdiction of State Commission",
+    "rule_text": "4. Jurisdiction of State Commission.-Subject to the other provisions of the Act and in pursuance of proviso to sub-clause (i) of clause (a) of sub-section (1) of section 47, the State Commission shall have jurisdiction to entertain complaints where the value of the goods or services paid as consideration exceeds fifty lakh but does not exceed two crore rupees.",
+    "sub_rules": [],
+    "tables": [],
+    "schedules": [],
+    "scope_of_application": ["Defines monetary jurisdiction for State Commissions"],
+    "related_keywords": ["state commission jurisdiction", "monetary limits", "complaint value", "fifty lakh to two crore"],
+    "aliases": [],
+    "cross_references": {
+      "parent_act_sections": ["CPA2019_Sec47"],
+      "related_rules": ["CPJC2021_R3", "CPJC2021_R5"],
+      "related_acts": ["Consumer Protection Act, 2019"],
+      "related_schedules": []
+    },
+    "amendments": [],
+    "importance_level": "high",
+    "citation_format": "Consumer Protection (Jurisdiction of the District Commission, the State Commission and the National Commission) Rules, 2021, Rule 4",
+    "citation_count": 0,
+    "metadata": {
+      "token_length": 55,
+      "source_url": "",
+      "source_type": "official_pdf",
+      "last_updated": "2021-12-30"
+    },
+    "embedding_text": "Rule 4: Jurisdiction of State Commission - State Commission has jurisdiction for complaints where value of goods/services exceeds fifty lakh rupees but does not exceed two crore rupees.",
+    "vector_info": {
+      "embedding_model": "",
+      "embedding_dim": 768,
+      "vector_id": null
+    },
+    "processing_flags": {
+      "cleaned": true,
+      "extracted_tables": false,
+      "embedded": false,
+      "indexed": false
+    }
+  },
+  {
+    "rule_id": "CPJC2021_R5",
+    "rule_set_name": "Consumer Protection (Jurisdiction of the District Commission, the State Commission and the National Commission) Rules, 2021",
+    "rule_type": "Rule",
+    "chapter_number": null,
+    "chapter_name": null,
+    "rule_number": "5",
+    "rule_title": "Jurisdiction of National Commission",
+    "rule_text": "5. Jurisdiction of National Commission.-Subject to the other provisions of the Act and in pursuance of proviso to sub-clause (i) of clause (a) of sub-section (1) of section 58, the National Commission shall have jurisdiction to entertain complaints where the value of the goods or services paid as consideration, exceeds two crore rupees.",
+    "sub_rules": [],
+    "tables": [],
+    "schedules": [],
+    "scope_of_application": ["Defines monetary jurisdiction for National Commission"],
+    "related_keywords": ["national commission jurisdiction", "monetary limits", "complaint value", "above two crore"],
+    "aliases": [],
+    "cross_references": {
+      "parent_act_sections": ["CPA2019_Sec58"],
+      "related_rules": ["CPJC2021_R3", "CPJC2021_R4"],
+      "related_acts": ["Consumer Protection Act, 2019"],
+      "related_schedules": []
+    },
+    "amendments": [],
+    "importance_level": "high",
+    "citation_format": "Consumer Protection (Jurisdiction of the District Commission, the State Commission and the National Commission) Rules, 2021, Rule 5",
+    "citation_count": 0,
+    "metadata": {
+      "token_length": 45,
+      "source_url": "",
+      "source_type": "official_pdf",
+      "last_updated": "2021-12-30"
+    },
+    "embedding_text": "Rule 5: Jurisdiction of National Commission - National Commission has jurisdiction for complaints where value of goods/services exceeds two crore rupees.",
+    "vector_info": {
+      "embedding_model": "",
+      "embedding_dim": 768,
+      "vector_id": null
+    },
+    "processing_flags": {
+      "cleaned": true,
+      "extracted_tables": false,
+      "embedded": false,
+      "indexed": false
+    }
+  }
+]

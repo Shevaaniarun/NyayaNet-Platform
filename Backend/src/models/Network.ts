@@ -303,7 +303,8 @@ export class NetworkModel {
         followingCount: row.following_count,
         isFollowingBack: row.is_following_back,
         isFollowedBy: true,
-        connectionType: row.is_following_back ? 'mutual' : 'follower'
+        connectionType: row.is_following_back ? 'mutual' : 'follower',
+        follow_status: row.is_following_back ? 'MUTUAL' : 'FOLLOWED_BY'
       }));
     } catch (error) {
       console.error('Error in getFollowers:', error);
@@ -345,7 +346,8 @@ export class NetworkModel {
       followerCount: row.follower_count,  // Added
       followingCount: row.following_count,  // Added
       isFollowedBy: row.is_followed_by,
-      connectionType: row.is_followed_by ? 'mutual' : 'following'
+      connectionType: row.is_followed_by ? 'mutual' : 'following',
+      follow_status: row.is_followed_by ? 'MUTUAL' : 'FOLLOWING'
     }));
   } catch (error) {
     console.error('Error in getFollowing:', error);
@@ -411,7 +413,8 @@ export class NetworkModel {
           followingCount: row.following_count,
           isFollowing: row.is_following,
           isFollower: row.is_follower,
-          hasPendingRequest: row.has_pending_request
+          hasPendingRequest: row.has_pending_request, 
+          followStatus: row.is_following ? "FOLLOWING" : row.has_pending_request ? "PENDING" : row.is_follower ? "FOLLOWED_BY" : "NONE"
         }))
       };
     } catch (error) {
