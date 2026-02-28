@@ -516,46 +516,46 @@ export const createPostCommentNotification = async (req: AuthRequest, res: Respo
   }
 };
 
-// export const createMessageReceivedNotification = async (req: AuthRequest, res: Response) => {
-//   try {
-//     const userId = req.user?.id;
+export const createMessageReceivedNotification = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
 
-//     if (!userId) {
-//       return res.status(401).json({
-//         success: false,
-//         message: 'User not authenticated'
-//       });
-//     }
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: 'User not authenticated'
+      });
+    }
 
-//     const { receiverId, senderId, senderName, conversationId, messagePreview, messageType } = req.body;
+    const { receiverId, senderId, senderName, conversationId, messagePreview, messageType } = req.body;
 
-//     if (!receiverId || !senderId || !senderName || !conversationId || !messagePreview) {
-//       return res.status(400).json({
-//         success: false,
-//         message: 'Missing required fields: receiverId, senderId, senderName, conversationId, messagePreview'
-//       });
-//     }
+    if (!receiverId || !senderId || !senderName || !conversationId || !messagePreview) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required fields: receiverId, senderId, senderName, conversationId, messagePreview'
+      });
+    }
 
-//     const notificationId = await NotificationModel.createMessageReceivedNotification(
-//       receiverId,
-//       senderId,
-//       senderName,
-//       conversationId,
-//       messagePreview,
-//       messageType || 'TEXT'
-//     );
+    const notificationId = await NotificationModel.createMessageReceivedNotification(
+      receiverId,
+      senderId,
+      senderName,
+      conversationId,
+      messagePreview,
+      messageType || 'TEXT'
+    );
 
-//     return res.status(201).json({
-//       success: true,
-//       message: 'Message received notification created',
-//       data: { notificationId }
-//     });
-//   } catch (error: any) {
-//     console.error('Create message received notification error:', error);
-//     return res.status(500).json({
-//       success: false,
-//       message: 'Failed to create message received notification',
-//       error: error.message
-//     });
-//   }
-// };
+    return res.status(201).json({
+      success: true,
+      message: 'Message received notification created',
+      data: { notificationId }
+    });
+  } catch (error: any) {
+    console.error('Create message received notification error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to create message received notification',
+      error: error.message
+    });
+  }
+};
