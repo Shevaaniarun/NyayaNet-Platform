@@ -513,12 +513,6 @@ export class NotificationModel {
       false,
     ];
 
-    console.log("📝 Creating discussion reply notification:", {
-      discussionOwnerId,
-      replierId,
-      discussionId,
-    });
-
     const result = await pool.query(query, values);
     return result.rows[0].id;
   }
@@ -578,13 +572,6 @@ export class NotificationModel {
       false,
     ];
 
-    console.log("📝 Creating discussion upvote notification:", {
-      contentOwnerId,
-      upvoterId,
-      discussionId,
-      isReply,
-    });
-
     const result = await pool.query(query, values);
     return result.rows[0].id;
   }
@@ -635,11 +622,6 @@ export class NotificationModel {
       false,
     ];
 
-    console.log("📝 Creating connection request notification:", {
-      receiverId,
-      requesterId,
-      requestId,
-    });
 
     const result = await pool.query(query, values);
     return result.rows[0].id;
@@ -707,70 +689,60 @@ export class NotificationModel {
     }
   }
 
-//   static async createMessageReceivedNotification(
-//     receiverId: string,
-//     senderId: string,
-//     senderName: string,
-//     conversationId: string,
-//     messagePreview: string,
-//     messageType: string = 'TEXT'
-//   ): Promise<string> {
-//     console.log('💬 createMessageReceivedNotification called with:', {
-//       receiverId,
-//       senderId,
-//       senderName,
-//       conversationId,
-//       messageType
-//     });
+  static async createMessageReceivedNotification(
+    receiverId: string,
+    senderId: string,
+    senderName: string,
+    conversationId: string,
+    messagePreview: string,
+    messageType: string = 'TEXT'
+  ): Promise<string> {
 
-//     if (receiverId === senderId) {
-//       console.log('⚠️ User messaged themselves, skipping notification');
-//       return '';
-//     }
+    if (receiverId === senderId) {
+      console.log('⚠️ User messaged themselves, skipping notification');
+      return '';
+    }
 
-//     const query = `
-//       INSERT INTO notifications (
-//         user_id,
-//         notification_type,
-//         title,
-//         message,
-//         source_type,
-//         source_id,
-//         data,
-//         is_read
-//       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-//       RETURNING id
-//     `;
+    const query = `
+      INSERT INTO notifications (
+        user_id,
+        notification_type,
+        title,
+        message,
+        source_type,
+        source_id,
+        data,
+        is_read
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      RETURNING id
+    `;
 
-//     const truncatedMessage =
-//       messagePreview.length > 100 ? messagePreview.substring(0, 100) + '...' : messagePreview;
+    const truncatedMessage =
+      messagePreview.length > 100 ? messagePreview.substring(0, 100) + '...' : messagePreview;
 
-//     const values = [
-//       receiverId,
-//       'MESSAGE_RECEIVED',
-//       'New Message',
-//       `${senderName} sent you a message`,
-//       'MESSAGE',
-//       conversationId,
-//       JSON.stringify({
-//         userId: senderId,
-//         userName: senderName,
-//         conversationId: conversationId,
-//         messagePreview: truncatedMessage,
-//         messageType: messageType,
-//       }),
-//       false,
-//     ];
+    const values = [
+      receiverId,
+      'MESSAGE_RECEIVED',
+      'New Message',
+      `${senderName} sent you a message`,
+      'MESSAGE',
+      conversationId,
+      JSON.stringify({
+        userId: senderId,
+        userName: senderName,
+        conversationId: conversationId,
+        messagePreview: truncatedMessage,
+        messageType: messageType,
+      }),
+      false,
+    ];
 
-//     console.log('💾 Inserting message notification with values:', values);
-
-//     try {
-//       const result = await pool.query(query, values);
-//       console.log('✅ Message notification inserted, ID:', result.rows[0].id);
-//       return result.rows[0].id;
-//     } catch (error) {
-//       console.error('❌ Database error inserting message notification:', error);
-//       throw error;
-//     }
-//   }
+    try {
+      const result = await pool.query(query, values);
+      return result.rows[0].id;
+    } catch (error) {
+      console.error('❌ Database error inserting message notification:', error);
+      throw error;
+    }
+  }
 }
