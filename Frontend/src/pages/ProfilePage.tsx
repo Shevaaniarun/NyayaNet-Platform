@@ -5,9 +5,10 @@ import { ProfileStats } from "../components/Profile/ProfileStats";
 import { CertificationCard } from "../components/CertificationCard";
 import { ProfileTabs } from "../components/Profile/ProfileTabs";
 import { JusticeLoader } from "../components/JusticeLoader";
-import { Search, Award, Plus, ArrowLeft, X, UserPlus, UserCheck, Clock } from "lucide-react";
+import { Search, Award, Plus, ArrowLeft, X, UserPlus, UserCheck, Clock, Upload, Calendar, Link as LinkIcon, MapPin, Briefcase, Globe, Linkedin, FileText, Tag } from "lucide-react";
 import * as profileApi from "../api/profileAPI";
 import * as networkApi from "../api/networkAPI";
+
 interface ProfilePageProps {
   userId?: string;
   currentUserId?: string;
@@ -628,7 +629,7 @@ export function ProfilePage({
         {/* Search Bar */}
         <div className="mb-6">
           <div className="relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-judge-ivory/50" />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-constitutional-gold/50" />
             <input
               type="text"
               placeholder="Search within your content..."
@@ -637,11 +638,11 @@ export function ProfilePage({
               onKeyDown={(e) =>
                 e.key === "Enter" ? handleSearch() : undefined
               }
-              className="w-full pl-12 pr-24 py-3 bg-aged-paper border border-constitution-gold/20 rounded-lg text-judge-ivory placeholder-judge-ivory/50 focus:outline-none focus:border-constitution-gold/50"
+              className="w-full pl-12 pr-24 py-3 bg-[#1e1b1a] border border-constitution-gold/20 rounded-lg text-stone-200 placeholder-stone-500 focus:outline-none focus:border-constitutional-gold/50 focus:ring-1 focus:ring-constitution-gold/20"
             />
             <button
               onClick={handleSearch}
-              className="absolute right-2 top-1/2 -translate-y-1/2 px-4 py-1.5 bg-constitution-gold text-justice-black rounded font-medium text-sm hover:bg-constitution-gold/90"
+              className="absolute right-2 top-1/2 -translate-y-1/2 px-4 py-1.5 bg-constitution-gold text-stone-900 rounded font-medium text-sm hover:bg-constitution-gold/90 transition-colors"
               type="button"
             >
               Search
@@ -665,28 +666,19 @@ export function ProfilePage({
           </div>
         )}
 
-        <div className="mt-6">
-          <ProfileStats
-            followerCount={profileStats.followers}
-            followingCount={profileStats.following}
-            postCount={profileStats.posts}
-            discussionCount={profileStats.discussions}
-          />
-        </div>
-
         {/* Certifications Section */}
         <div className="mt-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <Award className="w-5 h-5 text-constitution-gold" />
-              <h2 className="font-heading font-bold text-judge-ivory">
+              <Award className="w-5 h-5 text-constitutional-gold" />
+              <h2 className="font-heading font-bold text-stone-200">
                 Certifications & Qualifications
               </h2>
             </div>
             {isOwnProfile && (
               <button
                 onClick={() => setShowAddCertModal(true)}
-                className="flex items-center gap-1 px-3 py-1.5 bg-constitution-gold text-justice-black rounded-lg font-medium text-sm hover:bg-constitution-gold/90"
+                className="flex items-center gap-1 px-3 py-1.5 bg-constitution-gold text-stone-900 rounded-lg font-medium text-sm hover:bg-constitution-gold/90 transition-colors"
                 type="button"
               >
                 <Plus className="w-4 h-4" />
@@ -706,13 +698,13 @@ export function ProfilePage({
               ))}
             </div>
           ) : (
-            <div className="aged-paper rounded-lg p-8 text-center border border-constitution-gold/20">
-              <Award className="w-12 h-12 text-ink-gray/30 mx-auto mb-3" />
-              <p className="text-ink-gray/60">No certifications added yet</p>
+            <div className="bg-[#1e1b1a] rounded-lg p-8 text-center border border-constitution-gold/10">
+              <Award className="w-12 h-12 text-stone-600 mx-auto mb-3" />
+              <p className="text-stone-400">No certifications added yet</p>
               {isOwnProfile && (
                 <button
                   onClick={() => setShowAddCertModal(true)}
-                  className="mt-3 text-constitution-gold hover:underline text-sm"
+                  className="mt-3 text-constitutional-gold hover:text-amber-400 hover:underline text-sm transition-colors"
                   type="button"
                 >
                   Add your first certification
@@ -751,71 +743,84 @@ export function ProfilePage({
         </div>
       </div>
 
-      {/* Edit Profile Modal */}
+      {/* Edit Profile Modal - IMPROVED UI */}
       {showEditModal && (
-        <div className="fixed inset-0 bg-justice-black/80 flex items-center justify-center z-50 p-4">
-          <div className="bg-aged-paper rounded-lg border border-constitution-gold/20 shadow-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-[#1e1b1a] rounded-xl border border-constitution-gold/20 shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-[#1e1b1a] border-b border-constitution-gold/20 px-6 py-4 flex items-center justify-between">
+              <h2 className="font-heading font-bold text-xl text-stone-200">
+                Edit Profile
+              </h2>
+              <button
+                onClick={() => setShowEditModal(false)}
+                className="p-2 hover:bg-constitution-gold/90/10 rounded-lg transition-colors"
+                type="button"
+              >
+                <X className="w-5 h-5 text-stone-400" />
+              </button>
+            </div>
+
             <div className="p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="font-heading font-bold text-2xl text-judge-ivory">
-                  Edit Profile
-                </h2>
-                <button
-                  onClick={() => setShowEditModal(false)}
-                  className="p-2 hover:bg-constitution-gold/10 rounded"
-                  type="button"
-                >
-                  <X className="w-5 h-5 text-ink-gray" />
-                </button>
-              </div>
-
-              <div className="space-y-4">
+              <div className="space-y-6">
+                {/* Full Name */}
                 <div>
-                  <label className="block text-sm font-medium text-ink-gray mb-2">
-                    Full Name *
+                  <label className="block text-sm font-medium text-stone-300 mb-2">
+                    Full Name <span className="text-constitutional-gold">*</span>
                   </label>
-                  <input
-                    type="text"
-                    value={editForm.fullName || ""}
-                    onChange={(e) =>
-                      setEditForm({ ...editForm, fullName: e.target.value })
-                    }
-                    className="w-full px-4 py-2 bg-justice-black border border-constitution-gold/20 rounded-lg text-judge-ivory focus:outline-none focus:border-constitution-gold/50"
-                  />
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={editForm.fullName || ""}
+                      onChange={(e) =>
+                        setEditForm({ ...editForm, fullName: e.target.value })
+                      }
+                      className="w-full px-4 py-2.5 bg-black/50 border border-constitution-gold/20 rounded-lg text-stone-200 placeholder-stone-600 focus:outline-none focus:border-constitutional-gold/50 focus:ring-1 focus:ring-constitution-gold/20"
+                      placeholder="Enter your full name"
+                    />
+                  </div>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-ink-gray mb-2">
-                    Designation
-                  </label>
-                  <input
-                    type="text"
-                    value={editForm.designation || ""}
-                    onChange={(e) =>
-                      setEditForm({ ...editForm, designation: e.target.value })
-                    }
-                    className="w-full px-4 py-2 bg-justice-black border border-constitution-gold/20 rounded-lg text-judge-ivory focus:outline-none focus:border-constitution-gold/50"
-                  />
+                {/* Designation & Organization */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-stone-300 mb-2">
+                      Designation
+                    </label>
+                    <div className="relative">
+                      <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-500" />
+                      <input
+                        type="text"
+                        value={editForm.designation || ""}
+                        onChange={(e) =>
+                          setEditForm({ ...editForm, designation: e.target.value })
+                        }
+                        className="w-full pl-10 pr-4 py-2.5 bg-black/50 border border-constitution-gold/20 rounded-lg text-stone-200 placeholder-stone-600 focus:outline-none focus:border-constitutional-gold/50 focus:ring-1 focus:ring-constitution-gold/20"
+                        placeholder="e.g., Senior Lawyer"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-stone-300 mb-2">
+                      Organization
+                    </label>
+                    <input
+                      type="text"
+                      value={editForm.organization || ""}
+                      onChange={(e) =>
+                        setEditForm({ ...editForm, organization: e.target.value })
+                      }
+                      className="w-full px-4 py-2.5 bg-black/50 border border-constitution-gold/20 rounded-lg text-stone-200 placeholder-stone-600 focus:outline-none focus:border-constitutional-gold/50 focus:ring-1 focus:ring-constitution-gold/20"
+                      placeholder="e.g., Law Firm"
+                    />
+                  </div>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-ink-gray mb-2">
-                    Organization
-                  </label>
-                  <input
-                    type="text"
-                    value={editForm.organization || ""}
-                    onChange={(e) =>
-                      setEditForm({ ...editForm, organization: e.target.value })
-                    }
-                    className="w-full px-4 py-2 bg-justice-black border border-constitution-gold/20 rounded-lg text-judge-ivory focus:outline-none focus:border-constitution-gold/50"
-                  />
-                </div>
-
+                {/* Bar Council Number (conditional) */}
                 {["LAWYER", "JUDGE", "ADVOCATE"].includes(editForm.role) && (
                   <div>
-                    <label className="block text-sm font-medium text-ink-gray mb-2">
-                      Bar Council Number *
+                    <label className="block text-sm font-medium text-stone-300 mb-2">
+                      Bar Council Number <span className="text-constitutional-gold">*</span>
                     </label>
                     <input
                       type="text"
@@ -826,46 +831,54 @@ export function ProfilePage({
                           barCouncilNumber: e.target.value,
                         })
                       }
-                      className="w-full px-4 py-2 bg-justice-black border border-constitution-gold/20 rounded-lg text-judge-ivory focus:outline-none focus:border-constitution-gold/50"
-                      placeholder="Required for your role"
+                      className="w-full px-4 py-2.5 bg-black/50 border border-constitution-gold/20 rounded-lg text-stone-200 placeholder-stone-600 focus:outline-none focus:border-constitutional-gold/50 focus:ring-1 focus:ring-constitution-gold/20"
+                      placeholder="Enter your bar council number"
                     />
                   </div>
                 )}
 
-                <div>
-                  <label className="block text-sm font-medium text-ink-gray mb-2">
-                    Years of Experience
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={editForm.experienceYears || 0}
-                    onChange={(e) =>
-                      setEditForm({
-                        ...editForm,
-                        experienceYears: parseInt(e.target.value) || 0,
-                      })
-                    }
-                    className="w-full px-4 py-2 bg-justice-black border border-constitution-gold/20 rounded-lg text-judge-ivory focus:outline-none focus:border-constitution-gold/50"
-                  />
+                {/* Experience & Location */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-stone-300 mb-2">
+                      Years of Experience
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={editForm.experienceYears || 0}
+                      onChange={(e) =>
+                        setEditForm({
+                          ...editForm,
+                          experienceYears: parseInt(e.target.value) || 0,
+                        })
+                      }
+                      className="w-full px-4 py-2.5 bg-black/50 border border-constitution-gold/20 rounded-lg text-stone-200 placeholder-stone-600 focus:outline-none focus:border-constitutional-gold/50 focus:ring-1 focus:ring-constitution-gold/20"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-stone-300 mb-2">
+                      Location
+                    </label>
+                    <div className="relative">
+                      <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-500" />
+                      <input
+                        type="text"
+                        value={editForm.location || ""}
+                        onChange={(e) =>
+                          setEditForm({ ...editForm, location: e.target.value })
+                        }
+                        className="w-full pl-10 pr-4 py-2.5 bg-black/50 border border-constitution-gold/20 rounded-lg text-stone-200 placeholder-stone-600 focus:outline-none focus:border-constitutional-gold/50 focus:ring-1 focus:ring-constitution-gold/20"
+                        placeholder="City, Country"
+                      />
+                    </div>
+                  </div>
                 </div>
 
+                {/* Bio */}
                 <div>
-                  <label className="block text-sm font-medium text-ink-gray mb-2">
-                    Location
-                  </label>
-                  <input
-                    type="text"
-                    value={editForm.location || ""}
-                    onChange={(e) =>
-                      setEditForm({ ...editForm, location: e.target.value })
-                    }
-                    className="w-full px-4 py-2 bg-justice-black border border-constitution-gold/20 rounded-lg text-judge-ivory focus:outline-none focus:border-constitution-gold/50"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-ink-gray mb-2">
+                  <label className="block text-sm font-medium text-stone-300 mb-2">
                     Bio
                   </label>
                   <textarea
@@ -874,50 +887,62 @@ export function ProfilePage({
                       setEditForm({ ...editForm, bio: e.target.value })
                     }
                     rows={4}
-                    className="w-full px-4 py-2 bg-justice-black border border-constitution-gold/20 rounded-lg text-judge-ivory focus:outline-none focus:border-constitution-gold/50"
+                    className="w-full px-4 py-2.5 bg-black/50 border border-constitution-gold/20 rounded-lg text-stone-200 placeholder-stone-600 focus:outline-none focus:border-constitutional-gold/50 focus:ring-1 focus:ring-constitution-gold/20 resize-none"
+                    placeholder="Tell us about yourself..."
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-ink-gray mb-2">
-                    Website URL
-                  </label>
-                  <input
-                    type="url"
-                    value={editForm.websiteUrl || ""}
-                    onChange={(e) =>
-                      setEditForm({ ...editForm, websiteUrl: e.target.value })
-                    }
-                    className="w-full px-4 py-2 bg-justice-black border border-constitution-gold/20 rounded-lg text-judge-ivory focus:outline-none focus:border-constitution-gold/50"
-                  />
-                </div>
+                {/* Website & LinkedIn */}
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-stone-300 mb-2">
+                      Website URL
+                    </label>
+                    <div className="relative">
+                      <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-500" />
+                      <input
+                        type="url"
+                        value={editForm.websiteUrl || ""}
+                        onChange={(e) =>
+                          setEditForm({ ...editForm, websiteUrl: e.target.value })
+                        }
+                        className="w-full pl-10 pr-4 py-2.5 bg-black/50 border border-constitution-gold/20 rounded-lg text-stone-200 placeholder-stone-600 focus:outline-none focus:border-constitutional-gold/50 focus:ring-1 focus:ring-constitution-gold/20"
+                        placeholder="https://yourwebsite.com"
+                      />
+                    </div>
+                  </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-ink-gray mb-2">
-                    LinkedIn URL
-                  </label>
-                  <input
-                    type="url"
-                    value={editForm.linkedinUrl || ""}
-                    onChange={(e) =>
-                      setEditForm({ ...editForm, linkedinUrl: e.target.value })
-                    }
-                    className="w-full px-4 py-2 bg-justice-black border border-constitution-gold/20 rounded-lg text-judge-ivory focus:outline-none focus:border-constitution-gold/50"
-                  />
+                  <div>
+                    <label className="block text-sm font-medium text-stone-300 mb-2">
+                      LinkedIn URL
+                    </label>
+                    <div className="relative">
+                      <Linkedin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-500" />
+                      <input
+                        type="url"
+                        value={editForm.linkedinUrl || ""}
+                        onChange={(e) =>
+                          setEditForm({ ...editForm, linkedinUrl: e.target.value })
+                        }
+                        className="w-full pl-10 pr-4 py-2.5 bg-black/50 border border-constitution-gold/20 rounded-lg text-stone-200 placeholder-stone-600 focus:outline-none focus:border-constitutional-gold/50 focus:ring-1 focus:ring-constitution-gold/20"
+                        placeholder="https://linkedin.com/in/username"
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              <div className="flex justify-end gap-3 mt-8">
+              <div className="flex justify-end gap-3 mt-8 pt-4 border-t border-constitution-gold/20">
                 <button
                   onClick={() => setShowEditModal(false)}
-                  className="px-4 py-2 border border-constitution-gold/30 text-constitution-gold rounded-lg hover:bg-constitution-gold/5"
+                  className="px-4 py-2 border border-constitution-gold/30 text-constitutional-gold rounded-lg hover:bg-constitution-gold/90/5 transition-colors"
                   type="button"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleSaveProfile}
-                  className="px-4 py-2 bg-constitution-gold text-justice-black rounded-lg font-medium hover:bg-constitution-gold/90"
+                  className="px-4 py-2 bg-constitution-gold text-stone-900 rounded-lg font-medium hover:bg-constitution-gold/90 transition-colors"
                   type="button"
                 >
                   Save Changes
@@ -928,28 +953,29 @@ export function ProfilePage({
         </div>
       )}
 
-      {/* Add Certification Modal */}
+      {/* Add Certification Modal - IMPROVED UI */}
       {showAddCertModal && (
-        <div className="fixed inset-0 bg-justice-black/80 flex items-center justify-center z-50 p-4">
-          <div className="bg-aged-paper rounded-lg border border-constitution-gold/20 shadow-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="font-heading font-bold text-2xl text-judge-ivory">
-                  Add Certification
-                </h2>
-                <button
-                  onClick={() => setShowAddCertModal(false)}
-                  className="p-2 hover:bg-constitution-gold/10 rounded"
-                  type="button"
-                >
-                  <X className="w-5 h-5 text-ink-gray" />
-                </button>
-              </div>
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-[#1e1b1a] rounded-xl border border-constitution-gold/20 shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-[#1e1b1a] border-b border-constitution-gold/20 px-6 py-4 flex items-center justify-between">
+              <h2 className="font-heading font-bold text-xl text-stone-200">
+                Add Certification
+              </h2>
+              <button
+                onClick={() => setShowAddCertModal(false)}
+                className="p-2 hover:bg-constitution-gold/90/10 rounded-lg transition-colors"
+                type="button"
+              >
+                <X className="w-5 h-5 text-stone-400" />
+              </button>
+            </div>
 
-              <div className="space-y-4">
+            <div className="p-6">
+              <div className="space-y-6">
+                {/* Title */}
                 <div>
-                  <label className="block text-sm font-medium text-ink-gray mb-2">
-                    Title *
+                  <label className="block text-sm font-medium text-stone-300 mb-2">
+                    Title <span className="text-constitutional-gold">*</span>
                   </label>
                   <input
                     type="text"
@@ -957,14 +983,15 @@ export function ProfilePage({
                     onChange={(e) =>
                       setNewCert({ ...newCert, title: e.target.value })
                     }
-                    className="w-full px-4 py-2 bg-justice-black border border-constitution-gold/20 rounded-lg text-judge-ivory focus:outline-none focus:border-constitution-gold/50"
+                    className="w-full px-4 py-2.5 bg-black/50 border border-constitution-gold/20 rounded-lg text-stone-200 placeholder-stone-600 focus:outline-none focus:border-constitutional-gold/50 focus:ring-1 focus:ring-constitution-gold/20"
                     placeholder="e.g., Certified Legal Specialist"
                   />
                 </div>
 
+                {/* Issuing Organization */}
                 <div>
-                  <label className="block text-sm font-medium text-ink-gray mb-2">
-                    Issuing Organization *
+                  <label className="block text-sm font-medium text-stone-300 mb-2">
+                    Issuing Organization <span className="text-constitutional-gold">*</span>
                   </label>
                   <input
                     type="text"
@@ -975,13 +1002,14 @@ export function ProfilePage({
                         issuingOrganization: e.target.value,
                       })
                     }
-                    className="w-full px-4 py-2 bg-justice-black border border-constitution-gold/20 rounded-lg text-judge-ivory focus:outline-none focus:border-constitution-gold/50"
+                    className="w-full px-4 py-2.5 bg-black/50 border border-constitution-gold/20 rounded-lg text-stone-200 placeholder-stone-600 focus:outline-none focus:border-constitutional-gold/50 focus:ring-1 focus:ring-constitution-gold/20"
                     placeholder="e.g., National Bar Association"
                   />
                 </div>
 
+                {/* Credential ID */}
                 <div>
-                  <label className="block text-sm font-medium text-ink-gray mb-2">
+                  <label className="block text-sm font-medium text-stone-300 mb-2">
                     Credential ID
                   </label>
                   <input
@@ -990,46 +1018,54 @@ export function ProfilePage({
                     onChange={(e) =>
                       setNewCert({ ...newCert, credentialId: e.target.value })
                     }
-                    className="w-full px-4 py-2 bg-justice-black border border-constitution-gold/20 rounded-lg text-judge-ivory focus:outline-none focus:border-constitution-gold/50"
+                    className="w-full px-4 py-2.5 bg-black/50 border border-constitution-gold/20 rounded-lg text-stone-200 placeholder-stone-600 focus:outline-none focus:border-constitutional-gold/50 focus:ring-1 focus:ring-constitution-gold/20"
                     placeholder="Optional"
                   />
                 </div>
 
+                {/* Issue & Expiry Dates */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-ink-gray mb-2">
-                      Issue Date *
+                    <label className="block text-sm font-medium text-stone-300 mb-2">
+                      Issue Date <span className="text-constitutional-gold">*</span>
                     </label>
-                    <input
-                      type="date"
-                      value={newCert.issueDate}
-                      onChange={(e) =>
-                        setNewCert({ ...newCert, issueDate: e.target.value })
-                      }
-                    className="w-full px-4 py-2 bg-justice-black border border-constitution-gold/20 rounded-lg text-judge-ivory focus:outline-none focus:border-constitution-gold/50"
-                    />
+                    <div className="relative">
+                      <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-500" />
+                      <input
+                        type="date"
+                        value={newCert.issueDate}
+                        onChange={(e) =>
+                          setNewCert({ ...newCert, issueDate: e.target.value })
+                        }
+                        className="w-full pl-10 pr-4 py-2.5 bg-black/50 border border-constitution-gold/20 rounded-lg text-stone-200 focus:outline-none focus:border-constitutional-gold/50 focus:ring-1 focus:ring-constitution-gold/20"
+                      />
+                    </div>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-ink-gray mb-2">
+                    <label className="block text-sm font-medium text-stone-300 mb-2">
                       Expiry Date
                     </label>
-                    <input
-                      type="date"
-                      value={newCert.expiryDate}
-                      onChange={(e) =>
-                        setNewCert({ ...newCert, expiryDate: e.target.value })
-                      }
-                    className="w-full px-4 py-2 bg-justice-black border border-constitution-gold/20 rounded-lg text-judge-ivory focus:outline-none focus:border-constitution-gold/50"
-                    />
+                    <div className="relative">
+                      <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-500" />
+                      <input
+                        type="date"
+                        value={newCert.expiryDate}
+                        onChange={(e) =>
+                          setNewCert({ ...newCert, expiryDate: e.target.value })
+                        }
+                        className="w-full pl-10 pr-4 py-2.5 bg-black/50 border border-constitution-gold/20 rounded-lg text-stone-200 focus:outline-none focus:border-constitutional-gold/50 focus:ring-1 focus:ring-constitution-gold/20"
+                      />
+                    </div>
                   </div>
                 </div>
 
+                {/* Certificate File */}
                 <div>
-                  <label className="block text-sm font-medium text-ink-gray mb-2">
+                  <label className="block text-sm font-medium text-stone-300 mb-2">
                     Certificate File
                   </label>
-                  <div className="flex items-center gap-3">
+                  <div className="relative">
                     <input
                       type="file"
                       accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
@@ -1038,21 +1074,23 @@ export function ProfilePage({
                           e.target.files ? e.target.files[0] : null
                         )
                       }
-                      className="w-full px-4 py-2 bg-justice-black border border-constitution-gold/20 rounded-lg text-judge-ivory focus:outline-none focus:border-constitution-gold/50"
+                      className="w-full px-4 py-2.5 bg-black/50 border border-constitution-gold/20 rounded-lg text-stone-200 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-constitution-gold file:text-stone-900 hover:file:bg-constitutional-gold file:cursor-pointer file:transition-colors"
                     />
-                    {certificateFile && (
-                      <span className="text-sm text-ink-gray">
-                        {certificateFile.name}
-                      </span>
-                    )}
                   </div>
-                  <p className="text-xs text-ink-gray/60 mt-1">
+                  {certificateFile && (
+                    <p className="mt-2 text-sm text-stone-400 flex items-center gap-2">
+                      <FileText className="w-4 h-4 text-constitutional-gold" />
+                      {certificateFile.name}
+                    </p>
+                  )}
+                  <p className="text-xs text-stone-500 mt-1">
                     Upload PDF or image of your certificate (optional)
                   </p>
                 </div>
 
+                {/* Description */}
                 <div>
-                  <label className="block text-sm font-medium text-ink-gray mb-2">
+                  <label className="block text-sm font-medium text-stone-300 mb-2">
                     Description
                   </label>
                   <textarea
@@ -1061,31 +1099,35 @@ export function ProfilePage({
                       setNewCert({ ...newCert, description: e.target.value })
                     }
                     rows={3}
-                    className="w-full px-4 py-2 bg-justice-black border border-constitution-gold/20 rounded-lg text-judge-ivory focus:outline-none focus:border-constitution-gold/50"
+                    className="w-full px-4 py-2.5 bg-black/50 border border-constitution-gold/20 rounded-lg text-stone-200 placeholder-stone-600 focus:outline-none focus:border-constitutional-gold/50 focus:ring-1 focus:ring-constitution-gold/20 resize-none"
                     placeholder="Brief description of the certification"
                   />
                 </div>
 
+                {/* Tags */}
                 <div>
-                  <label className="block text-sm font-medium text-ink-gray mb-2">
+                  <label className="block text-sm font-medium text-stone-300 mb-2">
                     Tags
                   </label>
-                  <input
-                    type="text"
-                    value={newCert.tags}
-                    onChange={(e) =>
-                      setNewCert({ ...newCert, tags: e.target.value })
-                    }
-                    className="w-full px-4 py-2 bg-justice-black border border-constitution-gold/20 rounded-lg text-judge-ivory focus:outline-none focus:border-constitution-gold/50"
-                    placeholder="Comma separated, e.g., litigation, corporate law, ethics"
-                  />
+                  <div className="relative">
+                    <Tag className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-500" />
+                    <input
+                      type="text"
+                      value={newCert.tags}
+                      onChange={(e) =>
+                        setNewCert({ ...newCert, tags: e.target.value })
+                      }
+                      className="w-full pl-10 pr-4 py-2.5 bg-black/50 border border-constitution-gold/20 rounded-lg text-stone-200 placeholder-stone-600 focus:outline-none focus:border-constitutional-gold/50 focus:ring-1 focus:ring-constitution-gold/20"
+                      placeholder="litigation, corporate law, ethics (comma separated)"
+                    />
+                  </div>
                 </div>
               </div>
 
-              <div className="flex justify-end gap-3 mt-8">
+              <div className="flex justify-end gap-3 mt-8 pt-4 border-t border-constitution-gold/20">
                 <button
                   onClick={() => setShowAddCertModal(false)}
-                  className="px-4 py-2 border border-constitution-gold/30 text-constitution-gold rounded-lg hover:bg-constitution-gold/5"
+                  className="px-4 py-2 border border-constitution-gold/30 text-constitutional-gold rounded-lg hover:bg-constitution-gold/90/5 transition-colors"
                   type="button"
                 >
                   Cancel
@@ -1093,10 +1135,17 @@ export function ProfilePage({
                 <button
                   onClick={handleAddCertification}
                   disabled={uploadingCert}
-                  className="px-4 py-2 bg-constitution-gold text-justice-black rounded-lg font-medium hover:bg-constitution-gold/90 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 bg-constitution-gold text-stone-900 rounded-lg font-medium hover:bg-constitution-gold/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                   type="button"
                 >
-                  {uploadingCert ? "Uploading..." : "Add Certification"}
+                  {uploadingCert ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-stone-900 border-t-transparent rounded-full animate-spin"></div>
+                      Uploading...
+                    </>
+                  ) : (
+                    'Add Certification'
+                  )}
                 </button>
               </div>
             </div>

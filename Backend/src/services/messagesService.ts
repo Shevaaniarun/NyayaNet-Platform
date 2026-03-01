@@ -326,7 +326,15 @@ export class MessagesService {
             LIMIT 1
           )
           ELSE NULL 
-        END as avatar_url
+        END as avatar_url,
+        CASE 
+          WHEN c.conversation_type = 'PRIVATE' THEN (
+            SELECT cm.user_id FROM conversation_members cm
+            WHERE cm.conversation_id = c.id AND cm.user_id != $2
+            LIMIT 1
+          )
+          ELSE NULL 
+        END as other_user_id
       FROM conversations c 
       WHERE c.id = $1 AND c.is_active = true
     `;
@@ -396,16 +404,20 @@ export class MessagesService {
    * Soft delete a conversation
    */
   async deleteConversation(conversationId: string, userId: string): Promise<void> {
+    // Allow any member of the conversation to soft-delete it
     const query = `
       UPDATE conversations
       SET is_active = false
-      WHERE id = $1 AND (created_by = $2 OR EXISTS (
+      WHERE id = $1 AND EXISTS (
         SELECT 1 FROM conversation_members 
-        WHERE conversation_id = conversations.id 
-        AND user_id = $2 AND role IN ('ADMIN', 'OWNER')
-      ))
+        WHERE conversation_id = $1 
+        AND user_id = $2
+      )
     `;
-    await pool.query(query, [conversationId, userId]);
+    const result = await pool.query(query, [conversationId, userId]);
+    if (result.rowCount === 0) {
+      throw new Error('Conversation not found or you are not a member');
+    }
   }
 
   /**

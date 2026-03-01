@@ -82,6 +82,7 @@ app.use("/api/notes", noteRoutes);
 app.use('/api/network', networkRoutes);
 app.use('/api/messages', messagesRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/library', lawlibraryRoutes);
 
 // Debug middleware specifically for /api/posts to capture request + response details
 app.use('/api/posts', (req, res, next) => {

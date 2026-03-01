@@ -530,17 +530,6 @@ export function ChatbotPage() {
                 </div>
               )}
             </div>
-
-            {/* Logout Button */}
-            <div className="p-4 border-t border-constitution-gold/20">
-              <button
-                onClick={handleLogout}
-                className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 rounded-xl text-red-400 transition-all"
-              >
-                <LogOut className="w-5 h-5" />
-                <span className="font-medium">Logout</span>
-              </button>
-            </div>
           </div>
         )}
       </div>

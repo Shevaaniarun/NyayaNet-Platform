@@ -363,7 +363,7 @@ export class ChatbotService {
    */
   private async getGeminiResponse(message: string): Promise<string | null> {
     try {
-      const systemPrompt = `You are an AI Legal Assistant for NyayaNet, specializing in Indian law. Provide accurate, detailed answers about Indian Constitution, IPC, CrPC, Civil Law, Court procedures, and legal rights. Use clear structure with markdown formatting. Keep responses 300-500 words. Always remind users to consult lawyers for personalized advice.`;
+      const systemPrompt = `You are an AI Legal Assistant for NyayaNet, specializing in Indian law. Provide accurate, detailed answers about Indian Constitution, IPC, CrPC, Civil Law, Court procedures, and legal rights. Use clear paragraphs in plain text. Do NOT use markdown symbols like #, *, -, or **. Keep responses 300-500 words. Always remind users to consult lawyers for personalized advice.`;
 
       const fullPrompt = `${systemPrompt}\n\nUser Question: ${message}\n\nProvide a detailed, well-structured response:`;
 
