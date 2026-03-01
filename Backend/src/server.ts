@@ -83,6 +83,50 @@ app.use('/api/network', networkRoutes);
 app.use('/api/messages', messagesRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 
+// Debug middleware specifically for /api/posts to capture request + response details
+app.use('/api/posts', (req, res, next) => {
+	// Log incoming request
+	try {
+		const safeBody = typeof req.body === 'object' ? JSON.stringify(req.body).slice(0, 2000) : String(req.body || '');
+		console.log(`🔎 [Posts Debug] Incoming ${req.method} ${req.originalUrl} query=${JSON.stringify(req.query)} body=${safeBody}`);
+	} catch (err) {
+		console.log('🔎 [Posts Debug] Failed to stringify request body', err);
+	}
+
+	// Wrap res.json and res.send to capture response body for logging
+	const oldJson = res.json.bind(res);
+	const oldSend = res.send.bind(res);
+	let responseBody: any = undefined;
+
+	// Override json
+	(res as any).json = (body: any) => {
+		responseBody = body;
+		res.setHeader('X-Debug-Posts', '1');
+		return oldJson(body);
+	};
+
+	// Override send
+	(res as any).send = (body: any) => {
+		responseBody = body;
+		res.setHeader('X-Debug-Posts', '1');
+		return oldSend(body);
+	};
+
+	const start = Date.now();
+	res.on('finish', () => {
+		const duration = Date.now() - start;
+		let respPreview: string;
+		try {
+			respPreview = typeof responseBody === 'object' ? JSON.stringify(responseBody).slice(0, 2000) : String(responseBody || '');
+		} catch (e) {
+			respPreview = '[unable to stringify response]';
+		}
+		console.log(`🔎 [Posts Debug] Response ${req.method} ${req.originalUrl} -> ${res.statusCode} (${duration}ms) body=${respPreview}`);
+	});
+
+	next();
+});
+
 // Add global process handlers to capture unexpected async errors
 process.on('unhandledRejection', (reason, p) => {
     console.error('Unhandled Rejection at:', p, 'reason:', reason);
