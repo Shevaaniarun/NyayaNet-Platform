@@ -3,5 +3,8 @@ dist
 build
 .env
 .env.local
-nyayanet/nyayanet/
+
 nyayanet.zip
+venv/
+__pycache__/
+*.pyc

@@ -103,7 +103,7 @@ function AppContent() {
   const currentUser = getCurrentUser();
 
   useEffect(() => {
-    const t = setTimeout(() => setLoading(false), 800);
+    const t = setTimeout(() => setLoading(false), 2500);
     return () => clearTimeout(t);
   }, []);
 
