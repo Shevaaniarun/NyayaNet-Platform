@@ -448,7 +448,7 @@ export function NetworkPage({ onBack, currentUserId, onNavigateToProfile }: Netw
       return (
         <div className="text-center py-12">
           <Clock className="w-12 h-12 text-ink-gray/30 mx-auto mb-4" />
-          <p className="text-ink-gray/60">No {type} requests</p>
+          <p className="text-ink-gray/60">No requests</p>
         </div>
       );
     }

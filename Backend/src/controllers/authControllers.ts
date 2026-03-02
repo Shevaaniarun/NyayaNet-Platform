@@ -5,13 +5,18 @@ import { registerUser, loginUser } from "../services/authServices";
 
 export const register = async (req: Request, res: Response) => {
   try {
-    const { email, password, fullName, role, barCouncilNumber, experienceYears } = req.body;
+    let { email, password, fullName, role, barCouncilNumber, experienceYears } = req.body;
 
     if (!email || !password || !fullName || !role) {
       return res.status(400).json({
         message: "All fields are required",
       });
     }
+
+    email = email.trim().toLowerCase();
+    password = password.trim();
+    fullName = fullName.trim();
+    role = role.trim().toUpperCase();
 
     const result = await registerUser({
       email,
