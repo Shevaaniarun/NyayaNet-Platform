@@ -39,35 +39,17 @@ const LAW_ACTS_CONFIG: Record<string, {
     shortTitle: 'IPC',
     category: 'CRIMINAL_LAW'
   },
-  'crpc.json': {
-    name: 'Code of Criminal Procedure',
-    year: 1973,
-    shortTitle: 'CrPC',
-    category: 'CRIMINAL_LAW'
-  },
   'cpc.json': {
     name: 'Code of Civil Procedure',
     year: 1908,
     shortTitle: 'CPC',
     category: 'CIVIL_LAW'
   },
-  'iea.json': {
-    name: 'Indian Evidence Act',
-    year: 1872,
-    shortTitle: 'IEA',
-    category: 'CIVIL_LAW' // Changed from EVIDENCE_LAW to CIVIL_LAW
-  },
   'ida.json': {
     name: 'Indian Divorce Act',
     year: 1869,
     shortTitle: 'IDA',
     category: 'FAMILY_LAW'
-  },
-  'nia.json': {
-    name: 'Negotiable Instruments Act',
-    year: 1881,
-    shortTitle: 'NIA',
-    category: 'CORPORATE_LAW'
   },
   'MVA.json': {
     name: 'Motor Vehicles Act',
