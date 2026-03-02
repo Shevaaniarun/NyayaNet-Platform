@@ -159,60 +159,25 @@
   font-weight: 600;
 }
 
-/* Year selector */
-.year-selector {
+/* Year display styles - REPLACES year selector */
+.year-display {
   display: flex;
   align-items: center;
-  gap: 8px;
-  background: var(--bg-control);
-  border: 2px solid var(--border-control);
-  border-radius: 12px;
-  padding: 4px;
-  min-width: 160px;
+  margin-left: auto;
   flex-shrink: 0;
 }
 
-.year-nav-button {
-  background: transparent;
-  border: none;
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  color: var(--text-secondary);
-  transition: all 0.2s;
-  padding: 0;
-}
-
-.year-nav-button:hover:not(:disabled) {
-  background-color: rgba(0, 0, 0, 0.05);
-}
-
-.year-nav-button:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-.year-dropdown {
-  border: none;
-  background: transparent;
+.year-text {
   font-size: 14px;
   font-weight: 600;
   color: var(--text-primary);
-  padding: 6px 8px;
-  cursor: pointer;
+  background: var(--bg-control);
+  padding: 0.5rem 1.2rem;
+  border-radius: 12px;
+  border: 2px solid var(--border-control);
+  min-width: 80px;
   text-align: center;
-  min-width: 70px;
-  outline: none;
-  flex: 1;
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%235D4037' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 8px center;
-  background-size: 16px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
 }
 
 /* Heatmap grid - NO DAY LABELS */
@@ -426,9 +391,9 @@
     min-width: auto;
   }
   
-  .year-selector {
+  .year-display {
     align-self: flex-start;
-    min-width: 140px;
+    margin-left: 0;
   }
   
   .desktop-heatmap {
@@ -463,9 +428,13 @@
     align-items: flex-start;
   }
   
-  .year-selector {
+  .year-display {
     width: 100%;
-    justify-content: center;
+  }
+  
+  .year-text {
+    width: 100%;
+    text-align: center;
   }
   
   .heatmap-legend {

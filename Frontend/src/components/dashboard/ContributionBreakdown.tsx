@@ -41,8 +41,33 @@ const ContributionBreakdown: React.FC<Props> = ({
     postLikesReceived: 0
   };
 
-  // Use provided data or default
+  // Use provided data or default (keep original safeData for backward compatibility)
   const safeData = data || defaultData;
+
+  // === NEW: normalization to handle different API field names ===
+  const normalizedData: ContributionBreakdownData = {
+    posts: Number((data as any)?.posts ?? safeData.posts ?? 0),
+    discussions: Number((data as any)?.discussions ?? safeData.discussions ?? 0),
+    replies: Number((data as any)?.replies ?? safeData.replies ?? 0),
+    bestAnswers: Number((data as any)?.bestAnswers ?? (data as any)?.best_answers ?? safeData.bestAnswers ?? 0),
+    // Support followers, followers_count, followersCount
+    followers: Number(
+      (data as any)?.followers ??
+      (data as any)?.followers_count ??
+      (data as any)?.followersCount ??
+      safeData.followers ??
+      0
+    ),
+    // Support various names for post likes
+    postLikesReceived: Number(
+      (data as any)?.postLikesReceived ??
+      (data as any)?.post_likes_received ??
+      (data as any)?.postLikes ??
+      safeData.postLikesReceived ??
+      0
+    )
+  };
+  // === end normalization ===
 
   // Stat card configuration with Lucide icons - Updated with new metrics
   const statCardsConfig: StatCardConfig[] = [
@@ -117,12 +142,12 @@ const ContributionBreakdown: React.FC<Props> = ({
   // Calculate total contributions — include likes received as part of contributions
   const calculateTotalContributions = () => {
     const contributionMetrics = [
-      safeData.posts,
-      safeData.discussions,
-      safeData.replies,
-      safeData.bestAnswers,
+      normalizedData.posts,
+      normalizedData.discussions,
+      normalizedData.replies,
+      normalizedData.bestAnswers,
       // Treat post likes as a contribution metric so they count toward totals
-      safeData.postLikesReceived
+      normalizedData.postLikesReceived
     ];
     return contributionMetrics.reduce((sum, val) => sum + (val || 0), 0);
   };
@@ -130,7 +155,7 @@ const ContributionBreakdown: React.FC<Props> = ({
   const totalContributions = calculateTotalContributions();
 
   // Calculate total engagement (followers only)
-  const totalEngagement = (safeData.followers || 0);
+  const totalEngagement = (normalizedData.followers || 0);
 
   // Format large numbers
   const formatNumber = (num: number | undefined): string => {
@@ -246,7 +271,8 @@ const ContributionBreakdown: React.FC<Props> = ({
         <>
           <div className="stats-grid">
             {statCardsConfig.map((config) => {
-              const value = safeData[config.key] || 0;
+              // Use normalized values so followers display reliably
+              const value = (normalizedData as any)[config.key] || 0;
               
               // Calculate percentage differently for engagement vs contribution metrics
               let percentage = 0;
@@ -318,7 +344,7 @@ const ContributionBreakdown: React.FC<Props> = ({
                 <span className="engagement-text">
                   You have <strong>{formatNumber(totalEngagement)}</strong> followers
                   {totalContributions > 0 && (
-                    <>, and <strong>{formatNumber(safeData.postLikesReceived || 0)}</strong> post likes counted as contributions</>
+                    <>, and <strong>{formatNumber(normalizedData.postLikesReceived || 0)}</strong> post likes counted as contributions</>
                   )}
                 </span>
               </div>

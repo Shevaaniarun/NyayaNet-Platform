@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { ChevronLeft, ChevronRight, Info } from 'lucide-react';
+import { Info } from 'lucide-react';
 import './ContributionHeatmap.css';
 
 interface HeatmapDay {
@@ -11,8 +11,6 @@ interface HeatmapDay {
 
 interface Props {
   data?: HeatmapDay[];
-  selectedYear?: number;
-  onYearChange?: (year: number) => void;
   totalSubmissions?: number;
   totalActiveDays?: number;
   maxStreak?: number;
@@ -38,21 +36,21 @@ const safeNumber = (value: number | null | undefined, fallback: number = 0): num
 
 const ContributionHeatmap: React.FC<Props> = ({
   data = [],
-  selectedYear = new Date().getFullYear(),
-  onYearChange,
   totalSubmissions = 438,
   totalActiveDays = 101,
   maxStreak = 27,
   currentStreak = 0,
   loading = false
 }) => {
-  const currentYear = new Date().getFullYear();
   const [showInfo, setShowInfo] = useState(false);
   const [hoveredDay, setHoveredDay] = useState<{date: string; contributions: number; points: number; x: number; y: number} | null>(null);
 
   const CELL = 18;
   const GAP = 4;
   const MONTH_GAP = 12;
+
+  // Fixed to 2026
+  const selectedYear = 2026;
 
   const heatmapData: HeatmapData = useMemo(() => {
     // Build grid using local dates so the heatmap maps to the user's local day boundaries
@@ -166,13 +164,6 @@ const ContributionHeatmap: React.FC<Props> = ({
     return 'var(--border-accent)';
   };
 
-  const handleYearChange = (direction: 'prev' | 'next') => {
-    const newYear = direction === 'prev' ? selectedYear - 1 : selectedYear + 1;
-    if (onYearChange) {
-      onYearChange(newYear);
-    }
-  };
-
   const handleDayHover = (event: React.MouseEvent, dayData: HeatmapDay | null) => {
     if (!dayData) {
       setHoveredDay(null);
@@ -199,8 +190,6 @@ const ContributionHeatmap: React.FC<Props> = ({
       year: 'numeric'
     });
   };
-
-  const yearOptions = Array.from({ length: 6 }, (_, i) => currentYear - i);
   
   const svgHeight = 7 * (CELL + GAP) + 40;
 
@@ -246,32 +235,9 @@ const ContributionHeatmap: React.FC<Props> = ({
             </div>
           </div>
 
-          <div className="year-selector">
-            <button 
-              onClick={() => handleYearChange('prev')}
-              disabled={selectedYear <= currentYear - 5}
-              className="year-nav-button"
-            >
-              <ChevronLeft size={16} />
-            </button>
-            
-            <select 
-              value={selectedYear}
-              onChange={(e) => onYearChange?.(Number(e.target.value))}
-              className="year-dropdown"
-            >
-              {yearOptions.map(year => (
-                <option key={year} value={year}>{year}</option>
-              ))}
-            </select>
-            
-            <button 
-              onClick={() => handleYearChange('next')}
-              disabled={selectedYear >= currentYear}
-              className="year-nav-button"
-            >
-              <ChevronRight size={16} />
-            </button>
+          {/* Year display - static text instead of selector */}
+          <div className="year-display">
+            <span className="year-text">{selectedYear}</span>
           </div>
         </div>
 
