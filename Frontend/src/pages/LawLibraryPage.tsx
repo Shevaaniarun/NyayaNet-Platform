@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { BookOpen, Search, Bookmark, ChevronRight, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { lawLibraryAPI } from '../api/lawLibraryAPI';
+import { RAG } from "../components/RAG";
 
 interface LawAct {
   id: string;
@@ -50,6 +51,7 @@ export function LawLibraryPage() {
   return (
     <div className="min-h-screen bg-justice-black p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
+        
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
@@ -70,11 +72,15 @@ export function LawLibraryPage() {
           </Link>
         </div>
 
+        {/* RAG */}
+        <RAG />
+
+
         {/* Search and Filter */}
         <div className="aged-paper rounded-lg p-6 mb-8">
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1 relative">
-              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-ink-gray/50" />
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-ink-gray" />
               <input
                 type="text"
                 value={searchQuery}
