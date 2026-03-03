@@ -8,3 +8,30 @@ nyayanet.zip
 venv/
 __pycache__/
 *.pyc
+
+# Dependencies
+node_modules/
+uploads/
+
+# Environment variables
+.env
+
+# Build output
+dist/
+build/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Database
+*.sqlite
+*.db

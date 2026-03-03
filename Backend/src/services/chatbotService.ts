@@ -1,6 +1,5 @@
 /**
  * HYBRID Chatbot Service - AI-powered with intelligent fallback
- * Primary: Google Gemini AI for smart responses
  * Fallback: Comprehensive knowledge base for reliability
  */
 
@@ -9,10 +8,13 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+export type ChatMode = 'general' | 'argument' | 'prediction';
+
 interface ChatResponse {
   message: string;
   context?: any;
   suggestions?: string[];
+  mode?: ChatMode;
 }
 
 export class ChatbotService {
@@ -27,21 +29,20 @@ export class ChatbotService {
     this.conversationContext = new Map();
     this.initializeLegalKnowledge();
     
-    // Try to initialize Gemini AI (non-blocking)
     try {
-      const apiKey = process.env.GEMINI_API_KEY;
+      const apiKey = process.env.AI_API_KEY;
       if (apiKey) {
         this.genAI = new GoogleGenerativeAI(apiKey);
         this.model = this.genAI.getGenerativeModel({ 
-          model: 'gemini-2.5-flash'  // CORRECT model name!
+          model: 'gemini-2.5-flash'
         });
-        console.log('✅ Gemini AI initialized successfully with gemini-2.5-flash');
+        console.log('AI initialized successfully');
       } else {
-        console.log('⚠️  No Gemini API key - using knowledge base only');
+        console.log('⚠️  No AI API key - using knowledge base only');
         this.useAI = false;
       }
     } catch (error) {
-      console.error('⚠️  Gemini AI initialization failed - using knowledge base fallback');
+      console.error('⚠️  AI initialization failed - using knowledge base fallback');
       this.useAI = false;
     }
   }
@@ -315,55 +316,224 @@ export class ChatbotService {
       '• Cannot deny bail merely due to seriousness\n' +
       '• Personal liberty is paramount'
     );
+
+    // Case Prediction knowledge
+    this.legalKnowledgeBase.set('prediction intro',
+      '**Case Prediction Mode**\n\n' +
+      'I can help you analyze potential case outcomes based on:\n' +
+      '• Similar past cases and precedents\n' +
+      '• Relevant statutes and sections\n' +
+      '• Strength of evidence\n' +
+      '• Jurisdiction and court hierarchy\n' +
+      '• Judicial trends\n\n' +
+      'Please describe your case scenario in detail for analysis.'
+    );
+
+    // Argument Simulation knowledge
+    this.legalKnowledgeBase.set('argument intro',
+      '**Argument Simulation Mode**\n\n' +
+      'I can help you prepare legal arguments by:\n' +
+      '• Generating points for both sides\n' +
+      '• Anticipating counter-arguments\n' +
+      '• Citing relevant case laws\n' +
+      '• Suggesting legal strategies\n\n' +
+      'Describe your case and which side you want to argue for.'
+    );
   }
 
   /**
    * MAIN PROCESSING - Tries AI first, falls back to knowledge base
    */
-  async processMessage(message: string, userId?: string): Promise<ChatResponse> {
-    const normalizedMessage = message.toLowerCase().trim();
+  async processMessage(
+  message: string,
+  userId?: string,
+  mode: ChatMode = 'general'
+): Promise<ChatResponse> {
 
-    // Simple greeting detection
-    if (this.isSimpleGreeting(normalizedMessage)) {
-      return this.getGreetingResponse();
-    }
+  const normalizedMessage = message.toLowerCase().trim();
 
-    // Try Gemini AI first if available
-    if (this.useAI && this.model) {
-      try {
-        const aiResponse = await this.getGeminiResponse(message);
-        if (aiResponse) {
-          return {
-            message: aiResponse,
-            context: { source: 'gemini_ai', model: 'gemini-2.5-flash' },
-            suggestions: this.generateSmartSuggestions(normalizedMessage)
-          };
-        }
-      } catch (error) {
-        console.log('AI failed, using knowledge base fallback');
-      }
-    }
-
-    // Fallback to knowledge base
-    const kbResponse = this.searchKnowledgeBase(normalizedMessage);
-    if (kbResponse) {
-      return {
-        message: kbResponse,
-        context: { source: 'knowledge_base' },
-        suggestions: this.generateSmartSuggestions(normalizedMessage)
-      };
-    }
-
-    // Final fallback - helpful default response
-    return this.getDefaultResponse(normalizedMessage);
+  // 1️⃣ Greeting
+  if (this.isSimpleGreeting(normalizedMessage)) {
+    return this.getGreetingResponse(mode);
   }
 
-  /**
-   * Get response from Gemini AI
-   */
-  private async getGeminiResponse(message: string): Promise<string | null> {
+  // 2️⃣ AI Layer
+  if (this.useAI && this.model) {
     try {
-      const systemPrompt = `You are an AI Legal Assistant for NyayaNet, specializing in Indian law. Provide accurate, detailed answers about Indian Constitution, IPC, CrPC, Civil Law, Court procedures, and legal rights. Use clear paragraphs in plain text. Do NOT use markdown symbols like #, *, -, or **. Keep responses 300-500 words. Always remind users to consult lawyers for personalized advice.`;
+
+      // Argument Mode → 3-Pass Simulation
+      if (mode === 'argument') {
+        const debate = await this.runCourtroomSimulation(message);
+        if (debate) {
+          return {
+            message: debate,
+            context: { source: 'ai-3pass-simulation', model: '2.5-flash', mode },
+            suggestions: this.generateSmartSuggestions(normalizedMessage, mode),
+            mode
+          };
+        }
+      }
+
+      // General / Prediction → Single Pass AI
+      const aiResponse = await this.getAIResponse(message, mode);
+
+      if (aiResponse) {
+        return {
+          message: aiResponse,
+          context: { source: 'ai-single-pass', model: '2.5-flash', mode },
+          suggestions: this.generateSmartSuggestions(normalizedMessage, mode),
+          mode
+        };
+      }
+
+    } catch (error) {
+      console.log('AI failed, falling back to knowledge base');
+    }
+  }
+
+  // 3️⃣ Knowledge Base Fallback
+  const kbResponse = this.searchKnowledgeBase(normalizedMessage, mode);
+  if (kbResponse) {
+    return {
+      message: kbResponse,
+      context: { source: 'knowledge_base', mode },
+      suggestions: this.generateSmartSuggestions(normalizedMessage, mode),
+      mode
+    };
+  }
+
+  // 4️⃣ Final Default Fallback
+  return this.getDefaultResponse(normalizedMessage, mode);
+}
+
+  /**
+   * Get response from AI with mode-specific prompting
+   */
+  private async getAIResponse(message: string, mode: ChatMode): Promise<string | null> {
+    try {
+      let systemPrompt = '';
+
+      switch (mode) {
+        case 'general':
+          systemPrompt = `
+          You are NyayaNet AI – an expert Indian Legal Assistant.
+
+          You MUST follow these rules strictly:
+
+          1. Assume jurisdiction is India unless user specifies otherwise.
+          2. Base answers strictly on Indian Constitution, IPC, CrPC, CPC, Evidence Act, and relevant Indian statutes.
+          3. Cite specific Articles, Sections, or Acts wherever applicable.
+          4. Structure every answer EXACTLY in this format:
+
+          Introduction:
+          Brief explanation of the concept (2–3 sentences).
+
+          Legal Framework:
+          Mention relevant Articles, Sections, Acts.
+
+          Detailed Explanation:
+          Explain clearly with practical interpretation.
+
+          Practical Example (if applicable):
+          Provide a simple real-world scenario.
+
+          Important Notes:
+          Mention exceptions, limitations, or recent developments.
+
+          Conclusion:
+          Summarize in 2–3 strong sentences.
+
+          5. Keep response between 350–500 words.
+          6. Do NOT use markdown symbols like #, *, -, or **.
+          7. Maintain professional legal tone.
+          8. Always end with:
+          "This information is for educational purposes. Please consult a qualified lawyer for advice specific to your case."
+
+          Be precise, authoritative, and legally grounded.
+          `;
+          break;
+
+        case 'argument':
+          systemPrompt = `
+          You are NyayaNet AI – acting as a senior Indian courtroom advocate.
+
+          You must simulate realistic Indian court arguments.
+
+          Follow this structure strictly:
+
+          Case Summary:
+          Briefly restate facts based on user input.
+
+          Prosecution / Plaintiff Arguments:
+          - Cite relevant Sections/Articles.
+          - Present 5 strong legal points.
+          - Use courtroom-style persuasive language.
+
+          Defense Arguments:
+          - Present 5 counter-arguments.
+          - Challenge evidence credibility.
+          - Highlight procedural gaps.
+
+          Rebuttal Strategy:
+          How each side may attack the opponent’s arguments.
+
+          Key Case Laws:
+          Mention relevant Indian Supreme Court or High Court judgments if applicable.
+
+          Strategic Advice:
+          Practical courtroom tips.
+
+          Keep tone confident and formal.
+          Do NOT use markdown formatting.
+          Always conclude with:
+          "This is a simulated legal argument for educational purposes. Consult a practicing advocate for real case strategy."
+          `;
+          break;
+
+        case 'prediction':
+          systemPrompt = `
+          You are NyayaNet AI – a legal outcome analyst trained in Indian judicial trends.
+
+          You must analyze case outcome realistically using Indian legal standards.
+
+          Follow this exact structure:
+
+          Case Overview:
+          Summarize key facts.
+
+          Applicable Laws:
+          Mention specific IPC/CrPC/Civil provisions.
+
+          Evidence Strength Analysis:
+          Evaluate strength of prosecution/plaintiff evidence (Strong/Moderate/Weak).
+          Evaluate strength of defense evidence (Strong/Moderate/Weak).
+
+          Risk Factors:
+          Mention factors that may influence the judge’s decision.
+
+          Judicial Trend Insight:
+          Mention how Indian courts typically treat such cases.
+
+          Probability Estimate:
+          Give success probability in percentage.
+          Example: Conviction probability: 65%
+          Acquittal probability: 35%
+
+          Confidence Score:
+          Low / Moderate / High (based on evidence clarity).
+
+          Estimated Timeline:
+          General time expectation based on Indian courts.
+
+          Conclude with:
+          "This is predictive analysis based on legal principles and trends. Actual outcomes depend on court evaluation and evidence. Consult a lawyer for professional advice."
+
+          Keep 400–500 words.
+          No markdown formatting.
+          Be analytical and realistic.
+          `;
+          break;
+      }
 
       const fullPrompt = `${systemPrompt}\n\nUser Question: ${message}\n\nProvide a detailed, well-structured response:`;
 
@@ -371,10 +541,10 @@ export class ChatbotService {
       const response = await result.response;
       return response.text();
     } catch (error: any) {
-      console.error('Gemini AI error (full):', error);
+      console.error('AI error (full):', error);
       if (error?.response) {
         try {
-          console.error('Gemini error response body:', JSON.stringify(error.response));
+          console.error('AI error response body:', JSON.stringify(error.response));
         } catch (e) {
           console.error('Could not stringify error.response', e);
         }
@@ -383,10 +553,114 @@ export class ChatbotService {
     }
   }
 
+  private async runCourtroomSimulation(userMessage: string): Promise<string | null> {
+  try {
+
+    // PASS 1 – Prosecution
+    const prosecutionPrompt = `
+    You are a Public Prosecutor in an Indian court.
+
+    Based on the following case description, generate strong prosecution arguments.
+
+    Structure:
+    Case Summary:
+    Prosecution Arguments (5 strong legal points citing IPC/CrPC if applicable):
+    Key Evidence Emphasis:
+    Weaknesses in Defense:
+
+    Case Description:
+    ${userMessage}
+
+    Use formal Indian courtroom tone.
+    No markdown formatting.
+    `;
+
+    const prosecutionResult = await this.model.generateContent(prosecutionPrompt);
+    const prosecutionText = (await prosecutionResult.response).text();
+
+
+    // PASS 2 – Defense (Counter the above)
+    const defensePrompt = `
+    You are a Criminal Defense Advocate in an Indian court.
+
+    Below are the prosecution arguments:
+
+    ${prosecutionText}
+
+    Now generate defense counter-arguments.
+
+    Structure:
+    Defense Strategy:
+    Counter to Each Prosecution Point:
+    Procedural Lapses:
+    Doubts in Evidence:
+    Legal Protections for Accused:
+
+    Case Description:
+    ${userMessage}
+
+    Use persuasive courtroom language.
+    No markdown formatting.
+    `;
+
+    const defenseResult = await this.model.generateContent(defensePrompt);
+    const defenseText = (await defenseResult.response).text();
+
+
+    // PASS 3 – Judge Perspective
+    const judgePrompt = `
+    You are a Sessions Court Judge in India.
+
+    Below are arguments from both sides.
+
+    Prosecution:
+    ${prosecutionText}
+
+    Defense:
+    ${defenseText}
+
+    Now provide:
+
+    Judicial Analysis:
+    Strength of Prosecution (Strong/Moderate/Weak with reasoning):
+    Strength of Defense (Strong/Moderate/Weak with reasoning):
+    Likely Outcome (without giving final verdict):
+    Key Legal Issues Court Will Examine:
+
+    Maintain neutral judicial tone.
+    No markdown formatting.
+    `;
+
+    const judgeResult = await this.model.generateContent(judgePrompt);
+    const judgeText = (await judgeResult.response).text();
+
+
+    // Final Combined Output
+    return `
+    COURTROOM SIMULATION
+
+    --- PROSECUTION SIDE ---
+    ${prosecutionText}
+
+    --- DEFENSE SIDE ---
+    ${defenseText}
+
+    --- JUDICIAL PERSPECTIVE ---
+    ${judgeText}
+
+    This is a simulated courtroom debate for educational purposes only. Consult a practicing advocate for real case strategy.
+    `;
+
+  } catch (error) {
+    console.error('3-pass simulation failed:', error);
+    return null;
+  }
+}
+
   /**
-   * Search knowledge base
+   * Search knowledge base with mode awareness
    */
-  private searchKnowledgeBase(query: string): string | null {
+  private searchKnowledgeBase(query: string, mode: ChatMode): string | null {
     // Check for civil vs criminal
     if ((query.includes('civil') && query.includes('criminal')) || 
         (query.includes('difference') && (query.includes('civil') || query.includes('criminal')))) {
@@ -409,6 +683,15 @@ export class ChatbotService {
       return this.legalKnowledgeBase.get('property') || null;
     }
 
+    // Mode-specific fallbacks
+    if (mode === 'prediction' && !this.legalKnowledgeBase.get('prediction intro')) {
+      return 'Please describe your case in detail including the facts, applicable laws, and any evidence. I will analyze potential outcomes based on similar precedents and legal principles.';
+    }
+
+    if (mode === 'argument' && !this.legalKnowledgeBase.get('argument intro')) {
+      return 'Please describe your case and specify which side you need arguments for. I will help generate strong legal arguments, anticipate counter-arguments, and suggest effective strategies.';
+    }
+
     return null;
   }
 
@@ -421,68 +704,158 @@ export class ChatbotService {
   }
 
   /**
-   * Greeting response
+   * Greeting response with mode awareness
    */
-  private getGreetingResponse(): ChatResponse {
+  private getGreetingResponse(mode: ChatMode): ChatResponse {
+    const responses = {
+      general: {
+        message: 'Hello! I am your AI Legal Assistant powered by advanced AI. I can help you understand Indian laws, legal procedures, constitutional provisions, and much more. Feel free to ask any legal question!',
+        suggestions: [
+          'What is the difference between civil and criminal law?',
+          'Explain Article 21',
+          'What are fundamental rights?',
+          'Tell me about IPC'
+        ]
+      },
+      argument: {
+        message: 'Welcome to Argument Simulation Mode! I can help you prepare legal arguments for your case. Describe your case scenario and specify which side you need arguments for (prosecution/plaintiff or defense).',
+        suggestions: [
+          'Help me argue a theft case for the prosecution',
+          'Prepare defense arguments for a divorce case',
+          'How to argue for anticipatory bail?',
+          'Counter-arguments for Section 498A case'
+        ]
+      },
+      prediction: {
+        message: 'Welcome to Case Prediction Mode! Describe your case in detail including facts, applicable laws, and evidence. I will analyze potential outcomes based on precedents and legal principles.',
+        suggestions: [
+          'Predict outcome of a murder trial with circumstantial evidence',
+          'Chances of getting bail in NDPS case',
+          'Property dispute outcome analysis',
+          'Success probability in divorce by mutual consent'
+        ]
+      }
+    };
+
     return {
-      message: 'Hello! I am your AI Legal Assistant powered by advanced AI. I can help you understand Indian laws, legal procedures, constitutional provisions, and much more. Feel free to ask any legal question!',
-      suggestions: [
-        'What is the difference between civil and criminal law?',
-        'Explain Article 21',
-        'What are fundamental rights?',
-        'Tell me about IPC'
-      ]
+      message: responses[mode].message,
+      suggestions: responses[mode].suggestions,
+      mode
     };
   }
 
   /**
-   * Default helpful response
+   * Default helpful response with mode awareness
    */
-  private getDefaultResponse(query: string): ChatResponse {
+  private getDefaultResponse(query: string, mode: ChatMode): ChatResponse {
+    const responses = {
+      general: {
+        message: '**I can help you with Indian law!**\n\n' +
+          'I specialize in:\n' +
+          '✓ Constitutional Law (Articles, Fundamental Rights)\n' +
+          '✓ Criminal Law (IPC, CrPC)\n' +
+          '✓ Civil Law (Contracts, Property, Family Law)\n' +
+          '✓ Court System and Procedures\n' +
+          '✓ Legal Rights and Remedies\n\n' +
+          'Try asking specific questions like:\n' +
+          '• "What is Article 21?"\n' +
+          '• "Difference between civil and criminal law?"\n' +
+          '• "How does bail work?"\n' +
+          '• "What is IPC Section 420?"',
+        suggestions: [
+          'What is the difference between civil and criminal law?',
+          'What are fundamental rights?',
+          'Explain Article 21',
+          'Tell me about the Indian Constitution'
+        ]
+      },
+      argument: {
+        message: '**Legal Argument Simulation**\n\n' +
+          'To help you prepare effective legal arguments, please provide:\n' +
+          '1. Type of case (criminal/civil)\n' +
+          '2. Key facts of the case\n' +
+          '3. Which side you represent (prosecution/plaintiff or defense)\n' +
+          '4. Applicable laws if known\n' +
+          '5. Any evidence or witnesses\n\n' +
+          'For example: "I need arguments for the defense in a Section 302 murder case where the accused claims self-defense"',
+        suggestions: [
+          'Arguments for prosecution in theft case',
+          'Defense arguments for domestic violence case',
+          'How to argue for maintenance under Section 125 CrPC?',
+          'Counter arguments for property dispute'
+        ]
+      },
+      prediction: {
+        message: '**Case Outcome Prediction**\n\n' +
+          'For accurate case analysis, please provide:\n' +
+          '1. Case type and applicable laws\n' +
+          '2. Complete facts of the case\n' +
+          '3. Evidence available for both sides\n' +
+          '4. Current stage of proceedings\n' +
+          '5. Jurisdiction (court name/location)\n\n' +
+          'For example: "Analyze the chances of conviction in a Section 307 attempt to murder case with two eyewitnesses but no weapon recovery"',
+        suggestions: [
+          'Chances of conviction in dowry death case',
+          'Bail prediction for NDPS case with 1kg cannabis',
+          'Success rate for specific performance of contract',
+          'Custody battle outcome prediction'
+        ]
+      }
+    };
+
     return {
-      message: '**I can help you with Indian law!**\n\n' +
-        'I specialize in:\n' +
-        '✓ Constitutional Law (Articles, Fundamental Rights)\n' +
-        '✓ Criminal Law (IPC, CrPC)\n' +
-        '✓ Civil Law (Contracts, Property, Family Law)\n' +
-        '✓ Court System and Procedures\n' +
-        '✓ Legal Rights and Remedies\n\n' +
-        'Try asking specific questions like:\n' +
-        '• "What is Article 21?"\n' +
-        '• "Difference between civil and criminal law?"\n' +
-        '• "How does bail work?"\n' +
-        '• "What is IPC Section 420?"',
-      suggestions: [
-        'What is the difference between civil and criminal law?',
-        'What are fundamental rights?',
-        'Explain Article 21',
-        'Tell me about the Indian Constitution'
-      ]
+      message: responses[mode].message,
+      suggestions: responses[mode].suggestions,
+      mode
     };
   }
 
   /**
-   * Generate smart suggestions
+   * Generate smart suggestions based on mode
    */
-  private generateSmartSuggestions(query: string): string[] {
-    if (query.includes('civil') || query.includes('criminal')) {
-      return ['What is IPC?', 'How to file a civil case?', 'What is CrPC?', 'Explain Section 498A'];
+  private generateSmartSuggestions(query: string, mode: ChatMode): string[] {
+    const suggestions = {
+      general: {
+        default: [
+          'What are fundamental rights?',
+          'Difference between civil and criminal law',
+          'What is Article 21?',
+          'Explain IPC'
+        ],
+        civil: ['How to file a civil case?', 'What is CrPC?', 'Explain Section 498A'],
+        criminal: ['What is IPC?', 'How to file a civil case?', 'What is CrPC?']
+      },
+      argument: {
+        default: [
+          'Arguments for prosecution in murder case',
+          'Defense arguments for rape case',
+          'How to argue for bail?',
+          'Counter arguments for Section 498A'
+        ],
+        civil: ['Arguments for plaintiff in property dispute', 'Defense arguments for divorce', 'How to argue for maintenance?'],
+        criminal: ['Prosecution strategy for theft', 'Defense arguments for assault', 'Bail arguments']
+      },
+      prediction: {
+        default: [
+          'Murder trial outcome with circumstantial evidence',
+          'Chances of conviction in NDPS case',
+          'Property dispute success probability',
+          'Bail chances in cheating case'
+        ],
+        civil: ['Success rate in specific performance', 'Divorce by mutual consent timeline', 'Property partition chances'],
+        criminal: ['Acquittal chances in rape case', 'Bail probability in murder', 'Sentence reduction chances']
+      }
+    };
+
+    const modeSuggestions = suggestions[mode];
+    
+    if (query.includes('civil') || query.includes('property') || query.includes('divorce')) {
+      return modeSuggestions.civil || modeSuggestions.default;
     }
-    if (query.includes('article') || query.includes('constitution') || query.includes('fundamental')) {
-      return ['What is Article 21?', 'Explain Article 14', 'What are directive principles?', 'Right to privacy'];
-    }
-    if (query.includes('property') || query.includes('land')) {
-      return ['Property registration process', 'Transfer of Property Act', 'Stamp duty requirements', 'Title verification'];
-    }
-    if (query.includes('divorce') || query.includes('marriage')) {
-      return ['Grounds for divorce', 'Mutual consent divorce', 'Section 125 CrPC maintenance', 'Child custody laws'];
+    if (query.includes('criminal') || query.includes('murder') || query.includes('theft')) {
+      return modeSuggestions.criminal || modeSuggestions.default;
     }
     
-    return [
-      'What are fundamental rights?',
-      'Difference between civil and criminal law',
-      'What is Article 21?',
-      'Explain IPC'
-    ];
+    return modeSuggestions.default;
   }
 }

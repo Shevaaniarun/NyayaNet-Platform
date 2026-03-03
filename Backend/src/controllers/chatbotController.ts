@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { ChatbotService } from '../services/chatbotService';
+import { ChatbotService, ChatMode } from '../services/chatbotService';
 import { AuthRequest } from '../middleware/auth';
 import pool from '../config/database';
 import { v4 as uuidv4 } from 'uuid';
@@ -10,6 +10,7 @@ interface Message {
   role: 'user' | 'assistant';
   content: string;
   timestamp: string; 
+  mode?: ChatMode;
 }
 
 export class ChatbotController {
@@ -18,33 +19,52 @@ export class ChatbotController {
 
   // Ensure table exists method - guarded for missing pool
   private static async ensureTableExists(): Promise<void> {
-    if (!pool || typeof pool.query !== 'function') {
-      console.warn('⚠️ DB pool unavailable — using in-memory chat store');
-      return;
-    }
-    try {
-      await pool.query(`
-        CREATE TABLE IF NOT EXISTS chats (
-          id UUID PRIMARY KEY,
-          user_id VARCHAR(255) NOT NULL,
-          name VARCHAR(255) NOT NULL,
-          messages JSONB DEFAULT '[]'::jsonb,
-          created_at TIMESTAMP DEFAULT NOW(),
-          updated_at TIMESTAMP DEFAULT NOW()
-        );
-      `);
-
-      await pool.query(`
-        CREATE INDEX IF NOT EXISTS idx_chats_user_id ON chats(user_id);
-        CREATE INDEX IF NOT EXISTS idx_chats_updated_at ON chats(updated_at);
-      `);
-
-      console.log('✅ Chats table ready');
-    } catch (error) {
-      console.error('❌ Failed to ensure chats table exists:', error);
-      throw error;
-    }
+  if (!pool || typeof pool.query !== 'function') {
+    console.warn('⚠️ DB pool unavailable — using in-memory chat store');
+    return;
   }
+  try {
+    // Create table if it doesn't exist
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS chats (
+        id UUID PRIMARY KEY,
+        user_id VARCHAR(255) NOT NULL,
+        name VARCHAR(255) NOT NULL,
+        messages JSONB DEFAULT '[]'::jsonb,
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
+      );
+    `);
+
+    // Check if mode column exists and add it if not
+    const columnCheck = await pool.query(`
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_name='chats' AND column_name='mode'
+    `);
+
+    if (columnCheck.rows.length === 0) {
+      console.log('📝 Adding mode column to chats table...');
+      await pool.query(`
+        ALTER TABLE chats 
+        ADD COLUMN mode VARCHAR(50) DEFAULT 'general';
+      `);
+      console.log('✅ Mode column added successfully');
+    }
+
+    // Create indexes
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_chats_user_id ON chats(user_id);
+      CREATE INDEX IF NOT EXISTS idx_chats_updated_at ON chats(updated_at);
+      CREATE INDEX IF NOT EXISTS idx_chats_mode ON chats(mode);
+    `);
+
+    console.log('✅ Chats table ready');
+  } catch (error) {
+    console.error('❌ Failed to ensure chats table exists:', error);
+    throw error;
+  }
+}
 
   // Helper: in-memory operations
   private static inMemoryGetChats(userId: string) {
@@ -55,12 +75,20 @@ export class ChatbotController {
     this.inMemoryChats.set(userId, chats);
   }
 
-  private static inMemoryCreateChat(userId: string, name: string, initialMessages: Message[]) {
+  private static inMemoryCreateChat(userId: string, name: string, initialMessages: Message[], mode: ChatMode = 'general') {
     const id = uuidv4();
     const now = new Date().toISOString();
-    const chat = { id, user_id: userId, name, messages: initialMessages, created_at: now, updated_at: now };
+    const chat = { 
+      id, 
+      user_id: userId, 
+      name, 
+      messages: initialMessages, 
+      mode,
+      created_at: now, 
+      updated_at: now 
+    };
     const chats = this.inMemoryGetChats(userId);
-    chats.unshift(chat); // keep most recent first
+    chats.unshift(chat);
     this.inMemorySaveChats(userId, chats);
     return chat;
   }
@@ -90,11 +118,16 @@ export class ChatbotController {
 
   static async chat(req: Request, res: Response): Promise<void> {
     try {
-      const { message, chatId } = req.body;
+      const { message, chatId, mode = 'general' } = req.body;
       const authReq = req as AuthRequest;
       const userId = authReq.user?.id || authReq.user?.userId;
 
-      console.log('📝 Chat request:', { message: message?.substring(0, 50), chatId, userId });
+      console.log('📝 Chat request:', { 
+        message: message?.substring(0, 50), 
+        chatId, 
+        userId,
+        mode 
+      });
 
       if (!message || typeof message !== 'string') {
         res.status(400).json({ error: 'Message is required' });
@@ -108,21 +141,29 @@ export class ChatbotController {
       }
 
       // Get AI response
-      console.log(`🤖 Getting AI response for user=${userId}`);
+      console.log(`🤖 Getting AI response for user=${userId} in mode=${mode}`);
       let response: any;
       try {
-        response = await chatbotService.processMessage(message, userId);
+        response = await chatbotService.processMessage(message, userId, mode);
         console.log('✅ AI response received');
       } catch (aiError) {
         console.error('❌ AI Service error:', aiError);
         response = {
-          message: "I'm here to help with legal questions. Could you please rephrase your question?",
-          context: { source: 'fallback' },
-          suggestions: ["What is Article 21?", "Difference between civil and criminal law?", "What are fundamental rights?"]
+          message: mode === 'general' 
+            ? "I'm here to help with legal questions. Could you please rephrase your question?"
+            : mode === 'argument'
+            ? "I can help with argument simulation. Please describe your case."
+            : "I can help predict case outcomes. Please describe your case in detail.",
+          context: { source: 'fallback', mode },
+          suggestions: mode === 'general'
+            ? ["What is Article 21?", "Difference between civil and criminal law?", "What are fundamental rights?"]
+            : mode === 'argument'
+            ? ["Help me argue a criminal case", "Defense arguments for divorce", "How to argue for bail?"]
+            : ["Predict murder trial outcome", "Bail chances in NDPS case", "Property dispute analysis"]
         };
       }
 
-      // Ensure chats table exists (no-op if pool unavailable)
+      // Ensure chats table exists
       try {
         await ChatbotController.ensureTableExists();
       } catch (err) {
@@ -135,35 +176,36 @@ export class ChatbotController {
       try {
         // If no chatId, create new chat
         if (!chatId_to_use) {
-          console.log('🆕 Creating new chat');
+          console.log('🆕 Creating new chat in mode:', mode);
           const newChatId = uuidv4();
           const chatNameToUse = message.substring(0, 50) + (message.length > 50 ? '...' : '');
 
           const initialMessages: Message[] = [{
             role: 'user',
             content: message,
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
+            mode
           }];
 
           if (pool && typeof pool.query === 'function') {
             const insertResult = await pool.query(
-              `INSERT INTO chats (id, user_id, name, messages, created_at, updated_at) 
-               VALUES ($1, $2, $3, $4::jsonb, NOW(), NOW()) 
+              `INSERT INTO chats (id, user_id, name, messages, mode, created_at, updated_at) 
+               VALUES ($1, $2, $3, $4::jsonb, $5, NOW(), NOW()) 
                RETURNING id, name`,
-              [newChatId, userId, chatNameToUse, JSON.stringify(initialMessages)]
+              [newChatId, userId, chatNameToUse, JSON.stringify(initialMessages), mode]
             );
             chatId_to_use = newChatId;
             chatName = insertResult.rows[0]?.name || chatNameToUse;
             console.log('✅ New chat created (DB):', chatId_to_use);
           } else {
-            const chat = ChatbotController.inMemoryCreateChat(userId, chatNameToUse, initialMessages);
+            const chat = ChatbotController.inMemoryCreateChat(userId, chatNameToUse, initialMessages, mode);
             chatId_to_use = chat.id;
             chatName = chat.name;
             console.log('✅ New chat created (in-memory):', chatId_to_use);
           }
         } else {
           console.log('📂 Using existing chat:', chatId_to_use);
-          // Get existing chat
+          
           if (pool && typeof pool.query === 'function') {
             const chatResult = await pool.query(
               'SELECT name, messages FROM chats WHERE id = $1 AND user_id = $2',
@@ -174,10 +216,9 @@ export class ChatbotController {
               chatName = chatResult.rows[0].name;
               const currentMessages = chatResult.rows[0].messages || [];
 
-              // Add user message
               const updatedMessages = [
                 ...currentMessages,
-                { role: 'user', content: message, timestamp: new Date().toISOString() }
+                { role: 'user', content: message, timestamp: new Date().toISOString(), mode }
               ];
 
               await pool.query(
@@ -194,13 +235,14 @@ export class ChatbotController {
               const initialMessages: Message[] = [{
                 role: 'user',
                 content: message,
-                timestamp: new Date().toISOString()
+                timestamp: new Date().toISOString(),
+                mode
               }];
               const insertResult = await pool.query(
-                `INSERT INTO chats (id, user_id, name, messages, created_at, updated_at) 
-                 VALUES ($1, $2, $3, $4::jsonb, NOW(), NOW()) 
+                `INSERT INTO chats (id, user_id, name, messages, mode, created_at, updated_at) 
+                 VALUES ($1, $2, $3, $4::jsonb, $5, NOW(), NOW()) 
                  RETURNING id, name`,
-                [newChatId, userId, chatNameToUse, JSON.stringify(initialMessages)]
+                [newChatId, userId, chatNameToUse, JSON.stringify(initialMessages), mode]
               );
               chatId_to_use = newChatId;
               chatName = insertResult.rows[0]?.name || chatNameToUse;
@@ -212,7 +254,7 @@ export class ChatbotController {
               chatName = existing.name;
               const updatedMessages = [
                 ...existing.messages,
-                { role: 'user', content: message, timestamp: new Date().toISOString() }
+                { role: 'user', content: message, timestamp: new Date().toISOString(), mode }
               ];
               ChatbotController.inMemoryUpdateMessages(userId, chatId_to_use, updatedMessages);
               console.log('✅ User message added to chat (in-memory)');
@@ -222,9 +264,10 @@ export class ChatbotController {
               const initialMessages: Message[] = [{
                 role: 'user',
                 content: message,
-                timestamp: new Date().toISOString()
+                timestamp: new Date().toISOString(),
+                mode
               }];
-              const chat = ChatbotController.inMemoryCreateChat(userId, chatNameToUse, initialMessages);
+              const chat = ChatbotController.inMemoryCreateChat(userId, chatNameToUse, initialMessages, mode);
               chatId_to_use = chat.id;
               chatName = chat.name;
             }
@@ -242,7 +285,7 @@ export class ChatbotController {
           const currentMessages = messagesResult.rows[0]?.messages || [];
           const updatedMessages = [
             ...currentMessages,
-            { role: 'assistant', content: response.message, timestamp: new Date().toISOString() }
+            { role: 'assistant', content: response.message, timestamp: new Date().toISOString(), mode }
           ];
 
           await pool.query(
@@ -257,14 +300,13 @@ export class ChatbotController {
           const currentMessages = existing?.messages || [];
           const updatedMessages = [
             ...currentMessages,
-            { role: 'assistant', content: response.message, timestamp: new Date().toISOString() }
+            { role: 'assistant', content: response.message, timestamp: new Date().toISOString(), mode }
           ];
           if (existing) {
             ChatbotController.inMemoryUpdateMessages(userId, chatId_to_use, updatedMessages);
           } else {
-            // create new chat with assistant message if somehow missing
             const chatNameToUse = message.substring(0, 50) + (message.length > 50 ? '...' : '');
-            ChatbotController.inMemoryCreateChat(userId, chatNameToUse, updatedMessages);
+            ChatbotController.inMemoryCreateChat(userId, chatNameToUse, updatedMessages, mode);
             chatName = chatName || chatNameToUse;
           }
           console.log('✅ Assistant message added to chat (in-memory)');
@@ -279,7 +321,8 @@ export class ChatbotController {
         context: response.context,
         suggestions: response.suggestions,
         chatId: chatId_to_use,
-        chatName: chatName
+        chatName: chatName,
+        mode: response.mode || mode
       });
 
     } catch (error: any) {
@@ -312,7 +355,7 @@ export class ChatbotController {
 
       if (pool && typeof pool.query === 'function') {
         const result = await pool.query(
-          'SELECT id, name, created_at, updated_at FROM chats WHERE user_id = $1 ORDER BY updated_at DESC',
+          'SELECT id, name, mode, created_at, updated_at FROM chats WHERE user_id = $1 ORDER BY updated_at DESC',
           [userId]
         );
 
@@ -321,6 +364,7 @@ export class ChatbotController {
         const chats = result.rows.map(row => ({
           _id: row.id,
           name: row.name,
+          mode: row.mode || 'general',
           createdAt: row.created_at,
           updatedAt: row.updated_at
         }));
@@ -333,6 +377,7 @@ export class ChatbotController {
       const chats = ChatbotController.inMemoryGetChats(userId).map((c: any) => ({
         _id: c.id,
         name: c.name,
+        mode: c.mode || 'general',
         createdAt: c.created_at,
         updatedAt: c.updated_at
       }));
@@ -369,7 +414,6 @@ export class ChatbotController {
         );
 
         if (result.rows.length === 0) {
-          // fallback to in-memory if DB has no row
           const inMemory = ChatbotController.inMemoryFindChat(userId, chatId);
           if (!inMemory) {
             console.log('❌ Chat not found:', chatId);
@@ -380,7 +424,8 @@ export class ChatbotController {
             id: `${chatId}-${index}`,
             role: msg.role,
             content: msg.content,
-            timestamp: msg.timestamp
+            timestamp: msg.timestamp,
+            mode: msg.mode
           }));
           console.log(`✅ Found ${messages.length} messages (in-memory fallback)`);
           res.status(200).json(messages);
@@ -391,7 +436,8 @@ export class ChatbotController {
           id: `${chatId}-${index}`,
           role: msg.role,
           content: msg.content,
-          timestamp: msg.timestamp
+          timestamp: msg.timestamp,
+          mode: msg.mode
         }));
 
         console.log(`✅ Found ${messages.length} messages`);
@@ -410,7 +456,8 @@ export class ChatbotController {
         id: `${chatId}-${index}`,
         role: msg.role,
         content: msg.content,
-        timestamp: msg.timestamp
+        timestamp: msg.timestamp,
+        mode: msg.mode
       }));
       console.log(`✅ Found ${messages.length} messages (in-memory)`);
       res.status(200).json(messages);
@@ -444,7 +491,6 @@ export class ChatbotController {
         );
 
         if (result.rows.length === 0) {
-          // attempt in-memory delete
           const inMemory = ChatbotController.inMemoryFindChat(userId, chatId);
           if (!inMemory) {
             console.log('❌ Chat not found for deletion');
@@ -508,7 +554,6 @@ export class ChatbotController {
         );
 
         if (result.rows.length === 0) {
-          // try in-memory rename if DB didn't find it
           const inMemory = ChatbotController.inMemoryFindChat(userId, chatId);
           if (!inMemory) {
             console.log('❌ Chat not found for rename');
@@ -520,6 +565,7 @@ export class ChatbotController {
           res.status(200).json({
             id: inMemory.id,
             name: inMemory.name,
+            mode: inMemory.mode,
             createdAt: inMemory.created_at,
             updatedAt: inMemory.updated_at
           });
@@ -530,13 +576,14 @@ export class ChatbotController {
         res.status(200).json({
           id: result.rows[0].id,
           name: result.rows[0].name,
+          mode: result.rows[0].mode,
           createdAt: result.rows[0].created_at,
           updatedAt: result.rows[0].updated_at
         });
         return;
       }
 
-      // In-memory rename path (when DB unavailable)
+      // In-memory rename path
       const inMemory = ChatbotController.inMemoryFindChat(userId, chatId);
       if (!inMemory) {
         console.log('❌ Chat not found for rename (in-memory)');
@@ -548,6 +595,7 @@ export class ChatbotController {
       res.status(200).json({
         id: inMemory.id,
         name: inMemory.name,
+        mode: inMemory.mode,
         createdAt: inMemory.created_at,
         updatedAt: inMemory.updated_at
       });

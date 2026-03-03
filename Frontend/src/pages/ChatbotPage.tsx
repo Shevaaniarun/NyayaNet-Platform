@@ -1,5 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Loader2, Sparkles, Scale, X, Plus, Menu, ChevronLeft, ChevronRight, Edit2, Trash2, MoreVertical, LogOut } from 'lucide-react';
+import { 
+  Send, Bot, User, Loader2, Sparkles, Scale, X, Plus, Menu, 
+  ChevronLeft, ChevronRight, Edit2, Trash2, MoreVertical, 
+  LogOut, Gavel, Swords, BarChart3, MessageSquare 
+} from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import axios from 'axios';
 
@@ -8,11 +12,13 @@ interface Message {
   role: 'user' | 'assistant';
   content: string;
   timestamp: Date;
+  mode?: 'general' | 'argument' | 'prediction';
 }
 
 interface Chat {
   _id: string;
   name: string;
+  mode: 'general' | 'argument' | 'prediction';
   createdAt: string;
   updatedAt: string;
 }
@@ -20,6 +26,8 @@ interface Chat {
 interface ChatMessages {
   [key: string]: Message[];
 }
+
+type ChatMode = 'general' | 'argument' | 'prediction';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
@@ -39,18 +47,58 @@ axiosInstance.interceptors.request.use((config) => {
   return config;
 });
 
-const SUGGESTED_QUESTIONS = [
-  "What are the key provisions of Article 21?",
-  "Explain the concept of fundamental rights",
-  "What is the difference between civil and criminal law?",
-  "How does the Indian judicial system work?",
-  "What are the recent amendments in IPC?",
-  "Explain Section 498A of IPC"
-];
+const MODE_SUGGESTIONS = {
+  general: [
+    "What are the key provisions of Article 21?",
+    "Explain the concept of fundamental rights",
+    "What is the difference between civil and criminal law?",
+    "How does the Indian judicial system work?"
+  ],
+  argument: [
+    "Help me argue a theft case for prosecution",
+    "Prepare defense arguments for divorce",
+    "How to argue for anticipatory bail?",
+    "Counter-arguments for Section 498A case"
+  ],
+  prediction: [
+    "Predict outcome of murder trial with circumstantial evidence",
+    "Chances of getting bail in NDPS case",
+    "Property dispute outcome analysis",
+    "Success probability in divorce case"
+  ]
+};
+
+const MODE_CONFIG = {
+  general: {
+    icon: MessageSquare,
+    label: 'General',
+    color: 'text-constitution-gold',
+    bgColor: 'bg-constitution-gold/10',
+    borderColor: 'border-constitution-gold/30',
+    description: 'Ask general legal questions about Indian law'
+  },
+  argument: {
+    icon: Swords,
+    label: 'Argument Simulation',
+    color: 'text-constitution-gold',
+    bgColor: 'bg-constitution-gold/10',
+    borderColor: 'border-constitution-gold/30',
+    description: 'Simulate legal arguments for both sides'
+  },
+  prediction: {
+    icon: BarChart3,
+    label: 'Case Prediction',
+    color: 'text-constitution-gold',
+    bgColor: 'bg-constitution-gold/10',
+    borderColor: 'border-constitution-gold/30',
+    description: 'Analyze potential case outcomes'
+  }
+};
 
 export function ChatbotPage() {
   const [chats, setChats] = useState<Chat[]>([]);
   const [currentChatId, setCurrentChatId] = useState<string>('');
+  const [currentMode, setCurrentMode] = useState<ChatMode>('general');
   const [chatMessages, setChatMessages] = useState<ChatMessages>({});
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -59,6 +107,7 @@ export function ChatbotPage() {
   const [editingChatId, setEditingChatId] = useState<string | null>(null);
   const [editingChatName, setEditingChatName] = useState('');
   const [showChatMenu, setShowChatMenu] = useState<string | null>(null);
+  const [showModeSelector, setShowModeSelector] = useState(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -107,10 +156,11 @@ export function ChatbotPage() {
       // If there are chats, load the most recent one
       if (fetchedChats.length > 0) {
         setCurrentChatId(fetchedChats[0]._id);
+        setCurrentMode(fetchedChats[0].mode || 'general');
         await fetchChatMessages(fetchedChats[0]._id);
       } else {
         // Create a new chat if none exists
-        createNewChat();
+        createNewChat('general');
       }
     } catch (error: any) {
       console.error('Failed to fetch chat history:', error);
@@ -143,31 +193,46 @@ export function ChatbotPage() {
         ...prev,
         [chatId]: messages
       }));
+
+      // Update current mode based on first message's mode
+      if (messages.length > 0 && messages[0].mode) {
+        setCurrentMode(messages[0].mode);
+      }
     } catch (error) {
       console.error('Failed to fetch chat messages:', error);
       toast.error('Failed to load messages');
     }
   };
 
-  const createNewChat = async () => {
+  const createNewChat = async (mode: ChatMode = 'general') => {
     try {
       // Create a temporary local chat
       const tempChat: Chat = {
         _id: 'temp-' + Date.now(),
-        name: 'New Conversation',
+        name: `New ${mode === 'general' ? '' : mode + ' '}Conversation`,
+        mode: mode,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
       
       setChats(prev => [tempChat, ...prev]);
       setCurrentChatId(tempChat._id);
+      setCurrentMode(mode);
+      setShowModeSelector(false);
       
-      // Add welcome message
+      // Add welcome message based on mode
+      const welcomeMessages = {
+        general: 'Hello! I\'m your AI Legal Assistant. How can I help you today?',
+        argument: 'Welcome to Argument Simulation Mode! I can help you prepare legal arguments. Describe your case',
+        prediction: 'Welcome to Case Prediction Mode! Describe your case in detail and I\'ll analyze potential outcomes based on precedents and legal principles.'
+      };
+      
       const welcomeMessage: Message = {
         id: Date.now().toString(),
         role: 'assistant',
-        content: 'Hello! I\'m your AI Legal Assistant. How can I help you today?',
-        timestamp: new Date()
+        content: welcomeMessages[mode],
+        timestamp: new Date(),
+        mode: mode
       };
       
       setChatMessages(prev => ({
@@ -199,8 +264,9 @@ export function ChatbotPage() {
           const remainingChats = chats.filter(chat => chat._id !== chatId);
           if (remainingChats.length > 0) {
             setCurrentChatId(remainingChats[0]._id);
+            setCurrentMode(remainingChats[0].mode || 'general');
           } else {
-            createNewChat();
+            createNewChat('general');
           }
         }
       } else {
@@ -218,9 +284,10 @@ export function ChatbotPage() {
           const remainingChats = chats.filter(chat => chat._id !== chatId);
           if (remainingChats.length > 0) {
             setCurrentChatId(remainingChats[0]._id);
+            setCurrentMode(remainingChats[0].mode || 'general');
             await fetchChatMessages(remainingChats[0]._id);
           } else {
-            createNewChat();
+            createNewChat('general');
           }
         }
       }
@@ -276,7 +343,6 @@ export function ChatbotPage() {
     setEditingChatName('');
   };
 
-  // FIXED: Renamed from handleKeyPress to handleKeyDown
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -299,7 +365,8 @@ export function ChatbotPage() {
       id: Date.now().toString(),
       role: 'user',
       content: inputMessage.trim(),
-      timestamp: new Date()
+      timestamp: new Date(),
+      mode: currentMode
     };
 
     // Update UI with user message
@@ -314,14 +381,16 @@ export function ChatbotPage() {
     try {
       const response = await axiosInstance.post('/chatbot/chat', {
         message: inputMessage.trim(),
-        chatId: currentChatId.startsWith('temp-') ? null : currentChatId
+        chatId: currentChatId.startsWith('temp-') ? null : currentChatId,
+        mode: currentMode
       });
 
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
         content: response.data.message,
-        timestamp: new Date()
+        timestamp: new Date(),
+        mode: response.data.mode || currentMode
       };
 
       // Update messages with assistant response
@@ -341,7 +410,8 @@ export function ChatbotPage() {
             ? { 
                 ...chat, 
                 _id: newChatId, 
-                name: response.data.chatName || chat.name 
+                name: response.data.chatName || chat.name,
+                mode: response.data.mode || currentMode
               }
             : chat
         ));
@@ -357,7 +427,7 @@ export function ChatbotPage() {
         setCurrentChatId(newChatId);
       } else {
         // Update chat name if it was the first message
-        if (chats.find(c => c._id === currentChatId)?.name === 'New Conversation') {
+        if (chats.find(c => c._id === currentChatId)?.name.includes('New')) {
           setChats(prev => prev.map(chat => 
             chat._id === currentChatId 
               ? { ...chat, name: inputMessage.trim().substring(0, 30) + (inputMessage.length > 30 ? '...' : '') }
@@ -378,7 +448,8 @@ export function ChatbotPage() {
           id: (Date.now() + 1).toString(),
           role: 'assistant',
           content: 'I apologize, but I encountered an error processing your request. Please try again or rephrase your question.',
-          timestamp: new Date()
+          timestamp: new Date(),
+          mode: currentMode
         };
         
         setChatMessages(prev => ({
@@ -398,6 +469,10 @@ export function ChatbotPage() {
   };
 
   const switchChat = async (chatId: string) => {
+    const chat = chats.find(c => c._id === chatId);
+    if (chat) {
+      setCurrentMode(chat.mode || 'general');
+    }
     setCurrentChatId(chatId);
     if (!chatMessages[chatId]) {
       await fetchChatMessages(chatId);
@@ -427,6 +502,8 @@ export function ChatbotPage() {
     }
   };
 
+  const currentConfig = MODE_CONFIG[currentMode];
+  const CurrentModeIcon = currentConfig.icon;
   const currentMessages = chatMessages[currentChatId] || [];
 
   return (
@@ -442,12 +519,42 @@ export function ChatbotPage() {
             {/* New Chat Button */}
             <div className="p-4">
               <button
-                onClick={createNewChat}
+                onClick={() => setShowModeSelector(!showModeSelector)}
                 className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-constitution-gold/10 hover:bg-constitution-gold/20 border border-constitution-gold/30 rounded-xl text-constitution-gold transition-all group"
               >
                 <Plus className="w-5 h-5 group-hover:rotate-90 transition-transform" />
                 <span className="font-medium">New Chat</span>
               </button>
+
+              {/* Mode Selector */}
+              {showModeSelector && (
+                <div className="mt-2 space-y-2">
+                  {Object.entries(MODE_CONFIG).map(([mode, config]) => {
+                    const Icon = config.icon;
+                    return (
+                      <button
+                        key={mode}
+                        onClick={() => createNewChat(mode as ChatMode)}
+                        className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl border transition-all ${
+                          currentMode === mode
+                            ? config.bgColor + ' ' + config.borderColor
+                            : 'border-constitution-gold/10 hover:bg-constitution-gold/5'
+                        }`}
+                      >
+                        <Icon className={`w-5 h-5 ${config.color}`} />
+                        <div className="flex-1 text-left">
+                          <p className={`text-sm font-medium ${config.color}`}>
+                            {config.label}
+                          </p>
+                          <p className="text-xs text-constitution-gold/50">
+                            {config.description}
+                          </p>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
             {/* Chat History */}
@@ -458,75 +565,83 @@ export function ChatbotPage() {
                 </div>
               ) : (
                 <div className="space-y-1">
-                  {chats.map((chat) => (
-                    <div
-                      key={chat._id}
-                      onClick={() => switchChat(chat._id)}
-                      className={`group relative flex items-center justify-between px-3 py-3 rounded-xl cursor-pointer transition-all ${
-                        currentChatId === chat._id
-                          ? 'bg-constitution-gold/20 border border-constitution-gold/40'
-                          : 'hover:bg-constitution-gold/5 border border-transparent'
-                      }`}
-                    >
-                      {editingChatId === chat._id ? (
-                        <input
-                          ref={editInputRef}
-                          type="text"
-                          value={editingChatName}
-                          onChange={(e) => setEditingChatName(e.target.value)}
-                          onBlur={() => saveChatName(chat._id)}
-                          onKeyDown={handleKeyDown}
-                          className="flex-1 bg-justice-black text-judge-ivory border border-constitution-gold rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-constitution-gold"
-                          onClick={(e) => e.stopPropagation()}
-                        />
-                      ) : (
-                        <>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-judge-ivory text-sm font-medium truncate">
-                              {chat.name}
-                            </p>
-                            <p className="text-constitution-gold/50 text-xs mt-1">
-                              {formatDate(chat.updatedAt)}
-                            </p>
-                          </div>
-
-                          <div className="relative">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setShowChatMenu(showChatMenu === chat._id ? null : chat._id);
-                              }}
-                              className="opacity-0 group-hover:opacity-100 p-1 hover:bg-constitution-gold/20 rounded transition-all"
-                            >
-                              <MoreVertical className="w-4 h-4 text-constitution-gold/70" />
-                            </button>
-
-                            {showChatMenu === chat._id && (
-                              <div
-                                ref={menuRef}
-                                className="absolute right-0 top-full mt-1 w-40 bg-justice-black border border-constitution-gold/20 rounded-lg shadow-xl z-50 py-1"
-                              >
-                                <button
-                                  onClick={(e) => startEditingChat(chat, e)}
-                                  className="w-full px-4 py-2 text-left text-sm text-judge-ivory hover:bg-constitution-gold/10 flex items-center space-x-2"
-                                >
-                                  <Edit2 className="w-3.5 h-3.5 text-constitution-gold/70" />
-                                  <span>Rename</span>
-                                </button>
-                                <button
-                                  onClick={(e) => deleteChat(chat._id, e)}
-                                  className="w-full px-4 py-2 text-left text-sm text-red-400 hover:bg-red-500/10 flex items-center space-x-2"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                  <span>Delete</span>
-                                </button>
+                  {chats.map((chat) => {
+                    const chatModeConfig = MODE_CONFIG[chat.mode || 'general'];
+                    const ChatIcon = chatModeConfig.icon;
+                    
+                    return (
+                      <div
+                        key={chat._id}
+                        onClick={() => switchChat(chat._id)}
+                        className={`group relative flex items-center justify-between px-3 py-3 rounded-xl cursor-pointer transition-all ${
+                          currentChatId === chat._id
+                            ? chatModeConfig.bgColor + ' ' + chatModeConfig.borderColor
+                            : 'hover:bg-constitution-gold/5 border border-transparent'
+                        }`}
+                      >
+                        {editingChatId === chat._id ? (
+                          <input
+                            ref={editInputRef}
+                            type="text"
+                            value={editingChatName}
+                            onChange={(e) => setEditingChatName(e.target.value)}
+                            onBlur={() => saveChatName(chat._id)}
+                            onKeyDown={handleKeyDown}
+                            className="flex-1 bg-justice-black text-judge-ivory border border-constitution-gold rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-constitution-gold"
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        ) : (
+                          <>
+                            <div className="flex-1 min-w-0 flex items-center space-x-2">
+                              <ChatIcon className={`w-4 h-4 flex-shrink-0 ${chatModeConfig.color}`} />
+                              <div className="min-w-0">
+                                <p className="text-judge-ivory text-sm font-medium truncate">
+                                  {chat.name}
+                                </p>
+                                <p className="text-constitution-gold/50 text-xs mt-1">
+                                  {formatDate(chat.updatedAt)}
+                                </p>
                               </div>
-                            )}
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  ))}
+                            </div>
+
+                            <div className="relative">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setShowChatMenu(showChatMenu === chat._id ? null : chat._id);
+                                }}
+                                className="opacity-0 group-hover:opacity-100 p-1 hover:bg-constitution-gold/20 rounded transition-all"
+                              >
+                                <MoreVertical className="w-4 h-4 text-constitution-gold/70" />
+                              </button>
+
+                              {showChatMenu === chat._id && (
+                                <div
+                                  ref={menuRef}
+                                  className="absolute right-0 top-full mt-1 w-40 bg-justice-black border border-constitution-gold/20 rounded-lg shadow-xl z-50 py-1"
+                                >
+                                  <button
+                                    onClick={(e) => startEditingChat(chat, e)}
+                                    className="w-full px-4 py-2 text-left text-sm text-judge-ivory hover:bg-constitution-gold/10 flex items-center space-x-2"
+                                  >
+                                    <Edit2 className="w-3.5 h-3.5 text-constitution-gold/70" />
+                                    <span>Rename</span>
+                                  </button>
+                                  <button
+                                    onClick={(e) => deleteChat(chat._id, e)}
+                                    className="w-full px-4 py-2 text-left text-sm text-red-400 hover:bg-red-500/10 flex items-center space-x-2"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                    <span>Delete</span>
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -551,14 +666,18 @@ export function ChatbotPage() {
                 )}
               </button>
               <div className="relative">
-                <div className="w-12 h-12 bg-gradient-to-br from-constitution-gold to-constitution-gold/70 rounded-xl flex items-center justify-center shadow-lg">
-                  <Bot className="w-7 h-7 text-justice-black" />
+                <div className={`w-12 h-12 ${currentConfig.bgColor} rounded-xl flex items-center justify-center shadow-lg`}>
+                  <CurrentModeIcon className={`w-7 h-7 ${currentConfig.color}`} />
                 </div>
                 <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-justice-black animate-pulse"></div>
               </div>
               <div>
-                <h1 className="text-2xl font-heading text-judge-ivory tracking-wide">AI Legal Assistant</h1>
-                <p className="text-constitution-gold/70 text-sm">Powered by Advanced Language Models</p>
+                <h1 className="text-2xl font-heading text-judge-ivory tracking-wide">
+                  {currentConfig.label}
+                </h1>
+                <p className={`${currentConfig.color}/70 text-sm`}>
+                  {currentConfig.description}
+                </p>
               </div>
             </div>
           </div>
@@ -567,65 +686,83 @@ export function ChatbotPage() {
         {/* Messages Container */}
         <div className="flex-1 overflow-y-auto px-4 py-6">
           <div className="max-w-4xl mx-auto space-y-6">
-            {currentMessages.map((message) => (
-              <div
-                key={message.id}
-                className={`flex items-start space-x-4 ${
-                  message.role === 'user' ? 'flex-row-reverse space-x-reverse' : ''
-                }`}
-              >
-                {/* Avatar */}
-                <div
-                  className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${
-                    message.role === 'assistant'
-                      ? 'bg-gradient-to-br from-constitution-gold to-constitution-gold/70'
-                      : 'bg-seal-red'
-                  }`}
-                >
-                  {message.role === 'assistant' ? (
-                    <Bot className="w-6 h-6 text-justice-black" />
-                  ) : (
-                    <User className="w-6 h-6 text-white" />
-                  )}
-                </div>
+            {currentMessages.map((message) => {
+              const messageMode = message.mode || 'general';
+              const messageConfig = MODE_CONFIG[messageMode];
+              const MessageIcon = messageConfig.icon;
 
-                {/* Message Content */}
+              return (
                 <div
-                  className={`flex-1 max-w-3xl ${
-                    message.role === 'user' ? 'flex justify-end' : ''
+                  key={message.id}
+                  className={`flex items-start space-x-4 ${
+                    message.role === 'user' ? 'flex-row-reverse space-x-reverse' : ''
                   }`}
                 >
+                  {/* Avatar */}
                   <div
-                    className={`rounded-2xl px-6 py-4 ${
+                    className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${
                       message.role === 'assistant'
-                        ? 'bg-constitution-gold/5 border border-constitution-gold/20'
-                        : 'bg-seal-red/20 border border-seal-red/30'
+                        ? messageConfig.bgColor
+                        : 'bg-seal-red'
                     }`}
                   >
-                    <p className="text-judge-ivory leading-relaxed whitespace-pre-wrap">
-                      {message.content}
-                    </p>
-                    <p className="text-constitution-gold/50 text-xs mt-2">
-                      {message.timestamp.toLocaleTimeString([], { 
-                        hour: '2-digit', 
-                        minute: '2-digit' 
-                      })}
-                    </p>
+                    {message.role === 'assistant' ? (
+                      <MessageIcon className={`w-6 h-6 ${messageConfig.color}`} />
+                    ) : (
+                      <User className="w-6 h-6 text-white" />
+                    )}
+                  </div>
+
+                  {/* Message Content */}
+                  <div
+                    className={`flex-1 max-w-3xl ${
+                      message.role === 'user' ? 'flex justify-end' : ''
+                    }`}
+                  >
+                    <div
+                      className={`rounded-2xl px-6 py-4 ${
+                        message.role === 'assistant'
+                          ? `${messageConfig.bgColor} border ${messageConfig.borderColor}`
+                          : 'bg-seal-red/20 border border-seal-red/30'
+                      }`}
+                    >
+                      {message.role === 'assistant' && message.mode && message.mode !== 'general' && (
+                        <div className="flex items-center space-x-2 mb-2">
+                          <MessageIcon className={`w-4 h-4 ${messageConfig.color}`} />
+                          <span className={`text-xs font-medium ${messageConfig.color}`}>
+                            {messageConfig.label}
+                          </span>
+                        </div>
+                      )}
+                      <p className="text-judge-ivory leading-relaxed whitespace-pre-wrap">
+                        {message.content}
+                      </p>
+                      <p className="text-constitution-gold/50 text-xs mt-2">
+                        {message.timestamp.toLocaleTimeString([], { 
+                          hour: '2-digit', 
+                          minute: '2-digit' 
+                        })}
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
 
             {isLoading && (
               <div className="flex items-start space-x-4">
-                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-constitution-gold to-constitution-gold/70 flex items-center justify-center">
-                  <Bot className="w-6 h-6 text-justice-black" />
+                <div className={`flex-shrink-0 w-10 h-10 rounded-full ${currentConfig.bgColor} flex items-center justify-center`}>
+                  <CurrentModeIcon className={`w-6 h-6 ${currentConfig.color}`} />
                 </div>
                 <div className="flex-1">
-                  <div className="bg-constitution-gold/5 border border-constitution-gold/20 rounded-2xl px-6 py-4">
+                  <div className={`${currentConfig.bgColor} border ${currentConfig.borderColor} rounded-2xl px-6 py-4`}>
                     <div className="flex items-center space-x-3">
-                      <Loader2 className="w-5 h-5 text-constitution-gold animate-spin" />
-                      <span className="text-constitution-gold/70">AI is thinking...</span>
+                      <Loader2 className={`w-5 h-5 ${currentConfig.color} animate-spin`} />
+                      <span className={`${currentConfig.color}/70`}>
+                        {currentMode === 'argument' ? 'Simulating arguments...' : 
+                         currentMode === 'prediction' ? 'Analyzing case...' : 
+                         'AI is thinking...'}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -641,15 +778,19 @@ export function ChatbotPage() {
           <div className="px-4 pb-4">
             <div className="max-w-4xl mx-auto">
               <div className="flex items-center space-x-2 mb-3">
-                <Sparkles className="w-4 h-4 text-constitution-gold" />
-                <p className="text-constitution-gold/70 text-sm font-medium">Suggested Questions</p>
+                <Sparkles className={`w-4 h-4 ${currentConfig.color}`} />
+                <p className={`${currentConfig.color}/70 text-sm font-medium`}>
+                  {currentMode === 'argument' ? 'Try these arguments' :
+                   currentMode === 'prediction' ? 'Try these predictions' :
+                   'Suggested Questions'}
+                </p>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                {SUGGESTED_QUESTIONS.map((question, index) => (
+                {MODE_SUGGESTIONS[currentMode].map((question, index) => (
                   <button
                     key={index}
                     onClick={() => handleSuggestedQuestion(question)}
-                    className="text-left px-4 py-3 bg-constitution-gold/5 hover:bg-constitution-gold/10 border border-constitution-gold/20 rounded-lg transition-all text-judge-ivory/80 hover:text-judge-ivory text-sm"
+                    className={`text-left px-4 py-3 ${currentConfig.bgColor} hover:bg-opacity-20 border ${currentConfig.borderColor} rounded-lg transition-all text-judge-ivory/80 hover:text-judge-ivory text-sm`}
                   >
                     {question}
                   </button>
@@ -663,20 +804,31 @@ export function ChatbotPage() {
         <div className="bg-justice-black/80 backdrop-blur-sm border-t border-constitution-gold/20 px-4 py-4">
           <div className="max-w-4xl mx-auto">
             <div className="flex items-end space-x-3">
-              <div className="flex-1 relative">
-                <input
-                  ref={inputRef}
-                  type="text"
-                  value={inputMessage}
-                  onChange={(e) => setInputMessage(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  placeholder="Ask me anything about law, cases, or legal procedures..."
-                  className="w-full px-6 py-4 bg-constitution-gold/5 border border-constitution-gold/20 rounded-xl text-judge-ivory placeholder-constitution-gold/40 focus:outline-none focus:ring-2 focus:ring-constitution-gold/50 focus:border-transparent transition-all"
-                  disabled={isLoading}
-                />
-                <div className="absolute right-4 top-1/2 transform -translate-y-1/2 flex items-center space-x-2 text-constitution-gold/40 text-xs">
-                  <Scale className="w-4 h-4" />
-                  <span>Legal AI</span>
+              <div className="flex-1">
+                <div className={`flex items-center ${currentConfig.bgColor} border ${currentConfig.borderColor} rounded-xl px-4 py-3 focus-within:ring-2 focus-within:ring-${currentConfig.color}/50 transition-all`}>
+                  
+                  <input
+                    ref={inputRef}
+                    type="text"
+                    value={inputMessage}
+                    onChange={(e) => setInputMessage(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder={
+                      currentMode === 'argument' 
+                        ? "Describe your case to simulate arguments..." 
+                        : currentMode === 'prediction'
+                        ? "Describe your case in detail for outcome analysis..."
+                        : "Ask me anything about law, cases, or legal procedures..."
+                    }
+                    className="flex-1 bg-transparent outline-none text-judge-ivory placeholder-opacity-40"
+                    disabled={isLoading}
+                  />
+
+                  <div className={`flex items-center space-x-2 ml-3 ${currentConfig.color}/50 text-xs shrink-0`}>
+                    <CurrentModeIcon className="w-4 h-4" />
+                    <span>{currentConfig.label}</span>
+                  </div>
+
                 </div>
               </div>
               <button
@@ -692,8 +844,10 @@ export function ChatbotPage() {
                 <span>Send</span>
               </button>
             </div>
-            <p className="text-constitution-gold/40 text-xs mt-3 text-center">
-              AI responses may not be 100% accurate. Always verify important legal information.
+            <p className={`${currentConfig.color}/40 text-xs mt-3 text-center`}>
+              {currentMode === 'argument' ? 'Arguments are simulated for practice only. Consult a lawyer for actual legal advice.' :
+               currentMode === 'prediction' ? 'Predictions are estimates based on precedents. Actual outcomes may vary.' :
+               'AI responses may not be 100% accurate. Always verify important legal information.'}
             </p>
           </div>
         </div>
