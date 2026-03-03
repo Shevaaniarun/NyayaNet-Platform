@@ -79,7 +79,7 @@ export class NotificationModel {
 
           if (userResult.rows.length > 0) {
             formattedNotification.data = {
-              ...parsedData, 
+              ...parsedData,
               userId: userResult.rows[0].id,
               userName: userResult.rows[0].userName,
             };
@@ -402,6 +402,49 @@ export class NotificationModel {
     }
   }
 
+  static async createFollowRequestAcceptedNotification(
+    receiverId: string,
+    accepterId: string,
+    accepterName: string,
+  ): Promise<string> {
+    const query = `
+    INSERT INTO notifications (
+      user_id,
+      notification_type,
+      title,
+      message,
+      source_type,
+      source_id,
+      data,
+      is_read
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+    RETURNING id
+  `;
+
+    const values = [
+      receiverId,
+      "NEW_FOLLOWER",
+      "Follow Request Accepted",
+      `Your follow request has been accepted by ${accepterName}. You are now following ${accepterName}`,
+      "USER",
+      accepterId,
+      JSON.stringify({
+        userId: accepterId,
+        userName: accepterName,
+        isAcceptedRequest: true,
+      }),
+      false,
+    ];
+
+    try {
+      const result = await pool.query(query, values);
+      return result.rows[0].id;
+    } catch (error: any) {
+      console.error("❌ Database insert error:", error.message);
+      throw error;
+    }
+  }
+
   static async createPostLikeNotification(
     postOwnerId: string,
     likerId: string,
@@ -622,7 +665,6 @@ export class NotificationModel {
       false,
     ];
 
-
     const result = await pool.query(query, values);
     return result.rows[0].id;
   }
@@ -695,12 +737,11 @@ export class NotificationModel {
     senderName: string,
     conversationId: string,
     messagePreview: string,
-    messageType: string = 'TEXT'
+    messageType: string = "TEXT",
   ): Promise<string> {
-
     if (receiverId === senderId) {
-      console.log('⚠️ User messaged themselves, skipping notification');
-      return '';
+      console.log("⚠️ User messaged themselves, skipping notification");
+      return "";
     }
 
     const query = `
@@ -718,14 +759,16 @@ export class NotificationModel {
     `;
 
     const truncatedMessage =
-      messagePreview.length > 100 ? messagePreview.substring(0, 100) + '...' : messagePreview;
+      messagePreview.length > 100
+        ? messagePreview.substring(0, 100) + "..."
+        : messagePreview;
 
     const values = [
       receiverId,
-      'MESSAGE_RECEIVED',
-      'New Message',
+      "MESSAGE_RECEIVED",
+      "New Message",
       `${senderName} sent you a message`,
-      'MESSAGE',
+      "MESSAGE",
       conversationId,
       JSON.stringify({
         userId: senderId,
@@ -741,7 +784,7 @@ export class NotificationModel {
       const result = await pool.query(query, values);
       return result.rows[0].id;
     } catch (error) {
-      console.error('❌ Database error inserting message notification:', error);
+      console.error("❌ Database error inserting message notification:", error);
       throw error;
     }
   }

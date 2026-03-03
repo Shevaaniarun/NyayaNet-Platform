@@ -28,7 +28,7 @@ export class NetworkController {
 
       const result = await NetworkModel.sendFollowRequest(
         followerId,
-        targetUserId
+        targetUserId,
       );
 
       if (!result.success) {
@@ -51,17 +51,17 @@ export class NetworkController {
             followerId,
             requesterName,
             requestMessage,
-            result.requestId
+            result.requestId,
           );
 
           console.log(
             "✅ Connection request notification created for:",
-            targetUserId
+            targetUserId,
           );
         } catch (notifError: any) {
           console.error(
             "⚠️ Failed to create connection request notification:",
-            notifError.message
+            notifError.message,
           );
         }
       }
@@ -73,13 +73,11 @@ export class NetworkController {
       });
     } catch (error: any) {
       console.error("sendFollowRequest error:", error.message);
-      return res
-        .status(500)
-        .json({
-          success: false,
-          message: "Error sending follow request",
-          error: error.message,
-        });
+      return res.status(500).json({
+        success: false,
+        message: "Error sending follow request",
+        error: error.message,
+      });
     }
   }
 
@@ -111,13 +109,11 @@ export class NetworkController {
       });
     } catch (error: any) {
       console.error("unfollowUser error:", error.message);
-      return res
-        .status(500)
-        .json({
-          success: false,
-          message: "Error unfollowing user",
-          error: error.message,
-        });
+      return res.status(500).json({
+        success: false,
+        message: "Error unfollowing user",
+        error: error.message,
+      });
     }
   }
 
@@ -125,7 +121,7 @@ export class NetworkController {
 
   static async acceptFollowRequest(req: AuthRequest, res: Response) {
     try {
-      const userId = req.user?.id;
+      const userId = req.user?.id; 
       const { requestId } = req.params;
 
       if (!userId)
@@ -146,22 +142,32 @@ export class NetworkController {
       }
 
       try {
-        const followerUserId = result.followerId;
+        const followerUserId = result.followerId; 
+        const accepter = await findUserById(userId);
+        const accepterName = accepter?.full_name || "Someone";
 
-        const follower = await findUserById(userId);
-        const followerName = follower?.full_name || "Someone";
+        const requester = await findUserById(followerUserId!);
+        const requesterName = requester?.full_name || "Someone";
+
         if (followerUserId) {
           try {
-            const notificationId =
-              await NotificationModel.createNewFollowerNotification(
-                followerUserId,
-                userId,
-                followerName
-              );
+            // Notification 1: To the REQUESTER — "Your follow request was accepted by X" / "You are now following X"
+            await NotificationModel.createFollowRequestAcceptedNotification(
+              followerUserId, 
+              userId,
+              accepterName, 
+            );
+
+            // Notification 2: To the ACCEPTER — "X is now following you" (you got a new follower)
+            await NotificationModel.createNewFollowerNotification(
+              userId,
+              followerUserId,
+              requesterName,
+            );
           } catch (createError: any) {
             console.error(
               "❌ Error creating notification:",
-              createError.message
+              createError.message,
             );
             console.error("❌ Full error:", createError);
           }
@@ -171,7 +177,7 @@ export class NetworkController {
       } catch (notifError: any) {
         console.error(
           "⚠️ Failed to create follower notification:",
-          notifError.message
+          notifError.message,
         );
         console.error("Full error:", notifError);
       }
@@ -182,13 +188,11 @@ export class NetworkController {
       });
     } catch (error: any) {
       console.error("acceptFollowRequest error:", error.message);
-      return res
-        .status(500)
-        .json({
-          success: false,
-          message: "Error accepting follow request",
-          error: error.message,
-        });
+      return res.status(500).json({
+        success: false,
+        message: "Error accepting follow request",
+        error: error.message,
+      });
     }
   }
 
@@ -216,13 +220,11 @@ export class NetworkController {
       });
     } catch (error: any) {
       console.error("rejectFollowRequest error:", error.message);
-      return res
-        .status(500)
-        .json({
-          success: false,
-          message: "Error rejecting follow request",
-          error: error.message,
-        });
+      return res.status(500).json({
+        success: false,
+        message: "Error rejecting follow request",
+        error: error.message,
+      });
     }
   }
 
@@ -250,13 +252,11 @@ export class NetworkController {
       });
     } catch (error: any) {
       console.error("cancelFollowRequest error:", error.message);
-      return res
-        .status(500)
-        .json({
-          success: false,
-          message: "Error cancelling follow request",
-          error: error.message,
-        });
+      return res.status(500).json({
+        success: false,
+        message: "Error cancelling follow request",
+        error: error.message,
+      });
     }
   }
 
@@ -278,7 +278,7 @@ export class NetworkController {
 
       const status = await NetworkModel.getFollowStatus(
         requesterId,
-        targetUserId
+        targetUserId,
       );
 
       return res.json({
@@ -287,13 +287,11 @@ export class NetworkController {
       });
     } catch (error: any) {
       console.error("getFollowStatus error:", error.message);
-      return res
-        .status(500)
-        .json({
-          success: false,
-          message: "Error getting follow status",
-          error: error.message,
-        });
+      return res.status(500).json({
+        success: false,
+        message: "Error getting follow status",
+        error: error.message,
+      });
     }
   }
 
@@ -313,13 +311,11 @@ export class NetworkController {
       });
     } catch (error: any) {
       console.error("getFollowRequests error:", error.message);
-      return res
-        .status(500)
-        .json({
-          success: false,
-          message: "Error fetching follow requests",
-          error: error.message,
-        });
+      return res.status(500).json({
+        success: false,
+        message: "Error fetching follow requests",
+        error: error.message,
+      });
     }
   }
 
@@ -339,13 +335,11 @@ export class NetworkController {
       });
     } catch (error: any) {
       console.error("getPendingRequests error:", error.message);
-      return res
-        .status(500)
-        .json({
-          success: false,
-          message: "Error fetching pending requests",
-          error: error.message,
-        });
+      return res.status(500).json({
+        success: false,
+        message: "Error fetching pending requests",
+        error: error.message,
+      });
     }
   }
 
@@ -365,13 +359,11 @@ export class NetworkController {
       });
     } catch (error: any) {
       console.error("getFollowers error:", error.message);
-      return res
-        .status(500)
-        .json({
-          success: false,
-          message: "Error fetching followers",
-          error: error.message,
-        });
+      return res.status(500).json({
+        success: false,
+        message: "Error fetching followers",
+        error: error.message,
+      });
     }
   }
 
@@ -391,13 +383,11 @@ export class NetworkController {
       });
     } catch (error: any) {
       console.error("getFollowing error:", error.message);
-      return res
-        .status(500)
-        .json({
-          success: false,
-          message: "Error fetching following",
-          error: error.message,
-        });
+      return res.status(500).json({
+        success: false,
+        message: "Error fetching following",
+        error: error.message,
+      });
     }
   }
 
@@ -419,7 +409,7 @@ export class NetworkController {
         userId,
         q as string,
         parseInt(page as string),
-        parseInt(limit as string)
+        parseInt(limit as string),
       );
 
       return res.json({
@@ -428,13 +418,11 @@ export class NetworkController {
       });
     } catch (error: any) {
       console.error("searchUsers error:", error.message);
-      return res
-        .status(500)
-        .json({
-          success: false,
-          message: "Error searching users",
-          error: error.message,
-        });
+      return res.status(500).json({
+        success: false,
+        message: "Error searching users",
+        error: error.message,
+      });
     }
   }
 
@@ -454,13 +442,11 @@ export class NetworkController {
       });
     } catch (error: any) {
       console.error("getNetworkStats error:", error.message);
-      return res
-        .status(500)
-        .json({
-          success: false,
-          message: "Error fetching network stats",
-          error: error.message,
-        });
+      return res.status(500).json({
+        success: false,
+        message: "Error fetching network stats",
+        error: error.message,
+      });
     }
   }
 }
