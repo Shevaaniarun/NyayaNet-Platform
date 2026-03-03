@@ -69,6 +69,8 @@ export function Sidebar({
       path: "/notifications",
       icon: Bell,
       label: "Notifications",
+      badge: notificationCount > 0 ? notificationCount : null,
+      badgeType: "count",
     },
 
     { path: "/profile", icon: User, label: "Profile" },
@@ -136,7 +138,7 @@ export function Sidebar({
               {item.badge && (
                 <span
                   className={`px-2 py-0.5 rounded-full font-bold text-xs ${item.badgeType === "count"
-                      ? "bg-amber-700 text-white"
+                      ? "bg-constitution-gold/20 text-constitution-gold"
                       : "bg-constitution-gold text-justice-black"
                     }`}
                 >

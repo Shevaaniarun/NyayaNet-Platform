@@ -76,11 +76,12 @@ export function LawLibraryPage() {
         <RAG />
 
 
-        {/* Search and Filter */}
         <div className="aged-paper rounded-lg p-6 mb-8">
-          <div className="flex flex-col md:flex-row gap-4">
-            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5" />
-            <div className="flex-1 relative">
+          <div className="flex flex-col md:flex-row gap-4 items-stretch">
+            
+            {/* Search Input */}
+            <div className="relative flex-1">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-constitution-gold" />
               <input
                 type="text"
                 value={searchQuery}
@@ -89,15 +90,20 @@ export function LawLibraryPage() {
                 className="w-full parchment-bg border border-constitution-gold/30 rounded-lg pl-12 pr-4 py-3 text-ink-gray focus:outline-none focus:border-constitution-gold"
               />
             </div>
+
+            {/* Category Select */}
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
-              className="px-4 py-3 parchment-bg border border-constitution-gold/30 rounded-lg text-ink-gray focus:outline-none focus:border-constitution-gold"
+              className="md:w-64 px-4 py-3 parchment-bg border border-constitution-gold/30 rounded-lg text-ink-gray focus:outline-none focus:border-constitution-gold"
             >
               {categories.map(cat => (
-                <option key={cat.value} value={cat.value}>{cat.label}</option>
+                <option key={cat.value} value={cat.value}>
+                  {cat.label}
+                </option>
               ))}
             </select>
+
           </div>
         </div>
 
