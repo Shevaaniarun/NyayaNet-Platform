@@ -9,7 +9,7 @@ const chatbotService = new ChatbotService();
 interface Message {
   role: 'user' | 'assistant';
   content: string;
-  timestamp: string; // store as ISO string
+  timestamp: string; 
 }
 
 export class ChatbotController {

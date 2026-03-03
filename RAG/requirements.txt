@@ -1,9 +1,18 @@
-#first install the below 3 modules in your python environment using pip install <module_name>
+# Core dependencies
 fastapi
+uvicorn
 faiss-cpu
 sentence-transformers
-
-#if the below modules are said as "not found", install them also using pip install 
-uvicorn
 numpy
 scikit-learn
+
+# Database
+psycopg2-binary
+python-dotenv
+
+# Utilities
+colorama
+tqdm
+
+# Optional: For better performance
+# torch  # Uncomment if you have CUDA
