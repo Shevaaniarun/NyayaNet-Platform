@@ -1,5 +1,5 @@
 import { Search, Filter, TrendingUp, Clock, Star, Users, X } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface DiscussionFiltersProps {
   onFilterChange: (filters: {
@@ -12,17 +12,37 @@ interface DiscussionFiltersProps {
     q?: string;
   }) => void;
   availableCategories: string[];
+  currentFilters?: {
+    category?: string;
+    type?: string;
+    status?: 'resolved' | 'active';
+    sort?: 'newest' | 'active' | 'popular' | 'upvoted';
+    following?: boolean;
+    q?: string;
+    tags?: string[];
+  };
 }
 
-export function DiscussionFilters({ onFilterChange, availableCategories }: DiscussionFiltersProps) {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('');
-  const [selectedType, setSelectedType] = useState('');
-  const [selectedStatus, setSelectedStatus] = useState('');
-  const [selectedSort, setSelectedSort] = useState('newest');
-  const [followingOnly, setFollowingOnly] = useState(false);
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+export function DiscussionFilters({ onFilterChange, availableCategories, currentFilters }: DiscussionFiltersProps) {
+  const [searchQuery, setSearchQuery] = useState(currentFilters?.q || '');
+  const [selectedCategory, setSelectedCategory] = useState(currentFilters?.category || '');
+  const [selectedType, setSelectedType] = useState(currentFilters?.type || '');
+  const [selectedStatus, setSelectedStatus] = useState(currentFilters?.status || '');
+  const [selectedSort, setSelectedSort] = useState(currentFilters?.sort || 'newest');
+  const [followingOnly, setFollowingOnly] = useState(currentFilters?.following || false);
+  const [selectedTags, setSelectedTags] = useState<string[]>(currentFilters?.tags || []);
   const [tagInput, setTagInput] = useState('');
+
+  // Update local state when currentFilters changes (e.g., when clearing filters from parent)
+  useEffect(() => {
+    setSearchQuery(currentFilters?.q || '');
+    setSelectedCategory(currentFilters?.category || '');
+    setSelectedType(currentFilters?.type || '');
+    setSelectedStatus(currentFilters?.status || '');
+    setSelectedSort(currentFilters?.sort || 'newest');
+    setFollowingOnly(currentFilters?.following || false);
+    setSelectedTags(currentFilters?.tags || []);
+  }, [currentFilters]);
 
   const discussionTypes = [
     { value: '', label: 'All Types' },
@@ -40,7 +60,7 @@ export function DiscussionFilters({ onFilterChange, availableCategories }: Discu
 
   const handleSearch = () => {
     onFilterChange({
-      q: searchQuery,
+      q: searchQuery || undefined,
       category: selectedCategory || undefined,
       type: selectedType || undefined,
       status: selectedStatus as 'resolved' | 'active' || undefined,
@@ -51,6 +71,7 @@ export function DiscussionFilters({ onFilterChange, availableCategories }: Discu
   };
 
   const handleClearFilters = () => {
+    // Reset all local state
     setSearchQuery('');
     setSelectedCategory('');
     setSelectedType('');
@@ -58,6 +79,8 @@ export function DiscussionFilters({ onFilterChange, availableCategories }: Discu
     setSelectedSort('newest');
     setFollowingOnly(false);
     setSelectedTags([]);
+    
+    // Call onFilterChange with empty filters to reset
     onFilterChange({});
   };
 
@@ -72,6 +95,9 @@ export function DiscussionFilters({ onFilterChange, availableCategories }: Discu
     setSelectedTags(selectedTags.filter(t => t !== tag));
   };
 
+  // Check if any filters are active
+  const hasActiveFilters = !!(selectedCategory || selectedType || selectedStatus || followingOnly || selectedTags.length > 0 || searchQuery);
+
   return (
     <div className="aged-paper rounded-lg p-6 mb-8">
       <div className="flex items-center justify-between mb-6">
@@ -79,7 +105,7 @@ export function DiscussionFilters({ onFilterChange, availableCategories }: Discu
           <Filter className="w-5 h-5" />
           <span>Filter Discussions</span>
         </h3>
-        {(selectedCategory || selectedType || selectedStatus || followingOnly || selectedTags.length > 0 || searchQuery) && (
+        {hasActiveFilters && (
           <button
             onClick={handleClearFilters}
             className="text-constitution-gold hover:text-gavel-bronze transition-colors text-sm flex items-center space-x-1"
@@ -160,7 +186,11 @@ export function DiscussionFilters({ onFilterChange, availableCategories }: Discu
                   key={option.value}
                   type="button"
                   onClick={() => setSelectedSort(option.value)}
-                  className={`flex-1 flex flex-col items-center justify-center p-2.5 border rounded-lg transition-all ${selectedSort === option.value ? 'border-constitution-gold bg-constitution-gold/5 text-constitution-gold' : 'border-constitution-gold/20 hover:border-constitution-gold/40 text-ink-gray/70 hover:text-ink-gray'}`}
+                  className={`flex-1 flex flex-col items-center justify-center p-2.5 border rounded-lg transition-all ${
+                    selectedSort === option.value 
+                      ? 'border-constitution-gold bg-constitution-gold/5 text-constitution-gold' 
+                      : 'border-constitution-gold/20 hover:border-constitution-gold/40 text-ink-gray/70 hover:text-ink-gray'
+                  }`}
                 >
                   <Icon className="w-4 h-4 mb-1" />
                   <span className="text-xs">{option.label}</span>

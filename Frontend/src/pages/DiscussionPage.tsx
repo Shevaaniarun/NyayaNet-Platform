@@ -287,12 +287,18 @@ export function DiscussionsPage({ onNavigateToProfile }: DiscussionsPageProps) {
   };
 
   const handleFilterChange = (newFilters: Partial<DiscussionFilterType>) => {
-    setFilters(prev => ({
-      ...prev,
-      ...newFilters,
-      page: 1 // Reset to first page when filters change
-    }));
-  };
+  setFilters({
+    page: 1,
+    limit: 10,
+    sort: newFilters.sort || 'newest',
+    status: newFilters.status,
+    category: newFilters.category,
+    type: newFilters.type,
+    tags: newFilters.tags,
+    q: newFilters.q,
+    following: newFilters.following,
+  });
+};
 
   const handlePageChange = (page: number) => {
     setFilters(prev => ({
@@ -542,6 +548,15 @@ export function DiscussionsPage({ onNavigateToProfile }: DiscussionsPageProps) {
           <DiscussionFilters
             onFilterChange={handleFilterChange}
             availableCategories={availableCategories}
+            currentFilters={{
+              category: filters.category,
+              type: filters.type,
+              status: filters.status,
+              sort: filters.sort,
+              following: filters.following,
+              q: filters.q,
+              tags: filters.tags
+            }}
           />
         </div>
 
