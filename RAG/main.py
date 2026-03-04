@@ -30,9 +30,11 @@ class QueryRequest(BaseModel):
 class ResultItem(BaseModel):
     source: str
     score: float
-    chapter: Optional[Union[str, int]]
-    chapter_title: Optional[str]
+    chapter: Optional[Union[str, int]] = None
+    chapter_title: Optional[str] = None
     section_desc: str
+    act_id: Optional[str] = None
+    section_id: Optional[str] = None
     
 
 class QueryResponse(BaseModel):

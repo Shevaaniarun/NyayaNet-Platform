@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, useSearchParams, Link } from 'react-router-dom';
 import { ArrowLeft, BookOpen, Bookmark, Search, Loader2, ChevronRight } from 'lucide-react';
 import { lawLibraryAPI } from '../api/lawLibraryAPI';
 
@@ -26,6 +26,7 @@ export function LawActDetailPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSection, setSelectedSection] = useState<Section | null>(null);
+  const [searchParams] = useSearchParams();
 
   useEffect(() => {
     if (actId) {
@@ -38,6 +39,13 @@ export function LawActDetailPage() {
       setLoading(true);
       const data = await lawLibraryAPI.getActById(actId!);
       setAct(data);
+
+      // Auto-select section from query param
+      const sectionId = searchParams.get('section');
+      if (sectionId && data?.sections) {
+        const match = data.sections.find((s: Section) => s.id === sectionId);
+        if (match) setSelectedSection(match);
+      }
     } catch (error) {
       console.error('Failed to fetch act:', error);
     } finally {
@@ -45,7 +53,7 @@ export function LawActDetailPage() {
     }
   };
 
-  const filteredSections = act?.sections.filter(section => 
+  const filteredSections = act?.sections.filter(section =>
     section.section_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
     section.section_title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     section.section_text.toLowerCase().includes(searchQuery.toLowerCase())
@@ -96,7 +104,7 @@ export function LawActDetailPage() {
                 <BookOpen className="w-5 h-5 text-constitution-gold" />
                 Sections
               </h2>
-              
+
               <div className="relative mb-4">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-ink-gray/50" />
                 <input
@@ -113,11 +121,10 @@ export function LawActDetailPage() {
                   <button
                     key={section.id}
                     onClick={() => setSelectedSection(section)}
-                    className={`w-full text-left p-3 rounded-lg transition-all ${
-                      selectedSection?.id === section.id
+                    className={`w-full text-left p-3 rounded-lg transition-all ${selectedSection?.id === section.id
                         ? 'bg-constitution-gold/10 border border-constitution-gold/30'
                         : 'hover:bg-constitution-gold/5'
-                    }`}
+                      }`}
                   >
                     <div className="font-bold text-constitution-gold text-sm">
                       Section {section.section_number}
@@ -160,7 +167,7 @@ export function LawActDetailPage() {
                   <div className="text-ink-gray/90 leading-relaxed whitespace-pre-wrap font-serif">
                     {selectedSection.section_text}
                   </div>
-                  
+
                   {selectedSection.explanation && (
                     <div className="mt-6 pt-6 border-t border-constitution-gold/20">
                       <h4 className="font-bold text-constitution-gold mb-2">Explanation</h4>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { BookOpen, Search, Bookmark, ChevronRight, Loader2 } from 'lucide-react';
+import { BookOpen, Search, Bookmark, ChevronRight, Loader2, MessageCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { lawLibraryAPI } from '../api/lawLibraryAPI';
 import { RAG } from "../components/RAG";
@@ -18,6 +18,7 @@ export function LawLibraryPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
+  const [showAI, setShowAI] = useState(false);
 
   useEffect(() => {
     fetchActs();
@@ -43,7 +44,7 @@ export function LawLibraryPage() {
     { value: 'CORPORATE_LAW', label: 'Corporate Law' },
   ];
 
-  const filteredActs = acts.filter(act => 
+  const filteredActs = acts.filter(act =>
     act.act_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     act.short_title?.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -51,7 +52,7 @@ export function LawLibraryPage() {
   return (
     <div className="min-h-screen bg-justice-black p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
-        
+
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
@@ -63,22 +64,31 @@ export function LawLibraryPage() {
               Browse and search Indian legal acts, codes, and sections
             </p>
           </div>
-          <Link
-            to="/library/bookmarks"
-            className="px-4 py-2 bg-constitution-gold/10 text-constitution-gold rounded-lg hover:bg-constitution-gold/20 transition-colors flex items-center gap-2"
-          >
-            <Bookmark className="w-4 h-4" />
-            My Bookmarks
-          </Link>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setShowAI(true)}
+              className="px-4 py-2 bg-constitution-gold text-black rounded-lg hover:bg-constitution-gold/80 transition-colors flex items-center gap-2 font-bold"
+            >
+              <MessageCircle className="w-4 h-4" />
+              Ask NyayaNet AI
+            </button>
+            <Link
+              to="/library/bookmarks"
+              className="px-4 py-2 bg-constitution-gold/10 text-constitution-gold rounded-lg hover:bg-constitution-gold/20 transition-colors flex items-center gap-2"
+            >
+              <Bookmark className="w-4 h-4" />
+              My Bookmarks
+            </Link>
+          </div>
         </div>
 
-        {/* RAG */}
-        <RAG />
+        {/* RAG Chat Panel */}
+        {showAI && <RAG mode="panel" onClose={() => setShowAI(false)} />}
 
 
         <div className="aged-paper rounded-lg p-6 mb-8">
           <div className="flex flex-col md:flex-row gap-4 items-stretch">
-            
+
             {/* Search Input */}
             <div className="relative flex-1">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-constitution-gold" />
@@ -122,7 +132,7 @@ export function LawLibraryPage() {
               >
                 <div className="aged-paper rounded-lg p-6 border border-constitution-gold/20 hover:border-constitution-gold/40 transition-all cursor-pointer">
                   <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-constitution-gold/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                  
+
                   <div className="flex items-start justify-between">
                     <div>
                       <h2 className="font-heading font-bold text-ink-gray text-xl mb-2 group-hover:text-constitution-gold transition-colors">

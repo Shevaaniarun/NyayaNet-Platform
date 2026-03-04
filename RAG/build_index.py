@@ -14,6 +14,8 @@ def load_law_sections():
 
     query = """
         SELECT 
+            la.id AS act_id,
+            ls.id AS section_id,
             la.act_name,
             la.act_year,
             ls.section_number,
@@ -28,7 +30,7 @@ def load_law_sections():
 
     all_docs = []
 
-    for act_name, act_year, section_number, section_title, section_text in rows:
+    for act_id, section_id, act_name, act_year, section_number, section_title, section_text in rows:
         if not section_text:
             continue
 
@@ -39,6 +41,8 @@ def load_law_sections():
         )
 
         all_docs.append({
+            "act_id": str(act_id),
+            "section_id": str(section_id),
             "act": act_name,
             "section_num": section_number,
             "section_title": section_title,
